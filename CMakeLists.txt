@@ -6,8 +6,7 @@ add_compile_options(-Wall -Wextra -Werror)
 set(SOURCE_FILES
   bin/main.cc
   parsing/parser.cc
-  parsing/scanner.cc
-)
+  parsing/scanner.cc)
 
 add_executable(sysy ${SOURCE_FILES})
 target_include_directories(sysy PRIVATE .)
