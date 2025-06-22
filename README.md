@@ -11,3 +11,8 @@ cmake --build build
 ```
 ./build/sysy
 ```
+
+## Test
+```
+ctest --test-dir build
+```
