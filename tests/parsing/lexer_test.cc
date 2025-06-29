@@ -2,13 +2,35 @@
 
 #include <gtest/gtest.h>
 
+#include "parsing/token.h"
+
 namespace sysy::test {
 
-TEST(Lexer, IntLiteral) {
-  const char* source = "123";
+TEST(Lexer, SkipWhitespaces) {
+  const char* source = "      ";
   Lexer lexer(source);
   Token next_token = lexer.Next();
-  EXPECT_EQ(next_token.type(), TokenType::kIntLiteral);
+  EXPECT_EQ(next_token.type(), TokenType::kEof);
+}
+
+TEST(Lexer, SkipLineComment) {
+  const char* source = "// comment";
+  Lexer lexer(source);
+  Token next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kEof);
+}
+
+TEST(Lexer, SkipBlockComment) {
+  const char* source = R"(
+    /**
+     * multi-line comment
+     */
+
+    // comment
+  )";
+  Lexer lexer(source);
+  Token next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kEof);
 }
 
 }  // namespace sysy::test
