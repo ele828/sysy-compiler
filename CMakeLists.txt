@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 project(sysy_compiler)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-add_compile_options(-Wall -Wextra -Werror)
+add_compile_options(-Wall -Wextra -Werror -Wno-unused-function)
 add_compile_options(-fno-exceptions -fno-rtti)
 
 include_directories(.)

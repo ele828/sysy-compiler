@@ -16,14 +16,30 @@ inline bool IsWhiteSpace(char c) {
 
 inline bool IsLineTerminator(char c) { return c == '\n' || c == '\r'; }
 
+inline bool IsAlpha(char c) {
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+}
+
+inline bool IsDigit(char c) { return c >= '0' && c <= '9'; }
+
 }  // namespace
 
 Lexer::Lexer(std::string_view source) : source_(source) {}
 
 Token Lexer::Next() {
+  start_ = position_;
   SkipWhitespace();
 
-  if (IsAtEnd()) return Token(TokenType::kEof, {});
+  if (IsAtEnd()) {
+    return Token(TokenType::kEof, {});
+  }
+
+  char c = Peek();
+  Advance();
+
+  if (IsAlpha(c)) {
+    return ParseIdentifier();
+  }
 
   return {};
 }
@@ -58,6 +74,13 @@ void Lexer::SkipWhitespace() {
       return;
     }
   }
+}
+
+Token Lexer::ParseIdentifier() {
+  while (IsAlpha(Peek()) || IsDigit(Peek())) {
+    Advance();
+  }
+  return Token(TokenType::kIdentifier, lexeme());
 }
 
 }  // namespace sysy
