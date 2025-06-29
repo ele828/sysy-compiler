@@ -6,10 +6,11 @@
 namespace sysy {
 
 enum class TokenType : uint8_t {
-  kUninitialized,
+  kIllegal,
   kWhitespace,
-  kIntLiteral,
-  kFloatLiteral,
+  kEof,
+  kIntConst,
+  kFloatConst,
 };
 
 class Token {
@@ -21,7 +22,7 @@ class Token {
   [[nodiscard]] std::string_view value() const { return value_; }
 
  private:
-  TokenType type_{TokenType::kUninitialized};
+  TokenType type_{TokenType::kIllegal};
   std::string_view value_;
 };
 

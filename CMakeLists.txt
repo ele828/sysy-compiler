@@ -7,14 +7,19 @@ add_compile_options(-fno-exceptions -fno-rtti)
 
 include_directories(.)
 
+# sysy library
 set(SOURCE_FILES
   parsing/lexer.cc
   parsing/parser.cc
   parsing/token.cc)
 
-add_executable(sysy
-  bin/main.cc
-  ${SOURCE_FILES})
+add_library(sysy ${SOURCE_FILES})
+
+# sysy binary
+add_executable(
+  sysy_bin
+  bin/main.cc)
+target_link_libraries(sysy_bin sysy)
 
 # unit test
 include(FetchContent)
@@ -32,6 +37,7 @@ add_executable(
   tests/parsing/lexer_test.cc)
 target_link_libraries(
   sysy_test
+  sysy
   GTest::gtest_main)
 
 include(GoogleTest)
