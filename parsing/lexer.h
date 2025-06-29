@@ -20,22 +20,23 @@ class Lexer final {
     return source_[position_ + 1];
   }
 
-  char Advance() {
-    ++position_;
-    return source_[position_];
-  }
+  void Advance() { ++position_; }
 
-  char Advance(size_t step) {
-    position_ += step;
-    return source_[position_];
-  }
+  void Advance(size_t step) { position_ += step; }
 
   void SkipWhitespace();
 
+  Token ParseIdentifier();
+
   bool IsAtEnd() const { return position_ >= source_.length(); }
+
+  std::string_view lexeme() {
+    return source_.substr(start_, position_ - start_);
+  }
 
   std::string_view source_;
   size_t position_{0};
+  size_t start_{0};
 };
 
 }  // namespace sysy
