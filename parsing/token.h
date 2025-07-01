@@ -35,6 +35,18 @@ enum class TokenType : uint8_t {
   kGreaterThan,
   kLessThanEq,
   kGreaterThanEq,
+
+  // keywords
+  kKeywordConst,
+  kKeywordInt,
+  kKeywordFloat,
+  kKeywordVoid,
+  kKeywordIf,
+  kKeywordElse,
+  kKeywordWhile,
+  kKeywordBreak,
+  kKeywordContinue,
+  kKeywordReturn,
 };
 
 class Token {
