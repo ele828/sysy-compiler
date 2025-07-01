@@ -12,6 +12,29 @@ enum class TokenType : uint8_t {
   kIdentifier,
   kIntConst,
   kFloatConst,
+  kLeftParen,
+  kRightParen,
+  kLeftBrace,
+  kRightBrace,
+  kSemicolon,
+  kComma,
+  kPeriod,
+  kAssign,
+
+  kAdd,
+  kSub,
+  kMul,
+  kDiv,
+
+  kNot,
+  kAnd,
+  kOr,
+  kEq,
+  kNotEq,
+  kLessThan,
+  kGreaterThan,
+  kLessThanEq,
+  kGreaterThanEq,
 };
 
 class Token {
