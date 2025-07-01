@@ -40,5 +40,18 @@ target_link_libraries(
   sysy
   GTest::gtest_main)
 
+# fixtures test
+add_executable(
+  sysy_fixtures_test 
+  tests/parsing/lexer_fixtures.cc)
+target_compile_definitions(sysy_fixtures_test
+  PUBLIC
+  PROJECT_ROOT_PATH="${CMAKE_SOURCE_DIR}")
+target_link_libraries(
+  sysy_fixtures_test 
+  sysy
+  GTest::gtest)
+
 include(GoogleTest)
 gtest_discover_tests(sysy_test)
+gtest_discover_tests(sysy_fixtures_test)
