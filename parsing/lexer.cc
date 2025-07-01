@@ -57,6 +57,63 @@ Token Lexer::Next() {
     return ParseNumericConstant();
   }
 
+  switch (c) {
+    case '(':
+      return Token(TokenType::kLeftParen, lexeme());
+    case ')':
+      return Token(TokenType::kRightParen, lexeme());
+    case '{':
+      return Token(TokenType::kLeftBrace, lexeme());
+    case '}':
+      return Token(TokenType::kRightBrace, lexeme());
+    case ';':
+      return Token(TokenType::kSemicolon, lexeme());
+    case ',':
+      return Token(TokenType::kComma, lexeme());
+    case '.':
+      return Token(TokenType::kPeriod, lexeme());
+    case '+':
+      return Token(TokenType::kAdd, lexeme());
+    case '-':
+      return Token(TokenType::kSub, lexeme());
+    case '*':
+      return Token(TokenType::kMul, lexeme());
+    case '/':
+      return Token(TokenType::kDiv, lexeme());
+    case '!': {
+      if (Peek() == '=') {
+        Advance();
+        return Token(TokenType::kNotEq, lexeme());
+      } else {
+        return Token(TokenType::kNot, lexeme());
+      }
+    }
+    case '=': {
+      if (Peek() == '=') {
+        Advance();
+        return Token(TokenType::kEq, lexeme());
+      } else {
+        return Token(TokenType::kAssign, lexeme());
+      }
+    }
+    case '<': {
+      if (Peek() == '=') {
+        Advance();
+        return Token(TokenType::kLessThanEq, lexeme());
+      } else {
+        return Token(TokenType::kLessThan, lexeme());
+      }
+    }
+    case '>': {
+      if (Peek() == '=') {
+        Advance();
+        return Token(TokenType::kGreaterThanEq, lexeme());
+      } else {
+        return Token(TokenType::kGreaterThan, lexeme());
+      }
+    }
+  }
+
   return {};
 }
 
