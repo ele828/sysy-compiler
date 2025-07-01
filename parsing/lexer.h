@@ -28,6 +28,8 @@ class Lexer final {
 
   Token ParseIdentifier();
 
+  Token ParseNumericConstant();
+
   bool IsAtEnd() const { return position_ >= source_.length(); }
 
   std::string_view lexeme() {

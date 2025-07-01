@@ -1,8 +1,10 @@
 #include "parsing/lexer.h"
 
+#include <algorithm>
 #include <ostream>
 #include <print>
 
+#include "base/bounds.h"
 #include "parsing/token.h"
 
 namespace sysy {
@@ -17,10 +19,14 @@ inline bool IsWhiteSpace(char c) {
 inline bool IsLineTerminator(char c) { return c == '\n' || c == '\r'; }
 
 inline bool IsAlpha(char c) {
-  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+  return base::IsInRange(c, 'a', 'z') || base::IsInRange(c, 'A', 'Z');
 }
 
-inline bool IsDigit(char c) { return c >= '0' && c <= '9'; }
+inline bool IsIdentifier(char c) { return IsAlpha(c) || c == '_'; }
+
+inline bool IsDigit(char c) { return base::IsInRange(c, '0', '9'); }
+
+inline bool IsOctalDigit(char c) { return base::IsInRange(c, '0', '7'); }
 
 }  // namespace
 
@@ -34,11 +40,15 @@ Token Lexer::Next() {
     return Token(TokenType::kEof, {});
   }
 
-  char c = Peek();
+  const char c = Peek();
   Advance();
 
-  if (IsAlpha(c)) {
+  if (IsIdentifier(c)) {
     return ParseIdentifier();
+  }
+
+  if (IsDigit(c)) {
+    return ParseNumericConstant();
   }
 
   return {};
@@ -46,7 +56,7 @@ Token Lexer::Next() {
 
 void Lexer::SkipWhitespace() {
   while (true) {
-    char c = Peek();
+    const char c = Peek();
     if (IsWhiteSpace(c)) {
       Advance();
       continue;
@@ -68,19 +78,54 @@ void Lexer::SkipWhitespace() {
           Advance();
         }
       } else {
-        return;
+        break;
       }
     } else {
-      return;
+      break;
     }
   }
 }
 
 Token Lexer::ParseIdentifier() {
-  while (IsAlpha(Peek()) || IsDigit(Peek())) {
+  while (IsIdentifier(Peek()) || IsDigit(Peek())) {
     Advance();
   }
-  return Token(TokenType::kIdentifier, lexeme());
+  const std::string_view lexeme_value = lexeme();
+
+  // TODO(eric): resolve keywords
+  return Token(TokenType::kIdentifier, lexeme_value);
+}
+
+Token Lexer::ParseNumericConstant() {
+  // IntConst | FloatConst
+  const char next = Peek();
+  // hexadecimal
+  if (next == 'x' || next == 'X') {
+    // consume 'x' or 'X'
+    Advance();
+
+    // followed by digits 0-9 | a-f | A-F
+    while (IsDigit(Peek()) || IsAlpha(Peek())) {
+      Advance();
+    }
+    return Token(TokenType::kIntConst, lexeme());
+  }
+
+  // octal
+  if (next == '0') {
+    // consume '0'
+    Advance();
+    // followed by digits 0-7
+    while (IsOctalDigit(Peek())) {
+      Advance();
+    }
+    return Token(TokenType::kIntConst, lexeme());
+  }
+
+  while (IsDigit(Peek())) {
+    Advance();
+  }
+  return Token(TokenType::kIntConst, lexeme());
 }
 
 }  // namespace sysy

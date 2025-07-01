@@ -25,8 +25,6 @@ TEST(Lexer, SkipBlockComment) {
     /**
      * multi-line comment
      */
-
-    // comment
   )";
   Lexer lexer(source);
   Token next_token = lexer.Next();
@@ -47,6 +45,30 @@ TEST(Lexer, IdentifierWithUnderscoreStart) {
   Token next_token = lexer.Next();
   EXPECT_EQ(next_token.type(), TokenType::kIdentifier);
   EXPECT_EQ(next_token.value(), "_a1");
+}
+
+TEST(Lexer, IntConst) {
+  const char* source = "123";
+  Lexer lexer(source);
+  Token next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kIntConst);
+  EXPECT_EQ(next_token.value(), "123");
+}
+
+TEST(Lexer, IntConstHexadecimal) {
+  const char* source = "0x123DEADBEEFdeadbeef";
+  Lexer lexer(source);
+  Token next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kIntConst);
+  EXPECT_EQ(next_token.value(), "0x123DEADBEEFdeadbeef");
+}
+
+TEST(Lexer, IntConstOctal) {
+  const char* source = "011";
+  Lexer lexer(source);
+  Token next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kIntConst);
+  EXPECT_EQ(next_token.value(), "011");
 }
 
 }  // namespace sysy::test
