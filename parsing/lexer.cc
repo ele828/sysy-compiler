@@ -154,9 +154,38 @@ Token Lexer::ParseIdentifier() {
   while (IsIdentifier(Peek()) || IsDigit(Peek())) {
     Advance();
   }
-  const std::string_view lexeme_value = lexeme();
 
-  // TODO(eric): resolve keywords
+  const std::string_view lexeme_value = lexeme();
+  if (lexeme_value == "const") {
+    return Token(TokenType::kKeywordConst, lexeme_value);
+  }
+  if (lexeme_value == "int") {
+    return Token(TokenType::kKeywordInt, lexeme_value);
+  }
+  if (lexeme_value == "float") {
+    return Token(TokenType::kKeywordFloat, lexeme_value);
+  }
+  if (lexeme_value == "void") {
+    return Token(TokenType::kKeywordVoid, lexeme_value);
+  }
+  if (lexeme_value == "if") {
+    return Token(TokenType::kKeywordIf, lexeme_value);
+  }
+  if (lexeme_value == "else") {
+    return Token(TokenType::kKeywordElse, lexeme_value);
+  }
+  if (lexeme_value == "while") {
+    return Token(TokenType::kKeywordWhile, lexeme_value);
+  }
+  if (lexeme_value == "break") {
+    return Token(TokenType::kKeywordBreak, lexeme_value);
+  }
+  if (lexeme_value == "continue") {
+    return Token(TokenType::kKeywordContinue, lexeme_value);
+  }
+  if (lexeme_value == "return") {
+    return Token(TokenType::kKeywordReturn, lexeme_value);
+  }
   return Token(TokenType::kIdentifier, lexeme_value);
 }
 
