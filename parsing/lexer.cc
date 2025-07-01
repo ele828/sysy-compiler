@@ -124,24 +124,25 @@ void Lexer::SkipWhitespace() {
       Advance();
       continue;
     }
-    if (c == '/') {
-      // Line comment //
-      char next = PeekNext();
-      if (next == '/') {
-        while (!IsLineTerminator(Peek()) && !IsAtEnd()) {
-          Advance();
+
+    if (c != '/') {
+      break;
+    }
+
+    // Line comment //
+    char next = PeekNext();
+    if (next == '/') {
+      while (!IsLineTerminator(Peek()) && !IsAtEnd()) {
+        Advance();
+      }
+    } else if (next == '*') {
+      // Block comment /*
+      while (!IsAtEnd()) {
+        if (Peek() == '*' && PeekNext() == '/') {
+          Advance(2);
+          break;
         }
-      } else if (next == '*') {
-        // Block comment /*
-        while (!IsAtEnd()) {
-          if (Peek() == '*' && PeekNext() == '/') {
-            Advance(2);
-            break;
-          }
-          Advance();
-        }
-      } else {
-        break;
+        Advance();
       }
     } else {
       break;
