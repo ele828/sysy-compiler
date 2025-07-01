@@ -39,8 +39,8 @@ inline bool IsSign(const char c) { return c == '+' || c == '-'; }
 Lexer::Lexer(std::string_view source) : source_(source) {}
 
 Token Lexer::Next() {
-  start_ = position_;
   SkipWhitespace();
+  start_ = position_;
 
   if (IsAtEnd()) {
     return Token(TokenType::kEof, {});

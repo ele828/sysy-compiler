@@ -8,7 +8,6 @@ namespace sysy {
 enum class TokenType : uint8_t {
   kIllegal,
   kEof,
-  kWhitespace,
   kIdentifier,
   kIntConst,
   kFloatConst,
