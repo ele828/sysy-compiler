@@ -87,4 +87,60 @@ TEST(Lexer, FloatConstHexademical) {
   EXPECT_EQ(next_token.value(), "0x1.3P-2");
 }
 
+TEST(Lexer, VariableDecl) {
+  const char* source = "int a;";
+  Lexer lexer(source);
+  Token next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kKeywordInt);
+
+  next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kIdentifier);
+  EXPECT_EQ(next_token.value(), "a");
+
+  next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kSemicolon);
+}
+
+TEST(Lexer, Assignment) {
+  const char* source = "a = 1;";
+  Lexer lexer(source);
+  Token next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kIdentifier);
+  EXPECT_EQ(next_token.value(), "a");
+
+  next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kAssign);
+
+  next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kIntConst);
+  EXPECT_EQ(next_token.value(), "1");
+
+  next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kSemicolon);
+}
+
+TEST(Lexer, FunctionDecl) {
+  const char* source = "void foo();";
+  Lexer lexer(source);
+  Token next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kKeywordVoid);
+  EXPECT_EQ(next_token.value(), "void");
+
+  next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kIdentifier);
+  EXPECT_EQ(next_token.value(), "foo");
+
+  next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kLeftParen);
+
+  next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kRightParen);
+
+  next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kSemicolon);
+
+  next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kEof);
+}
+
 }  // namespace sysy::test
