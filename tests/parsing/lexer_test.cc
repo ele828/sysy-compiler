@@ -71,4 +71,20 @@ TEST(Lexer, IntConstOctal) {
   EXPECT_EQ(next_token.value(), "011");
 }
 
+TEST(Lexer, FloatConst) {
+  const char* source = "123.456E-3";
+  Lexer lexer(source);
+  Token next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kFloatConst);
+  EXPECT_EQ(next_token.value(), "123.456E-3");
+}
+
+TEST(Lexer, FloatConstHexademical) {
+  const char* source = "0x1.3P-2";
+  Lexer lexer(source);
+  Token next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kFloatConst);
+  EXPECT_EQ(next_token.value(), "0x1.3P-2");
+}
+
 }  // namespace sysy::test
