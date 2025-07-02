@@ -15,6 +15,8 @@ enum class TokenType : uint8_t {
   kRightParen,
   kLeftBrace,
   kRightBrace,
+  kLeftBracket,
+  kRightBracket,
   kSemicolon,
   kComma,
   kPeriod,
@@ -24,6 +26,7 @@ enum class TokenType : uint8_t {
   kSub,
   kMul,
   kDiv,
+  kMod,
 
   kNot,
   kAnd,
