@@ -5,6 +5,7 @@
 #include <print>
 
 #include "base/bounds.h"
+#include "base/logging.h"
 #include "parsing/token.h"
 
 namespace sysy {
@@ -66,6 +67,10 @@ Token Lexer::Next() {
       return Token(TokenType::kLeftBrace, lexeme());
     case '}':
       return Token(TokenType::kRightBrace, lexeme());
+    case '[':
+      return Token(TokenType::kLeftBracket, lexeme());
+    case ']':
+      return Token(TokenType::kRightBracket, lexeme());
     case ';':
       return Token(TokenType::kSemicolon, lexeme());
     case ',':
@@ -80,6 +85,18 @@ Token Lexer::Next() {
       return Token(TokenType::kMul, lexeme());
     case '/':
       return Token(TokenType::kDiv, lexeme());
+    case '%':
+      return Token(TokenType::kMod, lexeme());
+    case '&': {
+      if (Peek() == '&') {
+        return Token(TokenType::kAnd, lexeme());
+      }
+    }
+    case '|': {
+      if (Peek() == '|') {
+        return Token(TokenType::kOr, lexeme());
+      }
+    }
     case '!': {
       if (Peek() == '=') {
         Advance();
@@ -113,6 +130,8 @@ Token Lexer::Next() {
       }
     }
   }
+
+  NOTREACHED();
 
   return {};
 }
@@ -199,11 +218,9 @@ Token Lexer::ParseNumericConstant() {
 
     bool is_floating_point{false};
 
-    // followed by digits 0-9 | a-f | A-F | - | p
-    while (IsDigit(Peek()) || IsAlpha(Peek())) {
-      Advance();
-    }
+    // TODO(eric): improve hexadecimal parsing to recognize invalid inputs
 
+    // followed by digits 0-9 | a-f | A-F | - | p
     while (true) {
       const char c = Peek();
       if (c == '.') {
@@ -235,6 +252,8 @@ Token Lexer::ParseNumericConstant() {
     return Token(TokenType::kIntConst, lexeme());
   }
 
+  // TODO(eric): improve float point parsing to recognize invalid
+  // inputs
   bool is_floating_point{false};
   while (true) {
     const char c = Peek();
