@@ -6,13 +6,20 @@
 
 namespace sysy::test {
 
-class MyTest : public testing::Test {
+class LexerFixtureTest : public testing::Test {
  public:
-  explicit MyTest(std::string code) : code_(std::string(code)) {}
+  explicit LexerFixtureTest(std::string code) : code_(std::move(code)) {}
 
   void TestBody() override {
     Lexer lexer(code_);
-    while (lexer.Next().type() != TokenType::kEof);
+    Token next;
+
+    do {
+      next = lexer.Next();
+      EXPECT_NE(next.type(), TokenType::kIllegal);
+    } while (next.type() != TokenType::kEof);
+
+    EXPECT_EQ(next.type(), TokenType::kEof);
   }
 
  private:
@@ -24,11 +31,11 @@ void InitFixtureTest() {
       DiscoverFixtures(fs::path{PROJECT_ROOT_PATH} / "tests" / "fixtures");
   for (auto& fixture : fixtures) {
     std::string code = sysy::test::ReadFile(fixture.path);
-    testing::RegisterTest(
-        "LexerFixture", fixture.name.c_str(), nullptr, nullptr, __FILE__,
-        __LINE__,
-        // Important to use the fixture type as the return type here.
-        [=]() -> MyTest* { return new MyTest(code); });
+    testing::RegisterTest("LexerFixture", fixture.name.c_str(), nullptr,
+                          nullptr, __FILE__, __LINE__,
+                          [code = std::move(code)]() mutable {
+                            return new LexerFixtureTest(std::move(code));
+                          });
   }
 }
 
