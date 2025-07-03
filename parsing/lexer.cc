@@ -1,9 +1,5 @@
 #include "parsing/lexer.h"
 
-#include <algorithm>
-#include <ostream>
-#include <print>
-
 #include "base/bounds.h"
 #include "base/logging.h"
 #include "parsing/token.h"
@@ -34,6 +30,10 @@ inline bool IsExponentPart(const char c) { return c == 'e' || c == 'E'; }
 inline bool IsBinaryExponentPart(const char c) { return c == 'p' || c == 'P'; }
 
 inline bool IsSign(const char c) { return c == '+' || c == '-'; }
+
+inline bool MatchKeyword(std::string_view input, std::string_view expected) {
+  return input.substr(1) == expected.substr(1);
+}
 
 }  // namespace
 
@@ -174,38 +174,66 @@ Token Lexer::ParseIdentifier() {
     Advance();
   }
 
-  const std::string_view lexeme_value = lexeme();
-  if (lexeme_value == "const") {
-    return Token(TokenType::kKeywordConst, lexeme_value);
+  const std::string_view lexeme = Lexer::lexeme();
+  DCHECK(lexeme.length() > 0);
+
+  switch (lexeme[0]) {
+    case 'c': {
+      if (MatchKeyword(lexeme, "const")) {
+        return Token(TokenType::kKeywordConst, lexeme);
+      }
+      if (MatchKeyword(lexeme, "continue")) {
+        return Token(TokenType::kKeywordContinue, lexeme);
+      }
+      break;
+    }
+    case 'i': {
+      if (MatchKeyword(lexeme, "if")) {
+        return Token(TokenType::kKeywordIf, lexeme);
+      }
+      if (MatchKeyword(lexeme, "int")) {
+        return Token(TokenType::kKeywordInt, lexeme);
+      }
+      break;
+    }
+    case 'f': {
+      if (MatchKeyword(lexeme, "float")) {
+        return Token(TokenType::kKeywordFloat, lexeme);
+      }
+      break;
+    }
+    case 'v': {
+      if (MatchKeyword(lexeme, "void")) {
+        return Token(TokenType::kKeywordVoid, lexeme);
+      }
+      break;
+    }
+    case 'e': {
+      if (MatchKeyword(lexeme, "else")) {
+        return Token(TokenType::kKeywordElse, lexeme);
+      }
+      break;
+    }
+    case 'w': {
+      if (MatchKeyword(lexeme, "while")) {
+        return Token(TokenType::kKeywordWhile, lexeme);
+      }
+      break;
+    }
+    case 'b': {
+      if (MatchKeyword(lexeme, "break")) {
+        return Token(TokenType::kKeywordBreak, lexeme);
+      }
+      break;
+    }
+    case 'r': {
+      if (MatchKeyword(lexeme, "return")) {
+        return Token(TokenType::kKeywordReturn, lexeme);
+      }
+      break;
+    }
   }
-  if (lexeme_value == "int") {
-    return Token(TokenType::kKeywordInt, lexeme_value);
-  }
-  if (lexeme_value == "float") {
-    return Token(TokenType::kKeywordFloat, lexeme_value);
-  }
-  if (lexeme_value == "void") {
-    return Token(TokenType::kKeywordVoid, lexeme_value);
-  }
-  if (lexeme_value == "if") {
-    return Token(TokenType::kKeywordIf, lexeme_value);
-  }
-  if (lexeme_value == "else") {
-    return Token(TokenType::kKeywordElse, lexeme_value);
-  }
-  if (lexeme_value == "while") {
-    return Token(TokenType::kKeywordWhile, lexeme_value);
-  }
-  if (lexeme_value == "break") {
-    return Token(TokenType::kKeywordBreak, lexeme_value);
-  }
-  if (lexeme_value == "continue") {
-    return Token(TokenType::kKeywordContinue, lexeme_value);
-  }
-  if (lexeme_value == "return") {
-    return Token(TokenType::kKeywordReturn, lexeme_value);
-  }
-  return Token(TokenType::kIdentifier, lexeme_value);
+  return Token(TokenType::kIdentifier, lexeme);
 }
 
 Token Lexer::ParseNumericConstant() {
