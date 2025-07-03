@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "base/magic_enum.h"
 #include "parsing/lexer.h"
 #include "parsing/token.h"
 #include "tests/utils.h"
@@ -16,6 +17,7 @@ class LexerFixtureTest : public testing::Test {
 
     do {
       next = lexer.Next();
+      // std::println("token: {}", magic_enum::enum_name(next.type()));
       EXPECT_NE(next.type(), TokenType::kIllegal);
     } while (next.type() != TokenType::kEof);
 
