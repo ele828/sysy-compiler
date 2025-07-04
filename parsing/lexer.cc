@@ -1,5 +1,6 @@
 #include "parsing/lexer.h"
 
+#include <atomic>
 #include <print>
 
 #include "base/bounds.h"
@@ -19,6 +20,10 @@ constexpr bool IsLineTerminator(const char c) { return c == '\n' || c == '\r'; }
 
 constexpr bool IsAlpha(const char c) {
   return base::IsInRange(c, 'a', 'z') || base::IsInRange(c, 'A', 'Z');
+}
+
+constexpr bool IsHexadecimalAlpha(const char c) {
+  return base::IsInRange(c, 'a', 'f') || base::IsInRange(c, 'A', 'F');
 }
 
 constexpr bool IsIdentifier(const char c) { return IsAlpha(c) || c == '_'; }
@@ -242,7 +247,19 @@ Token Lexer::ParseIdentifier() {
   return Token(TokenType::kIdentifier, lexeme);
 }
 
-Token Lexer::ParseNumericConstant(char c) {
+Token Lexer::ParseNumericConstant(const char c) {
+  auto consume_digits = [&] {
+    while (IsDigit(Peek())) {
+      Advance();
+    }
+  };
+
+  auto consume_hex_digits = [&] {
+    while (IsDigit(Peek()) || IsHexadecimalAlpha(Peek())) {
+      Advance();
+    }
+  };
+
   // IntConst | FloatConst
   const char next = Peek();
   // hexadecimal
@@ -250,28 +267,22 @@ Token Lexer::ParseNumericConstant(char c) {
     // consume 'x' or 'X'
     Advance();
 
-    bool is_floating_point{false};
+    consume_hex_digits();
 
-    // TODO(eric): improve hexadecimal parsing to recognize invalid inputs
-
-    // followed by digits 0-9 | a-f | A-F | - | p
-    while (true) {
-      const char c = Peek();
-      if (c == '.') {
-        is_floating_point = true;
+    // floating point hexademical
+    if (Peek() == '.') {
+      Advance();
+      consume_hex_digits();
+      if (IsBinaryExponentPart(Peek())) {
         Advance();
-        continue;
-      } else if (IsDigit(c) || IsAlpha(c) || IsBinaryExponentPart(c) ||
-                 IsSign(c)) {
-        Advance();
-        continue;
+        if (IsSign(Peek())) {
+          Advance();
+        }
+        consume_digits();
+        return Token(TokenType::kFloatConst, lexeme());
       }
-      break;
     }
 
-    if (is_floating_point) {
-      return Token(TokenType::kFloatConst, lexeme());
-    }
     return Token(TokenType::kIntConst, lexeme());
   }
 
@@ -284,26 +295,21 @@ Token Lexer::ParseNumericConstant(char c) {
     return Token(TokenType::kIntConst, lexeme());
   }
 
-  // TODO(eric): improve float point parsing to recognize invalid
-  // inputs
-  bool is_floating_point{false};
-  while (true) {
-    const char c = Peek();
-    if (c == '.') {
-      is_floating_point = true;
+  consume_digits();
+
+  if (Peek() == '.') {
+    Advance();
+    consume_digits();
+    if (IsExponentPart(Peek())) {
       Advance();
-      continue;
-    } else if (IsDigit(c) || IsExponentPart(c) || IsSign(c)) {
-      Advance();
-      continue;
-    } else {
-      break;
+      if (IsSign(Peek())) {
+        Advance();
+      }
+      consume_digits();
+      return Token(TokenType::kFloatConst, lexeme());
     }
   }
 
-  if (is_floating_point) {
-    return Token(TokenType::kFloatConst, lexeme());
-  }
   return Token(TokenType::kIntConst, lexeme());
 }
 
