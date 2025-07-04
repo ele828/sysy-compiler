@@ -8,30 +8,34 @@ namespace sysy {
 
 namespace {
 
-inline bool IsWhiteSpace(const char c) {
+constexpr bool IsWhiteSpace(const char c) {
   return c == ' ' || c == '\t' || c == '\n' || c == '\f' || c == '\r' ||
          c == '\v';
 }
 
-inline bool IsLineTerminator(const char c) { return c == '\n' || c == '\r'; }
+constexpr bool IsLineTerminator(const char c) { return c == '\n' || c == '\r'; }
 
-inline bool IsAlpha(const char c) {
+constexpr bool IsAlpha(const char c) {
   return base::IsInRange(c, 'a', 'z') || base::IsInRange(c, 'A', 'Z');
 }
 
-inline bool IsIdentifier(const char c) { return IsAlpha(c) || c == '_'; }
+constexpr bool IsIdentifier(const char c) { return IsAlpha(c) || c == '_'; }
 
-inline bool IsDigit(const char c) { return base::IsInRange(c, '0', '9'); }
+constexpr bool IsDigit(const char c) { return base::IsInRange(c, '0', '9'); }
 
-inline bool IsOctalDigit(const char c) { return base::IsInRange(c, '0', '7'); }
+constexpr bool IsOctalDigit(const char c) {
+  return base::IsInRange(c, '0', '7');
+}
 
-inline bool IsExponentPart(const char c) { return c == 'e' || c == 'E'; }
+constexpr bool IsExponentPart(const char c) { return c == 'e' || c == 'E'; }
 
-inline bool IsBinaryExponentPart(const char c) { return c == 'p' || c == 'P'; }
+constexpr bool IsBinaryExponentPart(const char c) {
+  return c == 'p' || c == 'P';
+}
 
-inline bool IsSign(const char c) { return c == '+' || c == '-'; }
+constexpr bool IsSign(const char c) { return c == '+' || c == '-'; }
 
-inline bool MatchKeyword(std::string_view input, std::string_view expected) {
+constexpr bool MatchKeyword(std::string_view input, std::string_view expected) {
   return input.substr(1) == expected.substr(1);
 }
 
