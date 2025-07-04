@@ -1,5 +1,7 @@
 #include "parsing/lexer.h"
 
+#include <print>
+
 #include "base/bounds.h"
 #include "base/logging.h"
 #include "parsing/token.h"
@@ -59,7 +61,7 @@ Token Lexer::Next() {
   }
 
   if (IsDigit(c)) {
-    return ParseNumericConstant();
+    return ParseNumericConstant(c);
   }
 
   switch (c) {
@@ -240,7 +242,7 @@ Token Lexer::ParseIdentifier() {
   return Token(TokenType::kIdentifier, lexeme);
 }
 
-Token Lexer::ParseNumericConstant() {
+Token Lexer::ParseNumericConstant(char c) {
   // IntConst | FloatConst
   const char next = Peek();
   // hexadecimal
@@ -274,9 +276,7 @@ Token Lexer::ParseNumericConstant() {
   }
 
   // octal
-  if (next == '0') {
-    // consume '0'
-    Advance();
+  if (c == '0') {
     // followed by digits 0-7
     while (IsOctalDigit(Peek())) {
       Advance();
