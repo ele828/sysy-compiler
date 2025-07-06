@@ -7,7 +7,6 @@
 namespace sysy::base {
 
 template <typename T>
-  requires std::is_base_of_v<ZoneObject, T>
 class ZoneAllocator {
  public:
   using value_type = T;
@@ -30,3 +29,9 @@ class ZoneVector : public std::vector<T, ZoneAllocator<T>> {
 };
 
 }  // namespace sysy::base
+
+namespace sysy {
+
+using base::ZoneVector;
+
+}
