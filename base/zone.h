@@ -82,9 +82,8 @@ class Zone final {
   }
 
   template <typename T>
-    requires(std::is_base_of_v<ZoneObject, T>)
+    requires(alignof(T) <= kAlignmentInBytes)
   T* AllocateArray(size_t length) {
-    static_assert(alignof(T) <= kAlignmentInBytes);
     if (length > std::numeric_limits<size_t>::max() / sizeof(T)) {
       std::abort();
     }
