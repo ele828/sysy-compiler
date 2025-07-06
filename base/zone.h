@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <cstdint>
+#include <cstdlib>
 #include <type_traits>
 
 #include "base/memory.h"
@@ -81,6 +81,16 @@ class Zone final {
     return new (memory) T(std::forward<Args>(args)...);
   }
 
+  template <typename T>
+    requires(std::is_base_of_v<ZoneObject, T>)
+  T* AllocateArray(size_t length) {
+    static_assert(alignof(T) <= kAlignmentInBytes);
+    if (length > std::numeric_limits<size_t>::max() / sizeof(T)) {
+      std::abort();
+    }
+    return static_cast<T*>(Allocate(length * sizeof(T)));
+  }
+
  private:
   void Expand(size_t size);
 
@@ -96,3 +106,9 @@ class Zone final {
 };
 
 }  // namespace sysy::base
+
+namespace sysy {
+
+using base::ZoneObject;
+
+}
