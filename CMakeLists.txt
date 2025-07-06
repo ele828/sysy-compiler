@@ -9,6 +9,7 @@ include_directories(.)
 
 # sysy library
 set(SOURCE_FILES
+  base/zone.cc
   parsing/lexer.cc
   parsing/parser.cc
   parsing/token.cc)
