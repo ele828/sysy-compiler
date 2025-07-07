@@ -108,6 +108,7 @@ class Zone final {
 
 namespace sysy {
 
+using base::Zone;
 using base::ZoneObject;
 
-}
+}  // namespace sysy

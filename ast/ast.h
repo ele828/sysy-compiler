@@ -29,9 +29,14 @@ class AstNode : public ZoneObject {
 
 class CompilationUnit : public AstNode {
  public:
+  explicit CompilationUnit(ZoneVector<Decl*> body)
+      : AstNode(Kind::kCompilationUnit), body_(std::move(body)) {}
+
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kCompilationUnit;
   }
+
+  ZoneVector<Decl*>& body() { return body_; }
 
  private:
   ZoneVector<Decl*> body_;
