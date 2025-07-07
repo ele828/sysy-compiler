@@ -36,8 +36,8 @@ add_executable(
   sysy_test
   tests/base/zone_test.cc
   tests/base/type_casts_test.cc
-  tests/parsing/parser_test.cc
-  tests/parsing/lexer_test.cc)
+  tests/parsing/lexer_test.cc
+  tests/parsing/parser_test.cc)
 target_link_libraries(
   sysy_test
   sysy
