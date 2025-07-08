@@ -1,6 +1,6 @@
 #pragma once
 
-#include <print>
+#include <vector>
 
 #include "ast/ast.h"
 #include "base/zone.h"
@@ -19,25 +19,25 @@ class Parser {
 
   Decl* ParseDeclaration();
 
-  bool IsType(TokenType type) const { return current_.type() == type; }
+  FunDecl* ParseFunctionDeclaration();
 
-  bool Match(TokenType type) {
-    if (!IsType(type)) return false;
-    Advance();
-    return true;
+  ConstDecl* ParseConstDeclaration();
+
+  VarDecl* ParseVarDeclaration();
+
+  bool Match(TokenType type) const { return current_.type() == type; }
+
+  bool MatchTypeSpecifier() {
+    return Match(TokenType::kKeywordInt) || Match(TokenType::kKeywordFloat) ||
+           Match(TokenType::kKeywordVoid);
   }
 
-  void Consume(TokenType type, const char* error_message) {
-    if (IsType(type)) {
-      Advance();
-      return;
-    }
+  // Verify current token and advance
+  Token Consume();
 
-    // TODO(eric): report error
-    std::print("parse error: {}", error_message);
-  }
+  Token Consume(TokenType type, const char* error_message = nullptr);
 
-  void Advance();
+  void SyntaxError(std::string error);
 
   Zone* zone() { return &zone_; }
 
@@ -45,9 +45,9 @@ class Parser {
 
   Zone zone_;
   Lexer lexer_;
-
-  Token previous_;
   Token current_;
+
+  std::vector<std::string> errors_;
 };
 
 }  // namespace sysy
