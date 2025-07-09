@@ -1,10 +1,14 @@
 #include "parsing/parser.h"
 
+#include <array>
 #include <format>
 #include <print>
 
+#include "ast/ast.h"
 #include "ast/types.h"
+#include "base/logging.h"
 #include "base/magic_enum.h"
+#include "parsing/token.h"
 
 namespace sysy {
 
@@ -22,6 +26,68 @@ constexpr Type ResolveType(const Token& token) {
       return Type::kInvalid;
   }
 }
+
+class OperatorPrecedenceTable {
+ public:
+  constexpr OperatorPrecedenceTable() : token_precedence() {
+    for (size_t i = 0; i < std::size(kOperatorPrecedence); ++i) {
+      auto& op = kOperatorPrecedence[i];
+      token_precedence[static_cast<size_t>(op.token)] = op.precedence;
+    }
+  }
+
+  constexpr int GetPrecedence(TokenType token) const {
+    int precedence = token_precedence[static_cast<size_t>(token)];
+    if (precedence == 0) {
+      NOTREACHED();
+      return -1;
+    }
+    return precedence;
+  }
+
+ private:
+  int token_precedence[kTokenTypeCount];
+
+  struct OperatorPrecedence {
+    TokenType token;
+    int precedence;
+  };
+
+  enum Precedence {
+    kNone,
+    kAssignment,  // =
+    kOr,          // ||
+    kAnd,         // &&
+    kEquality,    // == !=
+    kComparison,  // < <= > >=
+    kTerm,        // + -
+    kFactor,      // * / %
+    kUnary,       // + - !
+    kCall,        // ()
+    kPrimary
+  };
+
+  static constexpr const OperatorPrecedence kOperatorPrecedence[] = {
+      {TokenType::kLeftParen, Precedence::kCall},
+      {TokenType::kMul, Precedence::kFactor},
+      {TokenType::kDiv, Precedence::kFactor},
+      {TokenType::kMod, Precedence::kFactor},
+      {TokenType::kAdd, Precedence::kTerm},
+      {TokenType::kSub, Precedence::kTerm},
+      {TokenType::kLessThan, Precedence::kComparison},
+      {TokenType::kLessThanEq, Precedence::kComparison},
+      {TokenType::kGreaterThan, Precedence::kComparison},
+      {TokenType::kGreaterThanEq, Precedence::kComparison},
+      {TokenType::kEq, Precedence::kEquality},
+      {TokenType::kNotEq, Precedence::kEquality},
+      {TokenType::kAnd, Precedence::kAnd},
+      {TokenType::kOr, Precedence::kOr},
+      {TokenType::kAssign, Precedence::kNone},
+      {TokenType::kNot, kNone},
+  };
+};
+
+constexpr OperatorPrecedenceTable operator_precedence;
 
 }  // namespace
 
@@ -46,7 +112,7 @@ ZoneVector<Decl*> Parser::ParseDeclarations() {
 Decl* Parser::ParseDeclaration() {
   if (Match(TokenType::kKeywordConst)) {
     Consume();
-    ParseConstDeclaration();
+    ParseConstantDeclaration();
   } else if (MatchTypeSpecifier()) {
     Type type = ResolveType(Consume());
     std::string_view identifier = Consume(TokenType::kIdentifier).value();
@@ -65,11 +131,14 @@ Decl* Parser::ParseDeclaration() {
         Consume(TokenType::kSemicolon);
       }
     }
+  } else {
+    SyntaxError(std::format("unexpected token: {}",
+                            magic_enum::enum_name(current_.type())));
   }
   return {};
 }
 
-ConstDecl* Parser::ParseConstDeclaration() {
+ConstantDeclaration* Parser::ParseConstantDeclaration() {
   if (!MatchTypeSpecifier()) {
     SyntaxError("expect type specifier");
     return {};
@@ -81,9 +150,14 @@ ConstDecl* Parser::ParseConstDeclaration() {
   return {};
 }
 
-VarDecl* Parser::ParseVarDeclaration() { return {}; }
+VariableDeclaration* Parser::ParseVariableDeclaration() { return {}; }
 
-FunDecl* Parser::ParseFunctionDeclaration() { return {}; }
+FunctionDeclaration* Parser::ParseFunctionDeclaration() { return {}; }
+
+Expression* Parser::ParseExpression() {
+  //
+  return {};
+}
 
 Token Parser::Consume() {
   auto prev_token = current_;

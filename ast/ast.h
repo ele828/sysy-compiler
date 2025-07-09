@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+
 #include "base/zone.h"
 #include "base/zone_container.h"
 
@@ -12,11 +14,16 @@ class AstNode : public ZoneObject {
   enum class Kind : uint8_t {
     kCompilationUnit,
 
-    // Declaration start
-    kConstDecl,
-    kVarDecl,
-    kFunDecl,
+    // Declaration begin
+    kConstantDeclaration,
+    kVariableDeclaration,
+    kFunctionDelcaration,
     // Declaration end
+
+    // Expression begin
+    kUnaryOperation,
+    kBinaryOperation,
+    // Expression end
   };
 
   explicit AstNode(Kind kind) : kind_(kind) {}
@@ -42,26 +49,55 @@ class CompilationUnit : public AstNode {
   ZoneVector<Decl*> body_;
 };
 
-class Decl : public AstNode {
+class Declaration : public AstNode {
  public:
   static bool classof(const AstNode& n) {
-    return n.kind() >= Kind::kConstDecl && n.kind() <= Kind::kFunDecl;
+    return n.kind() >= Kind::kConstantDeclaration &&
+           n.kind() <= Kind::kFunctionDelcaration;
   }
 };
 
-class ConstDecl : public Decl {
+class ConstantDeclaration : public Declaration {
  public:
-  static bool classof(const AstNode& n) { return n.kind() == Kind::kConstDecl; }
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kConstantDeclaration;
+  }
 };
 
-class VarDecl : public Decl {
+class VariableDeclaration : public Declaration {
  public:
-  static bool classof(const AstNode& n) { return n.kind() == Kind::kVarDecl; }
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kVariableDeclaration;
+  }
 };
 
-class FunDecl : public Decl {
+class FunctionDeclaration : public Declaration {
  public:
-  static bool classof(const AstNode& n) { return n.kind() == Kind::kFunDecl; }
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kFunctionDelcaration;
+  }
+};
+
+class Expression : public AstNode {
+ public:
+  static bool classof(const AstNode& n) {
+    return n.kind() >= Kind::kUnaryOperation &&
+           n.kind() <= Kind::kBinaryOperation;
+  }
+};
+
+class UnaryOperation : public Expression {
+ public:
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kUnaryOperation;
+  }
+};
+
+class BinaryOperation : public Expression {
+ public:
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kBinaryOperation;
+  }
 };
 
 }  // namespace sysy

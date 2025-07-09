@@ -19,11 +19,13 @@ class Parser {
 
   Decl* ParseDeclaration();
 
-  FunDecl* ParseFunctionDeclaration();
+  FunctionDeclaration* ParseFunctionDeclaration();
 
-  ConstDecl* ParseConstDeclaration();
+  ConstantDeclaration* ParseConstantDeclaration();
 
-  VarDecl* ParseVarDeclaration();
+  VariableDeclaration* ParseVariableDeclaration();
+
+  Expression* ParseExpression();
 
   bool Match(TokenType type) const { return current_.type() == type; }
 
