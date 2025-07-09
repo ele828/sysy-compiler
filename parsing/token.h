@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <string_view>
 
+#include "base/magic_enum.h"
+
 namespace sysy {
 
 enum class TokenType : uint8_t {
@@ -50,6 +52,8 @@ enum class TokenType : uint8_t {
   kKeywordContinue,
   kKeywordReturn,
 };
+
+constexpr size_t kTokenTypeCount = magic_enum::enum_count<TokenType>();
 
 class Token {
  public:
