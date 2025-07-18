@@ -141,44 +141,63 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() { return {}; }
 Expression* Parser::ParseExpression(Precedence min_precedence) { return {}; }
 
 Expression* Parser::ParseUnaryExpression() {
-  if (Match(TokenType::kAdd)) {
-    Consume();
-    ParseUnaryExpression();
-  } else if (Match(TokenType::kSub)) {
-    Consume();
-    ParseUnaryExpression();
-  } else if (Match(TokenType::kNot)) {
-    Consume();
-    ParseUnaryExpression();
-  } else {
-    if (Match(TokenType::kLeftBrace)) {
+  switch (current_.type()) {
+    case TokenType::kAdd: {
+      Consume();
+      ParseUnaryExpression();
+      return {};
+    }
+    case TokenType::kSub: {
+      Consume();
+      ParseUnaryExpression();
+      return {};
+    }
+    case TokenType::kNot: {
+      Consume();
+      ParseUnaryExpression();
+      return {};
+    }
+    case TokenType::kLeftBrace: {
       Consume();
       ParseExpression(Precedence::kAssignment);
-      Consume(TokenType::kRightBrace);
-    } else if (Match(TokenType::kIntConst) || Match(TokenType::kFloatConst)) {
-    } else if (Match(TokenType::kIdentifier)) {
-      // Ident | Ident{[exp]} | Ident(a, b)
+      return {};
+    }
+    case TokenType::kIntConst: {
+      return {};
+    }
+    case TokenType::kFloatConst: {
+      return {};
+    }
+    case TokenType::kIdentifier: {
       Token identifier = Consume();
-      if (Match(TokenType::kLeftBracket)) {
-        Consume();
-        ParseExpression(Precedence::kAssignment);
-        Consume(TokenType::kRightBracket);
-      } else if (Match(TokenType::kLeftBrace)) {
-        Consume();
-
-        ZoneVector<Expression*> parameters(zone());
-        while (!Match(TokenType::kRightBrace)) {
-          auto* expression = ParseExpression(Precedence::kAssignment);
-          parameters.push_back(expression);
-          if (Match(TokenType::kComma)) {
-            Consume();
-          }
+      switch (current_.type()) {
+        case TokenType::kLeftBracket: {
+          Consume();
+          ParseExpression(Precedence::kAssignment);
+          Consume(TokenType::kRightBracket);
+          return {};
         }
+        case TokenType::kLeftBrace: {
+          Consume();
+          ZoneVector<Expression*> arguments(zone());
+          while (!Match(TokenType::kRightBrace)) {
+            auto* expression = ParseExpression(Precedence::kAssignment);
+            arguments.push_back(expression);
+            if (Match(TokenType::kComma)) {
+              Consume();
+            }
+          }
 
-        Consume(TokenType::kRightBrace);
-      } else {
-        // pure identifier
+          Consume(TokenType::kRightBrace);
+          return {};
+        }
+        default: {
+          return zone()->New<VariableReference>(identifier.value());
+        }
       }
+    }
+    default: {
+      Unexpected(current_.type());
     }
   }
   return {};
@@ -201,14 +220,18 @@ Token Parser::Consume(TokenType type, const char* error_message) {
   if (error_message) {
     SyntaxError(error_message);
   } else {
-    SyntaxError(std::format("parse error: expected token type: {}",
-                            magic_enum::enum_name(type)));
+    Unexpected(type);
   }
   return {};
 }
 
 void Parser::SyntaxError(std::string error) {
   errors_.push_back(std::move(error));
+}
+
+void Parser::Unexpected(TokenType type) {
+  SyntaxError(std::format("parse error: expected token type: {}",
+                          magic_enum::enum_name(type)));
 }
 
 }  // namespace sysy
