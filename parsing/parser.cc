@@ -53,20 +53,6 @@ class OperatorPrecedenceTable {
     int precedence;
   };
 
-  enum Precedence {
-    kNone,
-    kAssignment,  // =
-    kOr,          // ||
-    kAnd,         // &&
-    kEquality,    // == !=
-    kComparison,  // < <= > >=
-    kTerm,        // + -
-    kFactor,      // * / %
-    kUnary,       // + - !
-    kCall,        // ()
-    kPrimary
-  };
-
   static constexpr const OperatorPrecedence kOperatorPrecedence[] = {
       {TokenType::kLeftParen, Precedence::kCall},
       {TokenType::kMul, Precedence::kFactor},
@@ -82,8 +68,6 @@ class OperatorPrecedenceTable {
       {TokenType::kNotEq, Precedence::kEquality},
       {TokenType::kAnd, Precedence::kAnd},
       {TokenType::kOr, Precedence::kOr},
-      {TokenType::kAssign, Precedence::kNone},
-      {TokenType::kNot, kNone},
   };
 };
 
@@ -154,8 +138,49 @@ VariableDeclaration* Parser::ParseVariableDeclaration() { return {}; }
 
 FunctionDeclaration* Parser::ParseFunctionDeclaration() { return {}; }
 
-Expression* Parser::ParseExpression() {
-  //
+Expression* Parser::ParseExpression(Precedence min_precedence) { return {}; }
+
+Expression* Parser::ParseUnaryExpression() {
+  if (Match(TokenType::kAdd)) {
+    Consume();
+    ParseUnaryExpression();
+  } else if (Match(TokenType::kSub)) {
+    Consume();
+    ParseUnaryExpression();
+  } else if (Match(TokenType::kNot)) {
+    Consume();
+    ParseUnaryExpression();
+  } else {
+    if (Match(TokenType::kLeftBrace)) {
+      Consume();
+      ParseExpression(Precedence::kAssignment);
+      Consume(TokenType::kRightBrace);
+    } else if (Match(TokenType::kIntConst) || Match(TokenType::kFloatConst)) {
+    } else if (Match(TokenType::kIdentifier)) {
+      // Ident | Ident{[exp]} | Ident(a, b)
+      Token identifier = Consume();
+      if (Match(TokenType::kLeftBracket)) {
+        Consume();
+        ParseExpression(Precedence::kAssignment);
+        Consume(TokenType::kRightBracket);
+      } else if (Match(TokenType::kLeftBrace)) {
+        Consume();
+
+        ZoneVector<Expression*> parameters(zone());
+        while (!Match(TokenType::kRightBrace)) {
+          auto* expression = ParseExpression(Precedence::kAssignment);
+          parameters.push_back(expression);
+          if (Match(TokenType::kComma)) {
+            Consume();
+          }
+        }
+
+        Consume(TokenType::kRightBrace);
+      } else {
+        // pure identifier
+      }
+    }
+  }
   return {};
 }
 

@@ -8,6 +8,20 @@
 
 namespace sysy {
 
+enum Precedence {
+  kNone,
+  kAssignment,  // =
+  kOr,          // ||
+  kAnd,         // &&
+  kEquality,    // == !=
+  kComparison,  // < <= > >=
+  kTerm,        // + -
+  kFactor,      // * / %
+  kUnary,       // + - !
+  kCall,        // ()
+  kPrimary
+};
+
 class Parser {
  public:
   explicit Parser(std::string_view source);
@@ -25,7 +39,9 @@ class Parser {
 
   VariableDeclaration* ParseVariableDeclaration();
 
-  Expression* ParseExpression();
+  Expression* ParseExpression(Precedence min_precedence);
+
+  Expression* ParseUnaryExpression();
 
   bool Match(TokenType type) const { return current_.type() == type; }
 
