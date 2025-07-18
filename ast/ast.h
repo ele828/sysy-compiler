@@ -23,6 +23,8 @@ class AstNode : public ZoneObject {
     // Expression begin
     kUnaryOperation,
     kBinaryOperation,
+    kArraySubscript,
+    kCallExpression,
     // Expression end
   };
 
@@ -82,7 +84,7 @@ class Expression : public AstNode {
  public:
   static bool classof(const AstNode& n) {
     return n.kind() >= Kind::kUnaryOperation &&
-           n.kind() <= Kind::kBinaryOperation;
+           n.kind() <= Kind::kCallExpression;
   }
 };
 
@@ -98,6 +100,31 @@ class BinaryOperation : public Expression {
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kBinaryOperation;
   }
+};
+
+class ArraySubscriptExpression : public Expression {
+ public:
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kArraySubscript;
+  }
+
+  const Expression* base() const { return base_; }
+  const Expression* dimension() const { return dimension_; }
+
+ private:
+  Expression* base_;
+  Expression* dimension_;
+};
+
+class CallExpression : public Expression {
+ public:
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kCallExpression;
+  }
+
+ private:
+  ZoneVector<Expression*> arguments_;
+  ;
 };
 
 }  // namespace sysy
