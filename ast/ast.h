@@ -21,8 +21,11 @@ class AstNode : public ZoneObject {
     // Declaration end
 
     // Expression begin
+    kIntegerLiteral,
+    kFloatingLiteral,
     kUnaryOperation,
     kBinaryOperation,
+    kVariableReference,
     kArraySubscript,
     kCallExpression,
     // Expression end
@@ -82,9 +85,26 @@ class FunctionDeclaration : public Declaration {
 
 class Expression : public AstNode {
  public:
+  explicit Expression(Kind kind) : AstNode(kind) {}
+
   static bool classof(const AstNode& n) {
-    return n.kind() >= Kind::kUnaryOperation &&
+    return n.kind() >= Kind::kIntegerLiteral &&
            n.kind() <= Kind::kCallExpression;
+  }
+};
+
+class IntegerLiteral : public Expression {
+ public:
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kIntegerLiteral;
+  }
+};
+
+class FloatingLiteral : public Expression {
+ public:
+ public:
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kFloatingLiteral;
   }
 };
 
@@ -100,6 +120,21 @@ class BinaryOperation : public Expression {
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kBinaryOperation;
   }
+};
+
+class VariableReference : public Expression {
+ public:
+  explicit VariableReference(std::string_view variable)
+      : Expression(Kind::kVariableReference), variable_(variable) {}
+
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kVariableReference;
+  }
+
+  std::string_view varaible() const { return variable_; }
+
+ private:
+  std::string_view variable_;
 };
 
 class ArraySubscriptExpression : public Expression {

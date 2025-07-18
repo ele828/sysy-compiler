@@ -57,6 +57,8 @@ class Parser {
 
   void SyntaxError(std::string error);
 
+  void Unexpected(TokenType type);
+
   Zone* zone() { return &zone_; }
 
   Lexer* lexer() { return &lexer_; }
