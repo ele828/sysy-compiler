@@ -59,7 +59,7 @@ TEST(Lexer, IntConstHexadecimal) {
   const char* source = "0x123DEADBEEFdeadbeef";
   Lexer lexer(source);
   Token next_token = lexer.Next();
-  EXPECT_EQ(next_token.type(), TokenType::kIntConst);
+  EXPECT_EQ(next_token.type(), TokenType::kIntHexConst);
   EXPECT_EQ(next_token.value(), "0x123DEADBEEFdeadbeef");
 }
 
@@ -67,7 +67,7 @@ TEST(Lexer, IntConstOctal) {
   const char* source = "011";
   Lexer lexer(source);
   Token next_token = lexer.Next();
-  EXPECT_EQ(next_token.type(), TokenType::kIntConst);
+  EXPECT_EQ(next_token.type(), TokenType::kIntOctalConst);
   EXPECT_EQ(next_token.value(), "011");
 }
 
@@ -83,7 +83,7 @@ TEST(Lexer, FloatConstHexademical) {
   const char* source = "0x1.3P-2";
   Lexer lexer(source);
   Token next_token = lexer.Next();
-  EXPECT_EQ(next_token.type(), TokenType::kFloatConst);
+  EXPECT_EQ(next_token.type(), TokenType::kFloatHexConst);
   EXPECT_EQ(next_token.value(), "0x1.3P-2");
 }
 

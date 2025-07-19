@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <expected>
 #include <string_view>
 
 #include "base/magic_enum.h"
@@ -12,7 +13,10 @@ enum class TokenType : uint8_t {
   kEof,
   kIdentifier,
   kIntConst,
+  kIntHexConst,
+  kIntOctalConst,
   kFloatConst,
+  kFloatHexConst,
   kLeftParen,
   kRightParen,
   kLeftBrace,
@@ -62,6 +66,15 @@ class Token {
 
   [[nodiscard]] TokenType type() const { return type_; }
   [[nodiscard]] std::string_view value() const { return value_; }
+
+  enum class ConversionError {
+    kInvalid,
+    kOutOfRange,
+  };
+
+  std::expected<int, ConversionError> GetIntValue();
+
+  std::expected<float, ConversionError> GetFloatValue();
 
  private:
   TokenType type_{TokenType::kIllegal};

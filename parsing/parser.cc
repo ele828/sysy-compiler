@@ -163,10 +163,24 @@ Expression* Parser::ParseUnaryExpression() {
       return {};
     }
     case TokenType::kIntConst: {
-      return {};
+      auto result = current_.GetIntValue();
+      if (result.has_value()) {
+        return zone()->New<IntegerLiteral>(result.value());
+      } else if (result.error() == Token::ConversionError::kOutOfRange) {
+        SyntaxError("Integer is out of range");
+      } else {
+        SyntaxError("Invalid integer");
+      }
     }
     case TokenType::kFloatConst: {
-      return {};
+      auto result = current_.GetFloatValue();
+      if (result.has_value()) {
+        return zone()->New<FloatingLiteral>(result.value());
+      } else if (result.error() == Token::ConversionError::kOutOfRange) {
+        SyntaxError("Integer is out of range");
+      } else {
+        SyntaxError("Invalid integer");
+      }
     }
     case TokenType::kIdentifier: {
       Token identifier = Consume();

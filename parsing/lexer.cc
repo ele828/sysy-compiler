@@ -279,11 +279,11 @@ Token Lexer::ParseNumericConstant(const char c) {
           Advance();
         }
         consume_digits();
-        return Token(TokenType::kFloatConst, lexeme());
+        return Token(TokenType::kFloatHexConst, lexeme());
       }
     }
 
-    return Token(TokenType::kIntConst, lexeme());
+    return Token(TokenType::kIntHexConst, lexeme());
   }
 
   // octal
@@ -292,7 +292,7 @@ Token Lexer::ParseNumericConstant(const char c) {
     while (IsOctalDigit(Peek())) {
       Advance();
     }
-    return Token(TokenType::kIntConst, lexeme());
+    return Token(TokenType::kIntOctalConst, lexeme());
   }
 
   consume_digits();
