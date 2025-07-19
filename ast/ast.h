@@ -95,17 +95,32 @@ class Expression : public AstNode {
 
 class IntegerLiteral : public Expression {
  public:
+  explicit IntegerLiteral(int value)
+      : Expression(Kind::kIntegerLiteral), value_(value) {}
+
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kIntegerLiteral;
   }
+
+  int value() const { return value_; }
+
+ private:
+  int value_;
 };
 
 class FloatingLiteral : public Expression {
  public:
- public:
+  explicit FloatingLiteral(float value)
+      : Expression(Kind::kFloatingLiteral), value_(value) {}
+
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kFloatingLiteral;
   }
+
+  float value() const { return value_; }
+
+ private:
+  float value_;
 };
 
 class UnaryOperation : public Expression {
