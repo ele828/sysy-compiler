@@ -39,6 +39,8 @@ class Parser {
 
   VariableDeclaration* ParseVariableDeclaration();
 
+  ArraySubscriptExpression* ParseArraySubscriptExpression(Expression* base);
+
   Expression* ParseExpression(Precedence min_precedence);
 
   Expression* ParseUnaryExpression();
