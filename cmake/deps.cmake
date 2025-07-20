@@ -16,11 +16,6 @@ function(add_dependencies)
     tags/v0.9.7)
 
   add_dependency(
-    fast_float
-    https://github.com/fastfloat/fast_float.git
-    tags/v8.0.2)
-
-  add_dependency(
     googletest
     https://github.com/google/googletest.git
     v1.17.0)

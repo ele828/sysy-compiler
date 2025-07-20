@@ -1,7 +1,9 @@
 #include "parsing/token.h"
 
+#include <charconv>
+#include <print>
+
 #include "base/logging.h"
-#include "fast_float/fast_float.h"
 
 namespace sysy {
 
@@ -36,8 +38,8 @@ std::expected<int, Token::ConversionError> Token::GetIntValue() {
   }
 
   int output{};
-  auto result = fast_float::from_chars(
-      input.data(), input.data() + input.size(), output, base);
+  auto result =
+      std::from_chars(input.data(), input.data() + input.size(), output, base);
   if (result.ec == std::errc{}) {
     return output;
   } else if (result.ec == std::errc::invalid_argument) {
@@ -54,17 +56,18 @@ std::expected<float, Token::ConversionError> Token::GetFloatValue() {
   DCHECK(type_ == TokenType::kFloatConst || type_ == TokenType::kFloatHexConst);
 
   std::string_view input = value_;
-  fast_float::chars_format format = fast_float::chars_format::general;
+  std::chars_format format = std::chars_format::general;
   if (type_ == TokenType::kFloatConst) {
     input = value_;
-    format = fast_float::chars_format::general;
+    format = std::chars_format::general;
   } else if (type_ == TokenType::kFloatHexConst) {
     input = value_.substr(2);
-    format = fast_float::chars_format::hex;
+    format = std::chars_format::hex;
   }
-  float output;
-  auto result = fast_float::from_chars(
-      input.data(), input.data() + input.size(), output, format);
+
+  float output{};
+  auto result = std::from_chars(input.data(), input.data() + input.size(),
+                                output, format);
 
   if (result.ec == std::errc{}) {
     return output;
