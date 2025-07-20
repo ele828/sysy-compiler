@@ -4,7 +4,7 @@
 #include <expected>
 #include <string_view>
 
-#include "base/magic_enum.h"
+#include "magic_enum/magic_enum.hpp"
 
 namespace sysy {
 
