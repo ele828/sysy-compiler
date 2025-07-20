@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <cstdint>
 
 #include "base/zone.h"
 #include "base/zone_container.h"
@@ -8,6 +9,31 @@
 namespace sysy {
 
 class Decl;
+
+enum class UnaryOperator : uint8_t {
+  kPlus,
+  kMinus,
+  kLNot,
+};
+
+enum class BinaryOperator : uint8_t {
+  kAdd,
+  kSub,
+  kMul,
+  kDiv,
+  kRem,
+  kShl,
+  kShr,
+  kLt,
+  kGt,
+  kLe,
+  kGe,
+  kEq,
+  kNeq,
+  kLAnd,
+  kLOr,
+  kAssign,
+};
 
 class AstNode : public ZoneObject {
  public:
@@ -125,9 +151,22 @@ class FloatingLiteral : public Expression {
 
 class UnaryOperation : public Expression {
  public:
+  UnaryOperation(UnaryOperator op, Expression* expression)
+      : Expression(Kind::kUnaryOperation),
+        operator_(op),
+        expression_(expression) {}
+
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kUnaryOperation;
   }
+
+  UnaryOperator op() const { return operator_; }
+
+  Expression* expression() const { return expression_; }
+
+ private:
+  UnaryOperator operator_;
+  Expression* expression_;
 };
 
 class BinaryOperation : public Expression {
@@ -154,11 +193,15 @@ class VariableReference : public Expression {
 
 class ArraySubscriptExpression : public Expression {
  public:
+  ArraySubscriptExpression(Expression* base, Expression* dimension)
+      : Expression(Kind::kArraySubscript), base_(base), dimension_(dimension) {}
+
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kArraySubscript;
   }
 
   const Expression* base() const { return base_; }
+
   const Expression* dimension() const { return dimension_; }
 
  private:
@@ -168,13 +211,20 @@ class ArraySubscriptExpression : public Expression {
 
 class CallExpression : public Expression {
  public:
+  CallExpression(std::string_view name, ZoneVector<Expression*> arguments)
+      : Expression(Kind::kCallExpression), arguments_(std::move(arguments)) {}
+
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kCallExpression;
   }
 
+  std::string_view name() const { return name_; }
+
+  ZoneVector<Expression*> arguments() const { return arguments_; }
+
  private:
+  std::string_view name_;
   ZoneVector<Expression*> arguments_;
-  ;
 };
 
 }  // namespace sysy

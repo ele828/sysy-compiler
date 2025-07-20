@@ -55,19 +55,19 @@ class OperatorPrecedenceTable {
 
   static constexpr const OperatorPrecedence kOperatorPrecedence[] = {
       {TokenType::kLeftParen, Precedence::kCall},
-      {TokenType::kMul, Precedence::kFactor},
-      {TokenType::kDiv, Precedence::kFactor},
-      {TokenType::kMod, Precedence::kFactor},
-      {TokenType::kAdd, Precedence::kTerm},
-      {TokenType::kSub, Precedence::kTerm},
+      {TokenType::kStar, Precedence::kFactor},
+      {TokenType::kSlash, Precedence::kFactor},
+      {TokenType::kPercent, Precedence::kFactor},
+      {TokenType::kPlus, Precedence::kTerm},
+      {TokenType::kMinus, Precedence::kTerm},
       {TokenType::kLessThan, Precedence::kComparison},
       {TokenType::kLessThanEq, Precedence::kComparison},
       {TokenType::kGreaterThan, Precedence::kComparison},
       {TokenType::kGreaterThanEq, Precedence::kComparison},
-      {TokenType::kEq, Precedence::kEquality},
-      {TokenType::kNotEq, Precedence::kEquality},
-      {TokenType::kAnd, Precedence::kAnd},
-      {TokenType::kOr, Precedence::kOr},
+      {TokenType::kEqualEqual, Precedence::kEquality},
+      {TokenType::kExclaimEqual, Precedence::kEquality},
+      {TokenType::kAmpAmp, Precedence::kAnd},
+      {TokenType::kPipePipe, Precedence::kOr},
   };
 };
 
@@ -110,7 +110,7 @@ Decl* Parser::ParseDeclaration() {
     } else {
       // Array decl
       if (Match(TokenType::kLeftBracket)) {
-      } else if (Match(TokenType::kAssign)) {
+      } else if (Match(TokenType::kEqual)) {
       } else {
         Consume(TokenType::kSemicolon);
       }
@@ -142,54 +142,51 @@ Expression* Parser::ParseExpression(Precedence min_precedence) { return {}; }
 
 Expression* Parser::ParseUnaryExpression() {
   switch (current_.type()) {
-    case TokenType::kAdd: {
+    case TokenType::kPlus: {
       Consume();
-      ParseUnaryExpression();
-      return {};
+      auto* expression = ParseUnaryExpression();
+      return zone()->New<UnaryOperation>(UnaryOperator::kPlus, expression);
     }
-    case TokenType::kSub: {
+    case TokenType::kMinus: {
       Consume();
-      ParseUnaryExpression();
-      return {};
+      auto* expression = ParseUnaryExpression();
+      return zone()->New<UnaryOperation>(UnaryOperator::kMinus, expression);
     }
-    case TokenType::kNot: {
+    case TokenType::kExclaim: {
       Consume();
-      ParseUnaryExpression();
-      return {};
+      auto* expression = ParseUnaryExpression();
+      return zone()->New<UnaryOperation>(UnaryOperator::kLNot, expression);
     }
     case TokenType::kLeftBrace: {
       Consume();
-      ParseExpression(Precedence::kAssignment);
-      return {};
+      return ParseExpression(Precedence::kAssignment);
     }
     case TokenType::kIntConst: {
       auto result = current_.GetIntValue();
-      if (result.has_value()) {
-        return zone()->New<IntegerLiteral>(result.value());
+      if (result.error() == Token::ConversionError::kInvalid) {
+        SyntaxError("Invalid integer");
       } else if (result.error() == Token::ConversionError::kOutOfRange) {
         SyntaxError("Integer is out of range");
-      } else {
-        SyntaxError("Invalid integer");
       }
+      DCHECK(result.has_value());
+      return zone()->New<IntegerLiteral>(result.value());
     }
     case TokenType::kFloatConst: {
       auto result = current_.GetFloatValue();
-      if (result.has_value()) {
-        return zone()->New<FloatingLiteral>(result.value());
+      if (result.error() == Token::ConversionError::kInvalid) {
+        SyntaxError("Invalid integer");
       } else if (result.error() == Token::ConversionError::kOutOfRange) {
         SyntaxError("Integer is out of range");
-      } else {
-        SyntaxError("Invalid integer");
       }
+      DCHECK(result.has_value());
+      return zone()->New<FloatingLiteral>(result.value());
     }
     case TokenType::kIdentifier: {
       Token identifier = Consume();
       switch (current_.type()) {
         case TokenType::kLeftBracket: {
-          Consume();
-          ParseExpression(Precedence::kAssignment);
-          Consume(TokenType::kRightBracket);
-          return {};
+          auto* expression = zone()->New<VariableReference>(identifier.value());
+          return ParseArraySubscriptExpression(expression);
         }
         case TokenType::kLeftBrace: {
           Consume();
@@ -202,7 +199,8 @@ Expression* Parser::ParseUnaryExpression() {
             }
           }
           Consume(TokenType::kRightBrace);
-          return {};
+          return zone()->New<CallExpression>(identifier.value(),
+                                             std::move(arguments));
         }
         default: {
           return zone()->New<VariableReference>(identifier.value());
@@ -214,6 +212,22 @@ Expression* Parser::ParseUnaryExpression() {
     }
   }
   return {};
+}
+
+ArraySubscriptExpression* Parser::ParseArraySubscriptExpression(
+    Expression* base) {
+  Consume();
+  auto dimension = ParseExpression(Precedence::kAssignment);
+  Consume(TokenType::kRightBracket);
+
+  auto array_subscript_expression =
+      zone()->New<ArraySubscriptExpression>(base, dimension);
+
+  if (Match(TokenType::kLeftBracket)) {
+    return ParseArraySubscriptExpression(array_subscript_expression);
+  }
+
+  return array_subscript_expression;
 }
 
 Token Parser::Consume() {
@@ -229,7 +243,6 @@ Token Parser::Consume(TokenType type, const char* error_message) {
     return prev_token;
   }
 
-  // TODO(eric): report error in a systematic way
   if (error_message) {
     SyntaxError(error_message);
   } else {

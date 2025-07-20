@@ -89,39 +89,39 @@ Token Lexer::Next() {
     case '.':
       return Token(TokenType::kPeriod, lexeme());
     case '+':
-      return Token(TokenType::kAdd, lexeme());
+      return Token(TokenType::kPlus, lexeme());
     case '-':
-      return Token(TokenType::kSub, lexeme());
+      return Token(TokenType::kMinus, lexeme());
     case '*':
-      return Token(TokenType::kMul, lexeme());
+      return Token(TokenType::kStar, lexeme());
     case '/':
-      return Token(TokenType::kDiv, lexeme());
+      return Token(TokenType::kSlash, lexeme());
     case '%':
-      return Token(TokenType::kMod, lexeme());
+      return Token(TokenType::kPercent, lexeme());
     case '&': {
       if (Peek() == '&') {
-        return Token(TokenType::kAnd, lexeme());
+        return Token(TokenType::kAmpAmp, lexeme());
       }
     }
     case '|': {
       if (Peek() == '|') {
-        return Token(TokenType::kOr, lexeme());
+        return Token(TokenType::kPipePipe, lexeme());
       }
     }
     case '!': {
       if (Peek() == '=') {
         Advance();
-        return Token(TokenType::kNotEq, lexeme());
+        return Token(TokenType::kExclaimEqual, lexeme());
       } else {
-        return Token(TokenType::kNot, lexeme());
+        return Token(TokenType::kExclaim, lexeme());
       }
     }
     case '=': {
       if (Peek() == '=') {
         Advance();
-        return Token(TokenType::kEq, lexeme());
+        return Token(TokenType::kEqualEqual, lexeme());
       } else {
-        return Token(TokenType::kAssign, lexeme());
+        return Token(TokenType::kEqual, lexeme());
       }
     }
     case '<': {

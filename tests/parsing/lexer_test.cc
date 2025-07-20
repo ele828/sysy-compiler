@@ -109,7 +109,7 @@ TEST(Lexer, Assignment) {
   EXPECT_EQ(next_token.value(), "a");
 
   next_token = lexer.Next();
-  EXPECT_EQ(next_token.type(), TokenType::kAssign);
+  EXPECT_EQ(next_token.type(), TokenType::kEqual);
 
   next_token = lexer.Next();
   EXPECT_EQ(next_token.type(), TokenType::kIntConst);
