@@ -8,7 +8,7 @@ add_compile_options(-fno-exceptions -fno-rtti)
 include_directories(.)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/deps.cmake)
-fetch_dependencies()
+add_dependencies()
 
 # sysy library
 set(SOURCE_FILES
@@ -18,7 +18,7 @@ set(SOURCE_FILES
   parsing/token.cc)
 
 add_library(sysy ${SOURCE_FILES})
-target_link_libraries(sysy PUBLIC fast_float)
+target_link_libraries(sysy PUBLIC magic_enum fast_float)
 
 # sysy binary
 add_executable(

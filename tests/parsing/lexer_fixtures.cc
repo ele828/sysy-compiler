@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "base/magic_enum.h"
+#include "magic_enum/magic_enum.hpp"
 #include "parsing/lexer.h"
 #include "parsing/token.h"
 #include "tests/utils.h"

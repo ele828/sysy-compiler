@@ -1,16 +1,20 @@
 function (add_dependency name url tag)
   include(FetchContent OPTIONAL)
+  message("add dependency: ${name}")
   FetchContent_Declare(
     ${name}
     GIT_REPOSITORY ${url}
     GIT_TAG ${tag}
-    DOWNLOAD_EXTRACT_TIMESTAMP FALSE
-    GIT_PROGRESS TRUE
     GIT_SHALLOW TRUE)
   FetchContent_MakeAvailable(${name})
 endfunction()
 
-function(fetch_dependencies)
+function(add_dependencies)
+  add_dependency(
+    magic_enum
+    https://github.com/Neargye/magic_enum.git
+    tags/v0.9.7)
+
   add_dependency(
     fast_float
     https://github.com/fastfloat/fast_float.git
