@@ -18,7 +18,7 @@ set(SOURCE_FILES
   parsing/token.cc)
 
 add_library(sysy ${SOURCE_FILES})
-target_link_libraries(sysy PUBLIC magic_enum fast_float)
+target_link_libraries(sysy PUBLIC magic_enum)
 
 # sysy binary
 add_executable(
@@ -33,7 +33,8 @@ add_executable(
   tests/base/zone_test.cc
   tests/base/type_casts_test.cc
   tests/parsing/lexer_test.cc
-  tests/parsing/parser_test.cc)
+  tests/parsing/parser_test.cc
+  tests/parsing/token_test.cc)
 target_link_libraries(
   sysy_test
   sysy

@@ -1,4 +1,3 @@
-
 #include "parsing/parser.h"
 
 #include <gtest/gtest.h>
