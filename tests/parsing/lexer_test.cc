@@ -72,6 +72,14 @@ TEST(Lexer, IntConstOctal) {
 }
 
 TEST(Lexer, FloatConst) {
+  const char* source = "123.456";
+  Lexer lexer(source);
+  Token next_token = lexer.Next();
+  EXPECT_EQ(next_token.type(), TokenType::kFloatConst);
+  EXPECT_EQ(next_token.value(), "123.456");
+}
+
+TEST(Lexer, FloatConstWithExponent) {
   const char* source = "123.456E-3";
   Lexer lexer(source);
   Token next_token = lexer.Next();

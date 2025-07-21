@@ -296,7 +296,6 @@ Token Lexer::ParseNumericConstant(const char c) {
   }
 
   consume_digits();
-
   if (Peek() == '.') {
     Advance();
     consume_digits();
@@ -306,8 +305,8 @@ Token Lexer::ParseNumericConstant(const char c) {
         Advance();
       }
       consume_digits();
-      return Token(TokenType::kFloatConst, lexeme());
     }
+    return Token(TokenType::kFloatConst, lexeme());
   }
 
   return Token(TokenType::kIntConst, lexeme());
