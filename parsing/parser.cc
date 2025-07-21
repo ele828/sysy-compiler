@@ -109,7 +109,10 @@ constexpr OperatorPrecedenceTable operator_precedence_table;
 
 }  // namespace
 
-Parser::Parser(std::string_view source) : lexer_(source) {}
+Parser::Parser(std::string_view source) : lexer_(source) {
+  // make current_ point to the first token
+  Consume();
+}
 
 CompilationUnit* Parser::ParseCompilationUnit() {
   auto declarations = ParseDeclarations();
@@ -198,8 +201,7 @@ Expression* Parser::ParseBinaryOperation(int min_precedence, Expression* lhs) {
 
     int next_precedence = GetCurrentPrecedence();
     if (current_precedence < next_precedence) {
-      rhs = ParseBinaryOperation(
-          static_cast<Precedence>(current_precedence + 1), rhs);
+      rhs = ParseBinaryOperation(current_precedence + 1, rhs);
       if (!rhs) {
         return {};
       }
@@ -219,41 +221,49 @@ Expression* Parser::ParseUnaryExpression() {
   switch (current_.type()) {
     case TokenType::kPlus: {
       Consume();
-      auto* expression = ParseUnaryExpression();
+      auto* expression = ParseExpression();
       return zone()->New<UnaryOperation>(UnaryOperator::kPlus, expression);
     }
     case TokenType::kMinus: {
       Consume();
-      auto* expression = ParseUnaryExpression();
+      auto* expression = ParseExpression();
       return zone()->New<UnaryOperation>(UnaryOperator::kMinus, expression);
     }
     case TokenType::kExclaim: {
       Consume();
-      auto* expression = ParseUnaryExpression();
+      auto* expression = ParseExpression();
       return zone()->New<UnaryOperation>(UnaryOperator::kLNot, expression);
     }
-    case TokenType::kLeftBrace: {
+    case TokenType::kLeftParen: {
       Consume();
       return ParseExpression();
     }
     case TokenType::kIntConst: {
       auto result = current_.GetIntValue();
-      if (result.error() == Token::ConversionError::kInvalid) {
-        SyntaxError("Invalid integer");
-      } else if (result.error() == Token::ConversionError::kOutOfRange) {
-        SyntaxError("Integer is out of range");
+      Consume();
+      if (!result.has_value()) {
+        if (result.error() == Token::ConversionError::kInvalid) {
+          SyntaxError("Invalid integer");
+          return {};
+        } else if (result.error() == Token::ConversionError::kOutOfRange) {
+          SyntaxError("Integer is out of range");
+          return {};
+        }
       }
-      DCHECK(result.has_value());
       return zone()->New<IntegerLiteral>(result.value());
     }
     case TokenType::kFloatConst: {
       auto result = current_.GetFloatValue();
-      if (result.error() == Token::ConversionError::kInvalid) {
-        SyntaxError("Invalid integer");
-      } else if (result.error() == Token::ConversionError::kOutOfRange) {
-        SyntaxError("Integer is out of range");
+      Consume();
+      if (!result.has_value()) {
+        if (result.error() == Token::ConversionError::kInvalid) {
+          SyntaxError("Invalid integer");
+          return {};
+        } else if (result.error() == Token::ConversionError::kOutOfRange) {
+          SyntaxError("Integer is out of range");
+          return {};
+        }
       }
-      DCHECK(result.has_value());
       return zone()->New<FloatingLiteral>(result.value());
     }
     case TokenType::kIdentifier: {
@@ -261,19 +271,20 @@ Expression* Parser::ParseUnaryExpression() {
       switch (current_.type()) {
         case TokenType::kLeftBracket: {
           auto* expression = zone()->New<VariableReference>(identifier.value());
-          return ParseArraySubscriptExpression(expression);
+          auto res = ParseArraySubscriptExpression(expression);
+          return res;
         }
-        case TokenType::kLeftBrace: {
+        case TokenType::kLeftParen: {
           Consume();
           ZoneVector<Expression*> arguments(zone());
-          while (!Match(TokenType::kRightBrace)) {
+          while (!Match(TokenType::kRightParen) && !Match(TokenType::kEof)) {
             auto* expression = ParseExpression();
             arguments.push_back(expression);
             if (Match(TokenType::kComma)) {
               Consume();
             }
           }
-          Consume(TokenType::kRightBrace);
+          Consume(TokenType::kRightParen);
           return zone()->New<CallExpression>(identifier.value(),
                                              std::move(arguments));
         }
@@ -291,8 +302,9 @@ Expression* Parser::ParseUnaryExpression() {
 
 ArraySubscriptExpression* Parser::ParseArraySubscriptExpression(
     Expression* base) {
+  // consume left bracket
   Consume();
-  auto dimension = ParseExpression();
+  Expression* dimension = ParseExpression();
   Consume(TokenType::kRightBracket);
 
   auto array_subscript_expression =
@@ -331,7 +343,7 @@ void Parser::SyntaxError(std::string error) {
 }
 
 void Parser::Unexpected(TokenType type) {
-  SyntaxError(std::format("parse error: expected token type: {}",
+  SyntaxError(std::format("parse error: unexpected token type: {}",
                           magic_enum::enum_name(type)));
 }
 

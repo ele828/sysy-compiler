@@ -226,7 +226,9 @@ class ArraySubscriptExpression : public Expression {
 class CallExpression : public Expression {
  public:
   CallExpression(std::string_view name, ZoneVector<Expression*> arguments)
-      : Expression(Kind::kCallExpression), arguments_(std::move(arguments)) {}
+      : Expression(Kind::kCallExpression),
+        name_(name),
+        arguments_(std::move(arguments)) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kCallExpression;
