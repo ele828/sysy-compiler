@@ -28,23 +28,29 @@ class Parser {
 
   CompilationUnit* ParseCompilationUnit();
 
-  ZoneVector<Decl*> ParseDeclarations();
+  ZoneVector<Declaration*> ParseDeclarations();
 
-  Decl* ParseDeclaration();
+  Declaration* ParseDeclaration();
 
-  FunctionDeclaration* ParseFunctionDeclaration();
+  FunctionDeclaration* ParseFunctionDeclaration(Type type,
+                                                std::string_view name);
+
+  VariableDeclaration* ParseVariableDeclaration(Type type,
+                                                std::string_view name);
 
   ConstantDeclaration* ParseConstantDeclaration();
-
-  VariableDeclaration* ParseVariableDeclaration();
 
   Expression* ParseBinaryOperation(int min_precedence, Expression* lhs);
 
   ArraySubscriptExpression* ParseArraySubscriptExpression(Expression* base);
 
+  CallExpression* ParseCallExpression(Token name);
+
   Expression* ParseExpression();
 
   Expression* ParseUnaryExpression();
+
+  Expression* ParseInitValue();
 
   bool has_errors() const { return !errors_.empty(); }
 

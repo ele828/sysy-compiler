@@ -3,12 +3,14 @@
 #include <atomic>
 #include <cstdint>
 
+#include "ast/types.h"
 #include "base/zone.h"
 #include "base/zone_container.h"
 
 namespace sysy {
 
-class Decl;
+class Expression;
+class Declaration;
 
 enum class UnaryOperator : uint8_t {
   kInvalid,
@@ -52,6 +54,7 @@ class AstNode : public ZoneObject {
     kUnaryOperation,
     kBinaryOperation,
     kVariableReference,
+    kInitList,
     kArraySubscript,
     kCallExpression,
     // Expression end
@@ -67,21 +70,23 @@ class AstNode : public ZoneObject {
 
 class CompilationUnit : public AstNode {
  public:
-  explicit CompilationUnit(ZoneVector<Decl*> body)
+  explicit CompilationUnit(ZoneVector<Declaration*> body)
       : AstNode(Kind::kCompilationUnit), body_(std::move(body)) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kCompilationUnit;
   }
 
-  ZoneVector<Decl*>& body() { return body_; }
+  const ZoneVector<Declaration*>& body() const { return body_; }
 
  private:
-  ZoneVector<Decl*> body_;
+  ZoneVector<Declaration*> body_;
 };
 
 class Declaration : public AstNode {
  public:
+  explicit Declaration(Kind kind) : AstNode(kind) {}
+
   static bool classof(const AstNode& n) {
     return n.kind() >= Kind::kConstantDeclaration &&
            n.kind() <= Kind::kFunctionDelcaration;
@@ -90,9 +95,24 @@ class Declaration : public AstNode {
 
 class ConstantDeclaration : public Declaration {
  public:
+  ConstantDeclaration(Type type, std::string_view name, Expression* init_value)
+      : Declaration(Kind::kConstantDeclaration),
+        type_(type),
+        name_(name),
+        init_value_(init_value) {}
+
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kConstantDeclaration;
   }
+
+  Type type() const { return type_; }
+  std::string_view name() const { return name_; }
+  Expression* init_value() const { return init_value_; }
+
+ private:
+  Type type_;
+  std::string_view name_;
+  Expression* init_value_;
 };
 
 class VariableDeclaration : public Declaration {
@@ -235,11 +255,24 @@ class CallExpression : public Expression {
   }
 
   std::string_view name() const { return name_; }
-  ZoneVector<Expression*> arguments() const { return arguments_; }
+  const ZoneVector<Expression*>& arguments() const { return arguments_; }
 
  private:
   std::string_view name_;
   ZoneVector<Expression*> arguments_;
+};
+
+class InitListExpression : public Expression {
+ public:
+  explicit InitListExpression(ZoneVector<Expression*> list)
+      : Expression(Kind::kInitList), list_(std::move(list)) {}
+
+  static bool classof(const AstNode& n) { return n.kind() == Kind::kInitList; }
+
+  const ZoneVector<Expression*>& list() const { return list_; }
+
+ private:
+  ZoneVector<Expression*> list_;
 };
 
 }  // namespace sysy
