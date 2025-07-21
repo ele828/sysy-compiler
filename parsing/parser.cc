@@ -119,8 +119,8 @@ CompilationUnit* Parser::ParseCompilationUnit() {
   return zone()->New<CompilationUnit>(std::move(declarations));
 }
 
-ZoneVector<Decl*> Parser::ParseDeclarations() {
-  ZoneVector<Decl*> declarations(zone());
+ZoneVector<Declaration*> Parser::ParseDeclarations() {
+  ZoneVector<Declaration*> declarations(zone());
   while (!Match(TokenType::kEof)) {
     auto* declaration = ParseDeclaration();
     declarations.push_back(declaration);
@@ -130,10 +130,10 @@ ZoneVector<Decl*> Parser::ParseDeclarations() {
 }
 
 // Decl | FunDecl
-Decl* Parser::ParseDeclaration() {
+Declaration* Parser::ParseDeclaration() {
   if (Match(TokenType::kKeywordConst)) {
     Consume();
-    ParseConstantDeclaration();
+    return ParseConstantDeclaration();
   } else if (MatchTypeSpecifier()) {
     Type type = GetType(Consume());
     std::string_view identifier = Consume(TokenType::kIdentifier).value();
@@ -141,16 +141,10 @@ Decl* Parser::ParseDeclaration() {
     (void)type;
     (void)identifier;
 
-    // FunDecl
     if (Match(TokenType::kLeftParen)) {
-      ParseFunctionDeclaration();
+      return ParseFunctionDeclaration(type, identifier);
     } else {
-      // Array decl
-      if (Match(TokenType::kLeftBracket)) {
-      } else if (Match(TokenType::kEqual)) {
-      } else {
-        Consume(TokenType::kSemicolon);
-      }
+      return ParseVariableDeclaration(type, identifier);
     }
   } else {
     SyntaxError(std::format("unexpected token: {}",
@@ -164,16 +158,49 @@ ConstantDeclaration* Parser::ParseConstantDeclaration() {
     SyntaxError("expect type specifier");
     return {};
   }
+
   Type type = GetType(Consume());
   std::string_view identifier = Consume(TokenType::kIdentifier).value();
-  (void)type;
-  (void)identifier;
+  if (Match(TokenType::kLeftBracket)) {
+    Consume(TokenType::kRightBracket);
+  }
+
+  Consume(TokenType::kEqual);
+  auto* init_value = ParseInitValue();
+  return zone()->New<ConstantDeclaration>(type, identifier, init_value);
+}
+
+Expression* Parser::ParseInitValue() {
+  if (Match(TokenType::kLeftBrace)) {
+    Consume();
+
+    ZoneVector<Expression*> list(zone());
+    while (!Match(TokenType::kRightBrace) && !Match(TokenType::kEof)) {
+      list.push_back(ParseInitValue());
+
+      if (Match(TokenType::kComma)) {
+        Consume();
+      }
+    }
+
+    return zone()->New<InitListExpression>(std::move(list));
+  }
+
+  return ParseExpression();
+}
+
+VariableDeclaration* Parser::ParseVariableDeclaration(Type type,
+                                                      std::string_view name) {
   return {};
 }
 
-VariableDeclaration* Parser::ParseVariableDeclaration() { return {}; }
+FunctionDeclaration* Parser::ParseFunctionDeclaration(Type type,
+                                                      std::string_view name) {
+  // consume left paren
+  Consume();
 
-FunctionDeclaration* Parser::ParseFunctionDeclaration() { return {}; }
+  return {};
+}
 
 Expression* Parser::ParseExpression() {
   auto lhs = ParseUnaryExpression();
@@ -275,18 +302,7 @@ Expression* Parser::ParseUnaryExpression() {
           return res;
         }
         case TokenType::kLeftParen: {
-          Consume();
-          ZoneVector<Expression*> arguments(zone());
-          while (!Match(TokenType::kRightParen) && !Match(TokenType::kEof)) {
-            auto* expression = ParseExpression();
-            arguments.push_back(expression);
-            if (Match(TokenType::kComma)) {
-              Consume();
-            }
-          }
-          Consume(TokenType::kRightParen);
-          return zone()->New<CallExpression>(identifier.value(),
-                                             std::move(arguments));
+          return ParseCallExpression(identifier);
         }
         default: {
           return zone()->New<VariableReference>(identifier.value());
@@ -315,6 +331,21 @@ ArraySubscriptExpression* Parser::ParseArraySubscriptExpression(
   }
 
   return array_subscript_expression;
+}
+
+CallExpression* Parser::ParseCallExpression(Token name) {
+  // consume left paren
+  Consume();
+  ZoneVector<Expression*> arguments(zone());
+  while (!Match(TokenType::kRightParen) && !Match(TokenType::kEof)) {
+    auto* expression = ParseExpression();
+    arguments.push_back(expression);
+    if (Match(TokenType::kComma)) {
+      Consume();
+    }
+  }
+  Consume(TokenType::kRightParen);
+  return zone()->New<CallExpression>(name.value(), std::move(arguments));
 }
 
 Token Parser::Consume() {
