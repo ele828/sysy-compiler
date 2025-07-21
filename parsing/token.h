@@ -39,10 +39,10 @@ enum class TokenType : uint8_t {
   kPipePipe,
   kEqualEqual,
   kExclaimEqual,
-  kLessThan,
-  kGreaterThan,
-  kLessThanEq,
-  kGreaterThanEq,
+  kLess,
+  kGreater,
+  kLessEqual,
+  kGreaterEqual,
 
   // keywords
   kKeywordConst,

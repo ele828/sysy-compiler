@@ -39,11 +39,15 @@ class Parser {
 
   VariableDeclaration* ParseVariableDeclaration();
 
+  Expression* ParseBinaryOperation(int min_precedence, Expression* lhs);
+
   ArraySubscriptExpression* ParseArraySubscriptExpression(Expression* base);
 
-  Expression* ParseExpression(Precedence min_precedence);
+  Expression* ParseExpression();
 
   Expression* ParseUnaryExpression();
+
+  int GetCurrentPrecedence();
 
   bool Match(TokenType type) const { return current_.type() == type; }
 
