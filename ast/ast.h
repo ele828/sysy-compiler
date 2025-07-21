@@ -11,19 +11,19 @@ namespace sysy {
 class Decl;
 
 enum class UnaryOperator : uint8_t {
+  kInvalid,
   kPlus,
   kMinus,
   kLNot,
 };
 
 enum class BinaryOperator : uint8_t {
+  kInvalid,
   kAdd,
   kSub,
   kMul,
   kDiv,
   kRem,
-  kShl,
-  kShr,
   kLt,
   kGt,
   kLe,
@@ -161,7 +161,6 @@ class UnaryOperation : public Expression {
   }
 
   UnaryOperator op() const { return operator_; }
-
   Expression* expression() const { return expression_; }
 
  private:
@@ -171,9 +170,25 @@ class UnaryOperation : public Expression {
 
 class BinaryOperation : public Expression {
  public:
+  BinaryOperation(BinaryOperator binary_operator, Expression* lhs,
+                  Expression* rhs)
+      : Expression(Kind::kBinaryOperation),
+        binary_operator_(binary_operator),
+        lhs_(lhs),
+        rhs_(rhs) {}
+
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kBinaryOperation;
   }
+
+  BinaryOperator binary_operator() const { return binary_operator_; }
+  Expression* lhs() const { return lhs_; }
+  Expression* rhs() const { return rhs_; }
+
+ private:
+  BinaryOperator binary_operator_;
+  Expression* lhs_;
+  Expression* rhs_;
 };
 
 class VariableReference : public Expression {
@@ -201,7 +216,6 @@ class ArraySubscriptExpression : public Expression {
   }
 
   const Expression* base() const { return base_; }
-
   const Expression* dimension() const { return dimension_; }
 
  private:
@@ -219,7 +233,6 @@ class CallExpression : public Expression {
   }
 
   std::string_view name() const { return name_; }
-
   ZoneVector<Expression*> arguments() const { return arguments_; }
 
  private:

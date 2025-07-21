@@ -14,7 +14,7 @@ namespace sysy {
 
 namespace {
 
-constexpr Type ResolveType(const Token& token) {
+constexpr Type GetType(const Token& token) {
   switch (token.type()) {
     case TokenType::kKeywordVoid:
       return Type::kVoid;
@@ -24,6 +24,41 @@ constexpr Type ResolveType(const Token& token) {
       return Type::kFloat;
     default:
       return Type::kInvalid;
+  }
+}
+
+BinaryOperator GetBinaryOperator(const Token& token) {
+  switch (token.type()) {
+    case TokenType::kPlus:
+      return BinaryOperator::kAdd;
+    case TokenType::kMinus:
+      return BinaryOperator::kSub;
+    case TokenType::kStar:
+      return BinaryOperator::kMul;
+    case TokenType::kSlash:
+      return BinaryOperator::kDiv;
+    case TokenType::kPercent:
+      return BinaryOperator::kRem;
+    case TokenType::kLess:
+      return BinaryOperator::kLt;
+    case TokenType::kGreater:
+      return BinaryOperator::kGt;
+    case TokenType::kLessEqual:
+      return BinaryOperator::kLe;
+    case TokenType::kGreaterEqual:
+      return BinaryOperator::kGe;
+    case TokenType::kEqualEqual:
+      return BinaryOperator::kEq;
+    case TokenType::kExclaimEqual:
+      return BinaryOperator::kNeq;
+    case TokenType::kAmpAmp:
+      return BinaryOperator::kLAnd;
+    case TokenType::kPipePipe:
+      return BinaryOperator::kLOr;
+    case TokenType::kEqual:
+      return BinaryOperator::kAssign;
+    default:
+      return BinaryOperator::kInvalid;
   }
 }
 
@@ -39,18 +74,17 @@ class OperatorPrecedenceTable {
   constexpr int GetPrecedence(TokenType token) const {
     int precedence = token_precedence[static_cast<size_t>(token)];
     if (precedence == 0) {
-      NOTREACHED();
       return -1;
     }
     return precedence;
   }
 
  private:
-  int token_precedence[kTokenTypeCount];
+  Precedence token_precedence[kTokenTypeCount];
 
   struct OperatorPrecedence {
     TokenType token;
-    int precedence;
+    Precedence precedence;
   };
 
   static constexpr const OperatorPrecedence kOperatorPrecedence[] = {
@@ -60,10 +94,10 @@ class OperatorPrecedenceTable {
       {TokenType::kPercent, Precedence::kFactor},
       {TokenType::kPlus, Precedence::kTerm},
       {TokenType::kMinus, Precedence::kTerm},
-      {TokenType::kLessThan, Precedence::kComparison},
-      {TokenType::kLessThanEq, Precedence::kComparison},
-      {TokenType::kGreaterThan, Precedence::kComparison},
-      {TokenType::kGreaterThanEq, Precedence::kComparison},
+      {TokenType::kLess, Precedence::kComparison},
+      {TokenType::kLessEqual, Precedence::kComparison},
+      {TokenType::kGreater, Precedence::kComparison},
+      {TokenType::kGreaterEqual, Precedence::kComparison},
       {TokenType::kEqualEqual, Precedence::kEquality},
       {TokenType::kExclaimEqual, Precedence::kEquality},
       {TokenType::kAmpAmp, Precedence::kAnd},
@@ -71,7 +105,7 @@ class OperatorPrecedenceTable {
   };
 };
 
-constexpr OperatorPrecedenceTable operator_precedence;
+constexpr OperatorPrecedenceTable operator_precedence_table;
 
 }  // namespace
 
@@ -98,7 +132,7 @@ Decl* Parser::ParseDeclaration() {
     Consume();
     ParseConstantDeclaration();
   } else if (MatchTypeSpecifier()) {
-    Type type = ResolveType(Consume());
+    Type type = GetType(Consume());
     std::string_view identifier = Consume(TokenType::kIdentifier).value();
 
     (void)type;
@@ -127,7 +161,7 @@ ConstantDeclaration* Parser::ParseConstantDeclaration() {
     SyntaxError("expect type specifier");
     return {};
   }
-  Type type = ResolveType(Consume());
+  Type type = GetType(Consume());
   std::string_view identifier = Consume(TokenType::kIdentifier).value();
   (void)type;
   (void)identifier;
@@ -138,7 +172,48 @@ VariableDeclaration* Parser::ParseVariableDeclaration() { return {}; }
 
 FunctionDeclaration* Parser::ParseFunctionDeclaration() { return {}; }
 
-Expression* Parser::ParseExpression(Precedence min_precedence) { return {}; }
+Expression* Parser::ParseExpression() {
+  auto lhs = ParseUnaryExpression();
+  if (!lhs) {
+    return {};
+  }
+
+  return ParseBinaryOperation(Precedence::kAssignment, lhs);
+}
+
+Expression* Parser::ParseBinaryOperation(int min_precedence, Expression* lhs) {
+  while (true) {
+    int current_precedence = GetCurrentPrecedence();
+    if (current_precedence < min_precedence) {
+      return lhs;
+    }
+
+    BinaryOperator binary_operator = GetBinaryOperator(current_);
+    Consume();
+
+    auto rhs = ParseUnaryExpression();
+    if (!rhs) {
+      return {};
+    }
+
+    int next_precedence = GetCurrentPrecedence();
+    if (current_precedence < next_precedence) {
+      rhs = ParseBinaryOperation(
+          static_cast<Precedence>(current_precedence + 1), rhs);
+      if (!rhs) {
+        return {};
+      }
+    }
+
+    lhs = zone()->New<BinaryOperation>(binary_operator, lhs, rhs);
+  }
+
+  return lhs;
+}
+
+inline int Parser::GetCurrentPrecedence() {
+  return operator_precedence_table.GetPrecedence(current_.type());
+}
 
 Expression* Parser::ParseUnaryExpression() {
   switch (current_.type()) {
@@ -159,7 +234,7 @@ Expression* Parser::ParseUnaryExpression() {
     }
     case TokenType::kLeftBrace: {
       Consume();
-      return ParseExpression(Precedence::kAssignment);
+      return ParseExpression();
     }
     case TokenType::kIntConst: {
       auto result = current_.GetIntValue();
@@ -192,7 +267,7 @@ Expression* Parser::ParseUnaryExpression() {
           Consume();
           ZoneVector<Expression*> arguments(zone());
           while (!Match(TokenType::kRightBrace)) {
-            auto* expression = ParseExpression(Precedence::kAssignment);
+            auto* expression = ParseExpression();
             arguments.push_back(expression);
             if (Match(TokenType::kComma)) {
               Consume();
@@ -217,7 +292,7 @@ Expression* Parser::ParseUnaryExpression() {
 ArraySubscriptExpression* Parser::ParseArraySubscriptExpression(
     Expression* base) {
   Consume();
-  auto dimension = ParseExpression(Precedence::kAssignment);
+  auto dimension = ParseExpression();
   Consume(TokenType::kRightBracket);
 
   auto array_subscript_expression =

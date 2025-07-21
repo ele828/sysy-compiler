@@ -127,17 +127,17 @@ Token Lexer::Next() {
     case '<': {
       if (Peek() == '=') {
         Advance();
-        return Token(TokenType::kLessThanEq, lexeme());
+        return Token(TokenType::kLessEqual, lexeme());
       } else {
-        return Token(TokenType::kLessThan, lexeme());
+        return Token(TokenType::kLess, lexeme());
       }
     }
     case '>': {
       if (Peek() == '=') {
         Advance();
-        return Token(TokenType::kGreaterThanEq, lexeme());
+        return Token(TokenType::kGreaterEqual, lexeme());
       } else {
-        return Token(TokenType::kGreaterThan, lexeme());
+        return Token(TokenType::kGreater, lexeme());
       }
     }
   }
