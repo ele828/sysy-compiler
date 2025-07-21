@@ -28,7 +28,6 @@ class Parser {
 
   CompilationUnit* ParseCompilationUnit();
 
- private:
   ZoneVector<Decl*> ParseDeclarations();
 
   Decl* ParseDeclaration();
@@ -47,6 +46,11 @@ class Parser {
 
   Expression* ParseUnaryExpression();
 
+  bool has_errors() const { return !errors_.empty(); }
+
+  std::vector<std::string> errors() const { return errors_; }
+
+ private:
   int GetCurrentPrecedence();
 
   bool Match(TokenType type) const { return current_.type() == type; }
@@ -56,9 +60,9 @@ class Parser {
            Match(TokenType::kKeywordVoid);
   }
 
-  // Verify current token and advance
   Token Consume();
 
+  // Verify current token and advance
   Token Consume(TokenType type, const char* error_message = nullptr);
 
   void SyntaxError(std::string error);
