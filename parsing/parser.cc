@@ -137,10 +137,6 @@ Declaration* Parser::ParseDeclaration() {
   } else if (MatchTypeSpecifier()) {
     Type type = GetType(Consume());
     std::string_view identifier = Consume(TokenType::kIdentifier).value();
-
-    (void)type;
-    (void)identifier;
-
     if (Match(TokenType::kLeftParen)) {
       return ParseFunctionDeclaration(type, identifier);
     } else {
