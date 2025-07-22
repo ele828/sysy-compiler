@@ -129,22 +129,20 @@ ZoneVector<Declaration*> Parser::ParseDeclarations() {
   return declarations;
 }
 
-// Decl | FunDecl
 Declaration* Parser::ParseDeclaration() {
   if (Match(TokenType::kKeywordConst)) {
     Consume();
     return ParseConstantDeclaration();
   } else if (MatchTypeSpecifier()) {
-    Type type = GetType(Consume());
-    std::string_view identifier = Consume(TokenType::kIdentifier).value();
-    if (Match(TokenType::kLeftParen)) {
-      return ParseFunctionDeclaration(type, identifier);
-    } else {
-      return ParseVariableDeclaration(type, identifier);
+    Lexer lookahead_lexer(lexer_);
+    // skips type specifier and identifier
+    auto third_token_after_current = lookahead_lexer.Next(3);
+    if (third_token_after_current.type() == TokenType::kLeftParen) {
+      return ParseFunctionDeclaration();
     }
+    return ParseVariableDeclaration();
   } else {
-    SyntaxError(std::format("unexpected token: {}",
-                            magic_enum::enum_name(current_.type())));
+    Unexpected(current_.type());
   }
   return {};
 }
@@ -185,13 +183,18 @@ Expression* Parser::ParseInitValue() {
   return ParseExpression();
 }
 
-VariableDeclaration* Parser::ParseVariableDeclaration(Type type,
-                                                      std::string_view name) {
+VariableDeclaration* Parser::ParseVariableDeclaration() {
+  [[maybe_unused]] Type type = GetType(Consume());
+  [[maybe_unused]] std::string_view identifier =
+      Consume(TokenType::kIdentifier).value();
   return {};
 }
 
-FunctionDeclaration* Parser::ParseFunctionDeclaration(Type type,
-                                                      std::string_view name) {
+FunctionDeclaration* Parser::ParseFunctionDeclaration() {
+  [[maybe_unused]] Type type = GetType(Consume());
+  [[maybe_unused]] std::string_view identifier =
+      Consume(TokenType::kIdentifier).value();
+
   // consume left paren
   Consume();
 
@@ -290,17 +293,17 @@ Expression* Parser::ParseUnaryExpression() {
       return zone()->New<FloatingLiteral>(result.value());
     }
     case TokenType::kIdentifier: {
-      Token identifier = Consume();
-      switch (current_.type()) {
+      Lexer lookahead_lexer(lexer_);
+      Token next_token = lookahead_lexer.Next();
+      switch (next_token.type()) {
         case TokenType::kLeftBracket: {
-          auto* expression = zone()->New<VariableReference>(identifier.value());
-          auto res = ParseArraySubscriptExpression(expression);
-          return res;
+          return ParseArraySubscriptExpression();
         }
         case TokenType::kLeftParen: {
-          return ParseCallExpression(identifier);
+          return ParseCallExpression();
         }
         default: {
+          Token identifier = Consume();
           return zone()->New<VariableReference>(identifier.value());
         }
       }
@@ -312,7 +315,13 @@ Expression* Parser::ParseUnaryExpression() {
   return {};
 }
 
-ArraySubscriptExpression* Parser::ParseArraySubscriptExpression(
+ArraySubscriptExpression* Parser::ParseArraySubscriptExpression() {
+  Token identifier = Consume();
+  auto* base = zone()->New<VariableReference>(identifier.value());
+  return ParseArraySubscriptDimension(base);
+}
+
+ArraySubscriptExpression* Parser::ParseArraySubscriptDimension(
     Expression* base) {
   // consume left bracket
   Consume();
@@ -323,13 +332,14 @@ ArraySubscriptExpression* Parser::ParseArraySubscriptExpression(
       zone()->New<ArraySubscriptExpression>(base, dimension);
 
   if (Match(TokenType::kLeftBracket)) {
-    return ParseArraySubscriptExpression(array_subscript_expression);
+    return ParseArraySubscriptDimension(array_subscript_expression);
   }
 
   return array_subscript_expression;
 }
 
-CallExpression* Parser::ParseCallExpression(Token name) {
+CallExpression* Parser::ParseCallExpression() {
+  Token name = Consume();
   // consume left paren
   Consume();
   ZoneVector<Expression*> arguments(zone());

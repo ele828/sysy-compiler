@@ -32,19 +32,19 @@ class Parser {
 
   Declaration* ParseDeclaration();
 
-  FunctionDeclaration* ParseFunctionDeclaration(Type type,
-                                                std::string_view name);
+  FunctionDeclaration* ParseFunctionDeclaration();
 
-  VariableDeclaration* ParseVariableDeclaration(Type type,
-                                                std::string_view name);
+  VariableDeclaration* ParseVariableDeclaration();
 
   ConstantDeclaration* ParseConstantDeclaration();
 
   Expression* ParseBinaryOperation(int min_precedence, Expression* lhs);
 
-  ArraySubscriptExpression* ParseArraySubscriptExpression(Expression* base);
+  ArraySubscriptExpression* ParseArraySubscriptExpression();
 
-  CallExpression* ParseCallExpression(Token name);
+  ArraySubscriptExpression* ParseArraySubscriptDimension(Expression* base);
+
+  CallExpression* ParseCallExpression();
 
   Expression* ParseExpression();
 
