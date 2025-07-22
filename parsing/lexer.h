@@ -12,6 +12,8 @@ class Lexer final {
 
   Token Next();
 
+  Token Next(int count);
+
  private:
   char Peek() const { return source_[position_]; }
 

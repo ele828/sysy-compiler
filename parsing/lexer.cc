@@ -147,6 +147,18 @@ Token Lexer::Next() {
   return {};
 }
 
+Token Lexer::Next(int count) {
+  DCHECK(count >= 1);
+  if (count < 1) {
+    return Token{};
+  }
+
+  while (--count > 0) {
+    Next();
+  }
+  return Next();
+}
+
 void Lexer::SkipWhitespace() {
   while (true) {
     const char c = Peek();
