@@ -155,13 +155,16 @@ ConstantDeclaration* Parser::ParseConstantDeclaration() {
 
   Type type = GetType(Consume());
   std::string_view identifier = Consume(TokenType::kIdentifier).value();
+  Expression* array_length_expression{};
   if (Match(TokenType::kLeftBracket)) {
+    array_length_expression = ParseExpression();
     Consume(TokenType::kRightBracket);
   }
 
   Consume(TokenType::kEqual);
   auto* init_value = ParseInitValue();
-  return zone()->New<ConstantDeclaration>(type, identifier, init_value);
+  return zone()->New<ConstantDeclaration>(type, array_length_expression,
+                                          identifier, init_value);
 }
 
 Expression* Parser::ParseInitValue() {
@@ -185,20 +188,26 @@ Expression* Parser::ParseInitValue() {
 
 VariableDeclaration* Parser::ParseVariableDeclaration() {
   [[maybe_unused]] Type type = GetType(Consume());
-  [[maybe_unused]] std::string_view identifier =
+  [[maybe_unused]] std::string_view name =
       Consume(TokenType::kIdentifier).value();
   return {};
 }
 
 FunctionDeclaration* Parser::ParseFunctionDeclaration() {
-  [[maybe_unused]] Type type = GetType(Consume());
-  [[maybe_unused]] std::string_view identifier =
-      Consume(TokenType::kIdentifier).value();
+  Type type = GetType(Consume());
+  std::string_view name = Consume(TokenType::kIdentifier).value();
 
-  // consume left paren
-  Consume();
+  ZoneVector<ParameterDeclaration> parameters(zone());
+  while (!Match(TokenType::kSemicolon) && !Match(TokenType::kEof)) {
+    parameters = ParseFunctionParameter();
+  }
+  Consume(TokenType::kLeftParen);
 
-  return {};
+  return zone()->New<FunctionDeclaration>(type, name, std::move(parameters));
+}
+
+ZoneVector<ParameterDeclaration> Parser::ParseFunctionParameter() {
+  //
 }
 
 Expression* Parser::ParseExpression() {
@@ -323,8 +332,7 @@ ArraySubscriptExpression* Parser::ParseArraySubscriptExpression() {
 
 ArraySubscriptExpression* Parser::ParseArraySubscriptDimension(
     Expression* base) {
-  // consume left bracket
-  Consume();
+  Consume(TokenType::kLeftBracket);
   Expression* dimension = ParseExpression();
   Consume(TokenType::kRightBracket);
 
@@ -340,8 +348,7 @@ ArraySubscriptExpression* Parser::ParseArraySubscriptDimension(
 
 CallExpression* Parser::ParseCallExpression() {
   Token name = Consume();
-  // consume left paren
-  Consume();
+  Consume(TokenType::kLeftParen);
   ZoneVector<Expression*> arguments(zone());
   while (!Match(TokenType::kRightParen) && !Match(TokenType::kEof)) {
     auto* expression = ParseExpression();
@@ -370,7 +377,9 @@ Token Parser::Consume(TokenType type, const char* error_message) {
   if (error_message) {
     SyntaxError(error_message);
   } else {
-    Unexpected(type);
+    SyntaxError(std::format("parse error: expected token type {}, but got {}",
+                            magic_enum::enum_name(type),
+                            magic_enum::enum_name(current_.type())));
   }
   return {};
 }
