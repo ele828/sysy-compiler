@@ -38,6 +38,8 @@ class Parser {
 
   ConstantDeclaration* ParseConstantDeclaration();
 
+  ZoneVector<ParameterDeclaration> ParseFunctionParameter();
+
   Expression* ParseBinaryOperation(int min_precedence, Expression* lhs);
 
   ArraySubscriptExpression* ParseArraySubscriptExpression();
