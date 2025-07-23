@@ -173,7 +173,12 @@ Expression* Parser::ParseInitValue() {
 
     ZoneVector<Expression*> list(zone());
     while (!Match(TokenType::kRightBrace) && !Match(TokenType::kEof)) {
-      list.push_back(ParseInitValue());
+      auto init_value = ParseInitValue();
+      if (!init_value) {
+        break;
+      }
+
+      list.push_back(init_value);
 
       if (Match(TokenType::kComma)) {
         Consume();
@@ -197,17 +202,36 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
   Type type = GetType(Consume());
   std::string_view name = Consume(TokenType::kIdentifier).value();
 
-  ZoneVector<ParameterDeclaration> parameters(zone());
+  ZoneVector<ParameterDeclaration*> parameters(zone());
   while (!Match(TokenType::kSemicolon) && !Match(TokenType::kEof)) {
-    parameters = ParseFunctionParameter();
+    parameters.push_back(ParseFunctionParameter());
   }
   Consume(TokenType::kLeftParen);
 
   return zone()->New<FunctionDeclaration>(type, name, std::move(parameters));
 }
 
-ZoneVector<ParameterDeclaration> Parser::ParseFunctionParameter() {
-  //
+ParameterDeclaration* Parser::ParseFunctionParameter() {
+  [[maybe_unused]] Type type = GetType(Consume());
+  [[maybe_unused]] std::string_view name =
+      Consume(TokenType::kIdentifier).value();
+
+  // array declaration
+  bool is_first_dimension = true;
+  while (Match(TokenType::kLeftBracket) && !Match(TokenType::kEof)) {
+    auto* expression = ParseExpression();
+    if (is_first_dimension) {
+      is_first_dimension = false;
+    } else {
+      if (!expression) {
+        SyntaxError("expected an expression");
+        break;
+      }
+    }
+    Consume(TokenType::kRightBracket);
+  }
+
+  return zone()->New<ParameterDeclaration>();
 }
 
 Expression* Parser::ParseExpression() {
@@ -352,6 +376,9 @@ CallExpression* Parser::ParseCallExpression() {
   ZoneVector<Expression*> arguments(zone());
   while (!Match(TokenType::kRightParen) && !Match(TokenType::kEof)) {
     auto* expression = ParseExpression();
+    if (!expression) {
+      break;
+    }
     arguments.push_back(expression);
     if (Match(TokenType::kComma)) {
       Consume();
