@@ -13,7 +13,7 @@ class Lexer final {
 
   Token Next();
 
-  Token Peek(int n = 1);
+  Token Peek(size_t n = 1);
 
  private:
   char PeekChar() const { return source_[position_]; }
@@ -47,7 +47,7 @@ class Lexer final {
 
   struct LexState {
     Token token;
-    size_t position;
+    size_t end_position;
   };
   base::RingBuffer<LexState, kMaxLookahead> lookahead_buffer_;
   bool peek_mode_{false};

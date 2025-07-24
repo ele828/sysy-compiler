@@ -53,7 +53,7 @@ Lexer::Lexer(std::string_view source) : source_(source) {}
 Token Lexer::Next() {
   if (!peek_mode_ && !lookahead_buffer_.is_empty()) {
     auto state = lookahead_buffer_.Pop();
-    position_ = state.position;
+    position_ = state.end_position;
     return state.token;
   }
 
@@ -153,7 +153,9 @@ Token Lexer::Next() {
   return {};
 }
 
-Token Lexer::Peek(int n) {
+Token Lexer::Peek(size_t n) {
+  DCHECK(n > 0 && n <= kMaxLookahead);
+
   // save states
   size_t saved_position = position_;
   peek_mode_ = true;
@@ -163,7 +165,7 @@ Token Lexer::Peek(int n) {
     token = Next();
     LexState state{
         .token = token,
-        .position = position_,
+        .end_position = position_,
     };
     lookahead_buffer_.Push(state);
   }
