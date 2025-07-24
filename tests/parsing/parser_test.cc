@@ -2,9 +2,21 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdio>
+
 #include "base/type_casts.h"
 
 namespace sysy::test {
+
+namespace {
+
+[[maybe_unused]] inline void PrintErrors(const Parser& parser) {
+  for (auto& error : parser.errors()) {
+    std::println(stderr, "{}", error);
+  }
+}
+
+}  // namespace
 
 TEST(Parser, ParseCompilationUnit) {
   const char* source = "";
@@ -174,6 +186,16 @@ TEST(Parser, ParseExpressionBinaryParenthesis) {
   EXPECT_EQ(rhs_bin_expr->binary_operator(), BinaryOperator::kAdd);
   EXPECT_TRUE(IsA<IntegerLiteral>(rhs_bin_expr->lhs()));
   EXPECT_TRUE(IsA<IntegerLiteral>(rhs_bin_expr->rhs()));
+}
+
+TEST(Parser, ParseFunctionDeclaration) {
+  const char* source = "int foo() {}";
+
+  Parser parser(source);
+  auto* decl = parser.ParseDeclaration();
+
+  EXPECT_FALSE(parser.has_errors());
+  EXPECT_TRUE(IsA<FunctionDeclaration>(decl));
 }
 
 }  // namespace sysy::test

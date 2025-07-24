@@ -56,7 +56,7 @@ class Parser {
 
   bool has_errors() const { return !errors_.empty(); }
 
-  std::vector<std::string> errors() const { return errors_; }
+  const std::vector<std::string>& errors() const { return errors_; }
 
  private:
   int GetCurrentPrecedence();

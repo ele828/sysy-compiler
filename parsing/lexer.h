@@ -39,7 +39,7 @@ class Lexer final {
     return source_.substr(start_, position_ - start_);
   }
 
-  static constexpr size_t kMaxLookahead = 3u;
+  static constexpr size_t kMaxLookahead = 2u;
 
   std::string_view source_;
   size_t position_{0u};
