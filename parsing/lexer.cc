@@ -51,8 +51,10 @@ constexpr bool MatchKeyword(std::string_view input, std::string_view expected) {
 Lexer::Lexer(std::string_view source) : source_(source) {}
 
 Token Lexer::Next() {
-  if (can_use_buffer_ && !lookahead_buffer_.is_empty()) {
-    return lookahead_buffer_.Pop();
+  if (!peek_mode_ && !lookahead_buffer_.is_empty()) {
+    auto state = lookahead_buffer_.Pop();
+    position_ = state.position;
+    return state.token;
   }
 
   SkipWhitespace();
@@ -154,17 +156,21 @@ Token Lexer::Next() {
 Token Lexer::Peek(int n) {
   // save states
   size_t saved_position = position_;
-  can_use_buffer_ = false;
+  peek_mode_ = true;
 
   Token token;
   while (n-- > 0) {
     token = Next();
-    lookahead_buffer_.Push(token);
+    LexState state{
+        .token = token,
+        .position = position_,
+    };
+    lookahead_buffer_.Push(state);
   }
 
   // restore states
   position_ = saved_position;
-  can_use_buffer_ = true;
+  peek_mode_ = false;
   return token;
 }
 

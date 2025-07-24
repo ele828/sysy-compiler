@@ -26,7 +26,7 @@ class RingBuffer {
   T Pop() {
     if (is_empty()) {
       NOTREACHED();
-      return;
+      return {};
     }
     T item = buffer_[head_];
     head_ = (head_ + 1) % kCapacity;

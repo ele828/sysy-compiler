@@ -44,8 +44,13 @@ class Lexer final {
   std::string_view source_;
   size_t position_{0u};
   size_t start_{0u};
-  base::RingBuffer<Token, kMaxLookahead> lookahead_buffer_;
-  bool can_use_buffer_{true};
+
+  struct LexState {
+    Token token;
+    size_t position;
+  };
+  base::RingBuffer<LexState, kMaxLookahead> lookahead_buffer_;
+  bool peek_mode_{false};
 };
 
 }  // namespace sysy

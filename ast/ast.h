@@ -45,6 +45,7 @@ class AstNode : public ZoneObject {
     // Declaration begin
     kConstantDeclaration,
     kVariableDeclaration,
+    kParameterDeclaration,
     kFunctionDelcaration,
     // Declaration end
 
@@ -149,12 +150,15 @@ class VariableDeclaration : public Declaration {
   Expression* init_value_;
 };
 
-class ParameterDeclaration : public Declaration {};
+class ParameterDeclaration : public Declaration {
+ public:
+  ParameterDeclaration() : Declaration(Kind::kParameterDeclaration) {}
+};
 
 class FunctionDeclaration : public Declaration {
  public:
   FunctionDeclaration(Type type, std::string_view name,
-                      ZoneVector<ParameterDeclaration> parameters)
+                      ZoneVector<ParameterDeclaration*> parameters)
       : Declaration(Kind::kFunctionDelcaration),
         type_(type),
         name_(name),
@@ -166,14 +170,14 @@ class FunctionDeclaration : public Declaration {
 
   Type type() const { return type_; }
   std::string_view name() const { return name_; }
-  const ZoneVector<ParameterDeclaration>& parameters() const {
+  const ZoneVector<ParameterDeclaration*>& parameters() const {
     return parameters_;
   }
 
  private:
   Type type_;
   std::string_view name_;
-  ZoneVector<ParameterDeclaration> parameters_;
+  ZoneVector<ParameterDeclaration*> parameters_;
 };
 
 class Expression : public AstNode {
