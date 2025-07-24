@@ -135,7 +135,7 @@ Declaration* Parser::ParseDeclaration() {
     return ParseConstantDeclaration();
   } else if (MatchTypeSpecifier()) {
     // skips type specifier and identifier
-    auto third_token_after_current = lexer()->Peek(2);
+    auto third_token_after_current = lexer()->PeekToken(2);
     if (third_token_after_current.type() == TokenType::kLeftParen) {
       return ParseFunctionDeclaration();
     }
@@ -326,7 +326,7 @@ Expression* Parser::ParseUnaryExpression() {
       return zone()->New<FloatingLiteral>(result.value());
     }
     case TokenType::kIdentifier: {
-      Token next_token = lexer()->Peek();
+      Token next_token = lexer()->PeekToken();
       switch (next_token.type()) {
         case TokenType::kLeftBracket: {
           return ParseArraySubscriptExpression();
@@ -389,7 +389,7 @@ CallExpression* Parser::ParseCallExpression() {
 
 Token Parser::Consume() {
   auto prev_token = current_;
-  current_ = lexer()->Next();
+  current_ = lexer()->NextToken();
   return prev_token;
 }
 
