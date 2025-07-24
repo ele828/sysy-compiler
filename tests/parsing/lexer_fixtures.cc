@@ -15,7 +15,7 @@ class LexerFixtureTest : public testing::Test {
     Token next;
 
     do {
-      next = lexer.Next();
+      next = lexer.NextToken();
       EXPECT_NE(next.type(), TokenType::kIllegal);
     } while (next.type() != TokenType::kEof);
 

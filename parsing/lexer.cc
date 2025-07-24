@@ -50,7 +50,7 @@ constexpr bool MatchKeyword(std::string_view input, std::string_view expected) {
 
 Lexer::Lexer(std::string_view source) : source_(source) {}
 
-Token Lexer::Next() {
+Token Lexer::NextToken() {
   if (!peek_mode_ && !lookahead_buffer_.is_empty()) {
     auto state = lookahead_buffer_.Pop();
     position_ = state.end_position;
@@ -64,7 +64,7 @@ Token Lexer::Next() {
     return Token(TokenType::kEof, {});
   }
 
-  const char c = PeekChar();
+  const char c = current();
   Advance();
 
   if (IsIdentifier(c)) {
@@ -105,17 +105,17 @@ Token Lexer::Next() {
     case '%':
       return Token(TokenType::kPercent, lexeme());
     case '&': {
-      if (PeekChar() == '&') {
+      if (current() == '&') {
         return Token(TokenType::kAmpAmp, lexeme());
       }
     }
     case '|': {
-      if (PeekChar() == '|') {
+      if (current() == '|') {
         return Token(TokenType::kPipePipe, lexeme());
       }
     }
     case '!': {
-      if (PeekChar() == '=') {
+      if (current() == '=') {
         Advance();
         return Token(TokenType::kExclaimEqual, lexeme());
       } else {
@@ -123,7 +123,7 @@ Token Lexer::Next() {
       }
     }
     case '=': {
-      if (PeekChar() == '=') {
+      if (current() == '=') {
         Advance();
         return Token(TokenType::kEqualEqual, lexeme());
       } else {
@@ -131,7 +131,7 @@ Token Lexer::Next() {
       }
     }
     case '<': {
-      if (PeekChar() == '=') {
+      if (current() == '=') {
         Advance();
         return Token(TokenType::kLessEqual, lexeme());
       } else {
@@ -139,7 +139,7 @@ Token Lexer::Next() {
       }
     }
     case '>': {
-      if (PeekChar() == '=') {
+      if (current() == '=') {
         Advance();
         return Token(TokenType::kGreaterEqual, lexeme());
       } else {
@@ -153,7 +153,7 @@ Token Lexer::Next() {
   return {};
 }
 
-Token Lexer::Peek(size_t n) {
+Token Lexer::PeekToken(size_t n) {
   DCHECK(n > 0 && n <= kMaxLookahead);
 
   // save states
@@ -162,7 +162,7 @@ Token Lexer::Peek(size_t n) {
 
   Token token;
   while (n-- > 0) {
-    token = Next();
+    token = NextToken();
     LexState state{
         .token = token,
         .end_position = position_,
@@ -178,7 +178,7 @@ Token Lexer::Peek(size_t n) {
 
 void Lexer::SkipWhitespace() {
   while (true) {
-    const char c = PeekChar();
+    const char c = current();
     if (IsWhiteSpace(c)) {
       Advance();
       continue;
@@ -189,15 +189,15 @@ void Lexer::SkipWhitespace() {
     }
 
     // Line comment //
-    char next = PeekCharNext();
+    char next = Peek();
     if (next == '/') {
-      while (!IsLineTerminator(PeekChar()) && !IsAtEnd()) {
+      while (!IsLineTerminator(current()) && !IsAtEnd()) {
         Advance();
       }
     } else if (next == '*') {
       // Block comment /*
       while (!IsAtEnd()) {
-        if (PeekChar() == '*' && PeekCharNext() == '/') {
+        if (current() == '*' && Peek() == '/') {
           Advance(2);
           break;
         }
@@ -210,7 +210,7 @@ void Lexer::SkipWhitespace() {
 }
 
 Token Lexer::ParseIdentifier() {
-  while (IsIdentifier(PeekChar()) || IsDigit(PeekChar())) {
+  while (IsIdentifier(current()) || IsDigit(current())) {
     Advance();
   }
 
@@ -278,19 +278,19 @@ Token Lexer::ParseIdentifier() {
 
 Token Lexer::ParseNumericConstant(const char c) {
   auto consume_digits = [&] {
-    while (IsDigit(PeekChar())) {
+    while (IsDigit(current())) {
       Advance();
     }
   };
 
   auto consume_hex_digits = [&] {
-    while (IsDigit(PeekChar()) || IsHexadecimalAlpha(PeekChar())) {
+    while (IsDigit(current()) || IsHexadecimalAlpha(current())) {
       Advance();
     }
   };
 
   // IntConst | FloatConst
-  const char next = PeekChar();
+  const char next = current();
   // hexadecimal
   if (next == 'x' || next == 'X') {
     // consume 'x' or 'X'
@@ -299,12 +299,12 @@ Token Lexer::ParseNumericConstant(const char c) {
     consume_hex_digits();
 
     // floating point hexademical
-    if (PeekChar() == '.') {
+    if (current() == '.') {
       Advance();
       consume_hex_digits();
-      if (IsBinaryExponentPart(PeekChar())) {
+      if (IsBinaryExponentPart(current())) {
         Advance();
-        if (IsSign(PeekChar())) {
+        if (IsSign(current())) {
           Advance();
         }
         consume_digits();
@@ -318,19 +318,19 @@ Token Lexer::ParseNumericConstant(const char c) {
   // octal
   if (c == '0') {
     // followed by digits 0-7
-    while (IsOctalDigit(PeekChar())) {
+    while (IsOctalDigit(current())) {
       Advance();
     }
     return Token(TokenType::kIntOctalConst, lexeme());
   }
 
   consume_digits();
-  if (PeekChar() == '.') {
+  if (current() == '.') {
     Advance();
     consume_digits();
-    if (IsExponentPart(PeekChar())) {
+    if (IsExponentPart(current())) {
       Advance();
-      if (IsSign(PeekChar())) {
+      if (IsSign(current())) {
         Advance();
       }
       consume_digits();

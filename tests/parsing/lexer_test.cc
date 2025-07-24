@@ -9,14 +9,14 @@ namespace sysy::test {
 TEST(Lexer, SkipWhitespaces) {
   const char* source = "      ";
   Lexer lexer(source);
-  Token next_token = lexer.Next();
+  Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kEof);
 }
 
 TEST(Lexer, SkipLineComment) {
   const char* source = "// comment";
   Lexer lexer(source);
-  Token next_token = lexer.Next();
+  Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kEof);
 }
 
@@ -27,14 +27,14 @@ TEST(Lexer, SkipBlockComment) {
      */
   )";
   Lexer lexer(source);
-  Token next_token = lexer.Next();
+  Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kEof);
 }
 
 TEST(Lexer, Identifier) {
   const char* source = "a1_B2";
   Lexer lexer(source);
-  Token next_token = lexer.Next();
+  Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kIdentifier);
   EXPECT_EQ(next_token.value(), "a1_B2");
 }
@@ -42,7 +42,7 @@ TEST(Lexer, Identifier) {
 TEST(Lexer, IdentifierWithUnderscoreStart) {
   const char* source = "_a1";
   Lexer lexer(source);
-  Token next_token = lexer.Next();
+  Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kIdentifier);
   EXPECT_EQ(next_token.value(), "_a1");
 }
@@ -50,7 +50,7 @@ TEST(Lexer, IdentifierWithUnderscoreStart) {
 TEST(Lexer, IntConst) {
   const char* source = "123";
   Lexer lexer(source);
-  Token next_token = lexer.Next();
+  Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kIntConst);
   EXPECT_EQ(next_token.value(), "123");
 }
@@ -58,7 +58,7 @@ TEST(Lexer, IntConst) {
 TEST(Lexer, IntConstHexadecimal) {
   const char* source = "0x123DEADBEEFdeadbeef";
   Lexer lexer(source);
-  Token next_token = lexer.Next();
+  Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kIntHexConst);
   EXPECT_EQ(next_token.value(), "0x123DEADBEEFdeadbeef");
 }
@@ -66,7 +66,7 @@ TEST(Lexer, IntConstHexadecimal) {
 TEST(Lexer, IntConstOctal) {
   const char* source = "011";
   Lexer lexer(source);
-  Token next_token = lexer.Next();
+  Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kIntOctalConst);
   EXPECT_EQ(next_token.value(), "011");
 }
@@ -74,7 +74,7 @@ TEST(Lexer, IntConstOctal) {
 TEST(Lexer, FloatConst) {
   const char* source = "123.456";
   Lexer lexer(source);
-  Token next_token = lexer.Next();
+  Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kFloatConst);
   EXPECT_EQ(next_token.value(), "123.456");
 }
@@ -82,7 +82,7 @@ TEST(Lexer, FloatConst) {
 TEST(Lexer, FloatConstWithExponent) {
   const char* source = "123.456E-3";
   Lexer lexer(source);
-  Token next_token = lexer.Next();
+  Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kFloatConst);
   EXPECT_EQ(next_token.value(), "123.456E-3");
 }
@@ -90,7 +90,7 @@ TEST(Lexer, FloatConstWithExponent) {
 TEST(Lexer, FloatConstHexademical) {
   const char* source = "0x1.3P-2";
   Lexer lexer(source);
-  Token next_token = lexer.Next();
+  Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kFloatHexConst);
   EXPECT_EQ(next_token.value(), "0x1.3P-2");
 }
@@ -98,56 +98,56 @@ TEST(Lexer, FloatConstHexademical) {
 TEST(Lexer, VariableDecl) {
   const char* source = "int a;";
   Lexer lexer(source);
-  Token next_token = lexer.Next();
+  Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kKeywordInt);
 
-  next_token = lexer.Next();
+  next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kIdentifier);
   EXPECT_EQ(next_token.value(), "a");
 
-  next_token = lexer.Next();
+  next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kSemicolon);
 }
 
 TEST(Lexer, Assignment) {
   const char* source = "a = 1;";
   Lexer lexer(source);
-  Token next_token = lexer.Next();
+  Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kIdentifier);
   EXPECT_EQ(next_token.value(), "a");
 
-  next_token = lexer.Next();
+  next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kEqual);
 
-  next_token = lexer.Next();
+  next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kIntConst);
   EXPECT_EQ(next_token.value(), "1");
 
-  next_token = lexer.Next();
+  next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kSemicolon);
 }
 
 TEST(Lexer, FunctionDecl) {
   const char* source = "void foo();";
   Lexer lexer(source);
-  Token next_token = lexer.Next();
+  Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kKeywordVoid);
   EXPECT_EQ(next_token.value(), "void");
 
-  next_token = lexer.Next();
+  next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kIdentifier);
   EXPECT_EQ(next_token.value(), "foo");
 
-  next_token = lexer.Next();
+  next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kLeftParen);
 
-  next_token = lexer.Next();
+  next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kRightParen);
 
-  next_token = lexer.Next();
+  next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kSemicolon);
 
-  next_token = lexer.Next();
+  next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kEof);
 }
 

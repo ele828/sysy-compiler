@@ -11,14 +11,14 @@ class Lexer final {
  public:
   explicit Lexer(std::string_view source);
 
-  Token Next();
+  Token NextToken();
 
-  Token Peek(size_t n = 1);
+  Token PeekToken(size_t n = 1);
 
  private:
-  char PeekChar() const { return source_[position_]; }
+  char current() const { return source_[position_]; }
 
-  char PeekCharNext() const {
+  char Peek() const {
     if (IsAtEnd()) return '\0';
     return source_[position_ + 1];
   }
