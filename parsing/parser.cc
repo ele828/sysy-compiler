@@ -135,7 +135,7 @@ Declaration* Parser::ParseDeclaration() {
     return ParseConstantDeclaration();
   } else if (MatchTypeSpecifier()) {
     // skips type specifier and identifier
-    auto third_token_after_current = lexer()->Peek(3);
+    auto third_token_after_current = lexer()->Peek(2);
     if (third_token_after_current.type() == TokenType::kLeftParen) {
       return ParseFunctionDeclaration();
     }
@@ -201,11 +201,12 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
   Type type = GetType(Consume());
   std::string_view name = Consume(TokenType::kIdentifier).value();
 
+  Consume(TokenType::kLeftParen);
   ZoneVector<ParameterDeclaration*> parameters(zone());
-  while (!Match(TokenType::kSemicolon) && !Match(TokenType::kEof)) {
+  while (!Match(TokenType::kRightParen) && !Match(TokenType::kEof)) {
     parameters.push_back(ParseFunctionParameter());
   }
-  Consume(TokenType::kLeftParen);
+  Consume(TokenType::kRightParen);
 
   return zone()->New<FunctionDeclaration>(type, name, std::move(parameters));
 }
