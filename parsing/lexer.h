@@ -2,6 +2,7 @@
 
 #include <string_view>
 
+#include "base/ring_buffer.h"
 #include "parsing/token.h"
 
 namespace sysy {
@@ -12,12 +13,12 @@ class Lexer final {
 
   Token Next();
 
-  Token Next(int count);
+  Token Peek(int n = 1);
 
  private:
-  char Peek() const { return source_[position_]; }
+  char PeekChar() const { return source_[position_]; }
 
-  char PeekNext() const {
+  char PeekCharNext() const {
     if (IsAtEnd()) return '\0';
     return source_[position_ + 1];
   }
@@ -38,9 +39,13 @@ class Lexer final {
     return source_.substr(start_, position_ - start_);
   }
 
+  static constexpr size_t kMaxLookahead = 3u;
+
   std::string_view source_;
-  size_t position_{0};
-  size_t start_{0};
+  size_t position_{0u};
+  size_t start_{0u};
+  base::RingBuffer<Token, kMaxLookahead> lookahead_buffer_;
+  bool can_use_buffer_{true};
 };
 
 }  // namespace sysy
