@@ -20,7 +20,7 @@ constexpr Type GetType(const Token& token) {
       return Type::kVoid;
     case TokenType::kKeywordInt:
       return Type::kInt;
-    case TokenType::kFloatConst:
+    case TokenType::kKeywordFloat:
       return Type::kFloat;
     default:
       return Type::kInvalid;
@@ -205,6 +205,9 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
   ZoneVector<ParameterDeclaration*> parameters(zone());
   while (!Match(TokenType::kRightParen) && !Match(TokenType::kEof)) {
     parameters.push_back(ParseFunctionParameter());
+    if (Match(TokenType::kComma)) {
+      Consume();
+    }
   }
   Consume(TokenType::kRightParen);
 
@@ -212,11 +215,10 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
 }
 
 ParameterDeclaration* Parser::ParseFunctionParameter() {
-  [[maybe_unused]] Type type = GetType(Consume());
-  [[maybe_unused]] std::string_view name =
-      Consume(TokenType::kIdentifier).value();
+  Type type = GetType(Consume());
+  std::string_view name = Consume(TokenType::kIdentifier).value();
 
-  // array declaration
+  // parse array declaration
   bool is_first_dimension = true;
   while (Match(TokenType::kLeftBracket) && !Match(TokenType::kEof)) {
     auto* expression = ParseExpression();
@@ -230,6 +232,8 @@ ParameterDeclaration* Parser::ParseFunctionParameter() {
     }
     Consume(TokenType::kRightBracket);
   }
+
+  std::println("func param: {}, type: {}", name, magic_enum::enum_name(type));
 
   return zone()->New<ParameterDeclaration>();
 }

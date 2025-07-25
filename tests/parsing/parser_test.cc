@@ -189,7 +189,7 @@ TEST(Parser, ParseExpressionBinaryParenthesis) {
 }
 
 TEST(Parser, ParseFunctionDeclaration) {
-  const char* source = "int foo() {}";
+  const char* source = "int foo(int a, float b) {}";
 
   Parser parser(source);
   auto* decl = parser.ParseDeclaration();
