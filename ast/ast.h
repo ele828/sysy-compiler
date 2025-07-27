@@ -3,7 +3,7 @@
 #include <atomic>
 #include <cstdint>
 
-#include "ast/types.h"
+#include "ast/type.h"
 #include "base/zone.h"
 #include "base/zone_container.h"
 
