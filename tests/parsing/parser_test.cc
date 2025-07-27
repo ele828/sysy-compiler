@@ -205,7 +205,7 @@ TEST(Parser, ParseExpressionBinaryParenthesis) {
 }
 
 TEST(Parser, ParseFunctionDeclaration) {
-  const char* source = "int foo(int a, float b[1+1][1]) {}";
+  const char* source = "void fun(int a, float b[1+1][1]) {}";
 
   ASTContext context;
   Parser parser(context, source);
@@ -213,6 +213,33 @@ TEST(Parser, ParseFunctionDeclaration) {
 
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<FunctionDeclaration>(decl));
+
+  auto* fun_decl = To<FunctionDeclaration>(decl);
+  EXPECT_EQ(fun_decl->name(), "fun");
+  EXPECT_EQ(fun_decl->type(), context.void_type());
+  EXPECT_EQ(fun_decl->parameters().size(), 2u);
+  EXPECT_TRUE(IsA<CompoundStatement>(fun_decl->body()));
+}
+
+TEST(Parser, ParseFunctionDeclarationWithBody) {
+  const char* source = R"(
+    void fun() {
+      const int a = 10;
+      return;
+    }
+  )";
+
+  ASTContext context;
+  Parser parser(context, source);
+  auto* decl = parser.ParseDeclaration();
+
+  EXPECT_FALSE(parser.has_errors());
+  EXPECT_TRUE(IsA<FunctionDeclaration>(decl));
+
+  auto* fun_decl = To<FunctionDeclaration>(decl);
+  EXPECT_TRUE(IsA<CompoundStatement>(fun_decl->body()));
+  auto* body = To<CompoundStatement>(fun_decl->body());
+  EXPECT_EQ(body->body().size(), 2u);
 }
 
 }  // namespace sysy::test

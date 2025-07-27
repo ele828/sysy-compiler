@@ -90,7 +90,7 @@ class Parser {
   // Verify current token and advance
   Token Consume(TokenType type, const char* error_message = nullptr);
 
-  Type* ResolveType(const Token& token);
+  Type* ResolveBuiltinType(const Token& token);
 
   void SyntaxError(std::string error);
 

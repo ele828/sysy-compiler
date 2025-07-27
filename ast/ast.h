@@ -108,11 +108,9 @@ class Declaration : public AstNode {
 
 class ConstantDeclaration : public Declaration {
  public:
-  ConstantDeclaration(Type* type, Expression* array_length_expression,
-                      std::string_view name, Expression* init_value)
+  ConstantDeclaration(Type* type, std::string_view name, Expression* init_value)
       : Declaration(Kind::kConstantDeclaration),
         type_(type),
-        array_length_expression_(array_length_expression),
         name_(name),
         init_value_(init_value) {}
 
@@ -121,26 +119,20 @@ class ConstantDeclaration : public Declaration {
   }
 
   Type* type() const { return type_; }
-  Expression* array_legnth_expression() const {
-    return array_length_expression_;
-  }
   std::string_view name() const { return name_; }
   Expression* init_value() const { return init_value_; }
 
  private:
   Type* type_;
-  Expression* array_length_expression_;
   std::string_view name_;
   Expression* init_value_;
 };
 
 class VariableDeclaration : public Declaration {
  public:
-  VariableDeclaration(Type* type, Expression* array_length_expression,
-                      std::string_view name, Expression* init_value)
+  VariableDeclaration(Type* type, std::string_view name, Expression* init_value)
       : Declaration(Kind::kVariableDeclaration),
         type_(type),
-        array_length_expression_(array_length_expression),
         name_(name),
         init_value_(init_value) {}
 
@@ -149,15 +141,11 @@ class VariableDeclaration : public Declaration {
   }
 
   Type* type() const { return type_; }
-  Expression* array_legnth_expression() const {
-    return array_length_expression_;
-  }
   std::string_view name() const { return name_; }
   Expression* init_value() const { return init_value_; }
 
  private:
   Type* type_;
-  Expression* array_length_expression_;
   std::string_view name_;
   Expression* init_value_;
 };
