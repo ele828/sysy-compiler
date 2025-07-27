@@ -152,7 +152,15 @@ class VariableDeclaration : public Declaration {
 
 class ParameterDeclaration : public Declaration {
  public:
-  ParameterDeclaration() : Declaration(Kind::kParameterDeclaration) {}
+  ParameterDeclaration(Type* type, std::string_view name)
+      : Declaration(Kind::kParameterDeclaration), type_(type), name_(name) {}
+
+  Type* type() const { return type_; }
+  std::string_view name() const { return name_; }
+
+ private:
+  Type* type_;
+  std::string_view name_;
 };
 
 class FunctionDeclaration : public Declaration {

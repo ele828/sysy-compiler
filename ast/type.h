@@ -52,6 +52,9 @@ class BuiltinType : public Type {
 
 class ArrayType : public Type {
  public:
+  explicit ArrayType(TypeClass type_class, Type* element_type)
+      : Type(type_class), element_type_(element_type) {}
+
   static bool classof(const Type& t) {
     return t.type_class() == TypeClass::kConstantArray ||
            t.type_class() == TypeClass::kIncompleteArray;
@@ -65,30 +68,25 @@ class ArrayType : public Type {
 
 class ConstantArrayType : public ArrayType {
  public:
+  ConstantArrayType(Type* element_type, Expression* size_expression)
+      : ArrayType(TypeClass::kConstantArray, element_type),
+        size_expression_(size_expression) {}
+
   static bool classof(const Type& t) {
     return t.type_class() == TypeClass::kConstantArray;
   }
 
-  bool has_size_expression() const {
-    return std::holds_alternative<Expression*>(size_);
-  }
-
-  size_t size() const {
-    DCHECK(!has_size_expression());
-    return std::get<size_t>(size_);
-  }
-
-  Expression* size_expression() const {
-    DCHECK(has_size_expression());
-    return std::get<Expression*>(size_);
-  }
+  Expression* size_expression() const { return size_expression_; }
 
  private:
-  std::variant<size_t, Expression*> size_;
+  Expression* size_expression_;
 };
 
 class IncompleteArrayType : public ArrayType {
  public:
+  explicit IncompleteArrayType(Type* element_type)
+      : ArrayType(TypeClass::kIncompleteArray, element_type) {}
+
   static bool classof(const Type& t) {
     return t.type_class() == TypeClass::kIncompleteArray;
   }

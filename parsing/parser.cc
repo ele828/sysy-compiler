@@ -203,26 +203,23 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
 }
 
 ParameterDeclaration* Parser::ParseFunctionParameter() {
-  [[maybe_unused]] Type* type = ResolveType(Consume());
-  [[maybe_unused]] std::string_view name =
-      Consume(TokenType::kIdentifier).value();
+  Type* type = ResolveType(Consume());
+  std::string_view name = Consume(TokenType::kIdentifier).value();
 
   // parse array declaration
-  bool is_first_dimension = true;
   while (Match(TokenType::kLeftBracket) && !Match(TokenType::kEof)) {
+    // consume left bracket
+    Consume();
     auto* expression = ParseExpression();
-    if (is_first_dimension) {
-      is_first_dimension = false;
+    if (!expression) {
+      type = zone()->New<IncompleteArrayType>(type);
     } else {
-      if (!expression) {
-        SyntaxError("expected an expression");
-        break;
-      }
+      type = zone()->New<ConstantArrayType>(type, expression);
     }
     Consume(TokenType::kRightBracket);
   }
 
-  return zone()->New<ParameterDeclaration>();
+  return zone()->New<ParameterDeclaration>(type, name);
 }
 
 Expression* Parser::ParseExpression() {
