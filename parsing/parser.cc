@@ -5,7 +5,7 @@
 #include <print>
 
 #include "ast/ast.h"
-#include "ast/types.h"
+#include "ast/type.h"
 #include "base/logging.h"
 #include "magic_enum/magic_enum.hpp"
 #include "parsing/token.h"
