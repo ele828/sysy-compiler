@@ -96,8 +96,8 @@ constexpr OperatorPrecedenceTable operator_precedence_table;
 
 }  // namespace
 
-Parser::Parser(std::shared_ptr<ASTContext> context, std::string_view source)
-    : context_(std::move(context)), lexer_(source) {
+Parser::Parser(ASTContext& context, std::string_view source)
+    : context_(context), lexer_(source) {
   // make current_ point to the first token
   Consume();
 }
@@ -140,7 +140,7 @@ ConstantDeclaration* Parser::ParseConstantDeclaration() {
     return {};
   }
 
-  Type* type = BuiltinType::Resolve(zone(), Consume());
+  Type* type = ResolveType(Consume());
   std::string_view identifier = Consume(TokenType::kIdentifier).value();
   Expression* array_length_expression{};
   if (Match(TokenType::kLeftBracket)) {
@@ -413,11 +413,11 @@ void Parser::Unexpected(TokenType type) {
 Type* Parser::ResolveType(const Token& token) {
   switch (token.type()) {
     case TokenType::kKeywordVoid:
-      return context_->void_type();
+      return context_.void_type();
     case TokenType::kKeywordInt:
-      return context_->int_type();
+      return context_.int_type();
     case TokenType::kKeywordFloat:
-      return context_->float_type();
+      return context_.float_type();
     default:
       SyntaxError(std::format("Unknown type: {}", token.value()));
       return {};

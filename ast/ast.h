@@ -96,7 +96,7 @@ class Declaration : public AstNode {
 
 class ConstantDeclaration : public Declaration {
  public:
-  ConstantDeclaration(Type type, Expression* array_length_expression,
+  ConstantDeclaration(Type* type, Expression* array_length_expression,
                       std::string_view name, Expression* init_value)
       : Declaration(Kind::kConstantDeclaration),
         type_(type),
@@ -108,7 +108,7 @@ class ConstantDeclaration : public Declaration {
     return n.kind() == Kind::kConstantDeclaration;
   }
 
-  Type type() const { return type_; }
+  Type* type() const { return type_; }
   Expression* array_legnth_expression() const {
     return array_length_expression_;
   }
@@ -116,7 +116,7 @@ class ConstantDeclaration : public Declaration {
   Expression* init_value() const { return init_value_; }
 
  private:
-  Type type_;
+  Type* type_;
   Expression* array_length_expression_;
   std::string_view name_;
   Expression* init_value_;
@@ -124,7 +124,7 @@ class ConstantDeclaration : public Declaration {
 
 class VariableDeclaration : public Declaration {
  public:
-  VariableDeclaration(Type type, Expression* array_length_expression,
+  VariableDeclaration(Type* type, Expression* array_length_expression,
                       std::string_view name, Expression* init_value)
       : Declaration(Kind::kVariableDeclaration),
         type_(type),
@@ -136,7 +136,7 @@ class VariableDeclaration : public Declaration {
     return n.kind() == Kind::kVariableDeclaration;
   }
 
-  Type type() const { return type_; }
+  Type* type() const { return type_; }
   Expression* array_legnth_expression() const {
     return array_length_expression_;
   }
@@ -144,7 +144,7 @@ class VariableDeclaration : public Declaration {
   Expression* init_value() const { return init_value_; }
 
  private:
-  Type type_;
+  Type* type_;
   Expression* array_length_expression_;
   std::string_view name_;
   Expression* init_value_;
@@ -157,7 +157,7 @@ class ParameterDeclaration : public Declaration {
 
 class FunctionDeclaration : public Declaration {
  public:
-  FunctionDeclaration(Type type, std::string_view name,
+  FunctionDeclaration(Type* type, std::string_view name,
                       ZoneVector<ParameterDeclaration*> parameters)
       : Declaration(Kind::kFunctionDelcaration),
         type_(type),
@@ -168,14 +168,14 @@ class FunctionDeclaration : public Declaration {
     return n.kind() == Kind::kFunctionDelcaration;
   }
 
-  Type type() const { return type_; }
+  Type* type() const { return type_; }
   std::string_view name() const { return name_; }
   const ZoneVector<ParameterDeclaration*>& parameters() const {
     return parameters_;
   }
 
  private:
-  Type type_;
+  Type* type_;
   std::string_view name_;
   ZoneVector<ParameterDeclaration*> parameters_;
 };
