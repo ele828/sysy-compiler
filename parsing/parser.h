@@ -25,7 +25,7 @@ enum Precedence {
 
 class Parser {
  public:
-  Parser(std::shared_ptr<ASTContext> context, std::string_view source);
+  Parser(ASTContext& context, std::string_view source);
 
   CompilationUnit* ParseCompilationUnit();
 
@@ -80,11 +80,11 @@ class Parser {
 
   void Unexpected(TokenType type);
 
-  Zone* zone() { return context_->zone(); }
+  Zone* zone() { return context_.zone(); }
 
   Lexer* lexer() { return &lexer_; }
 
-  std::shared_ptr<ASTContext> context_;
+  ASTContext& context_;
   Lexer lexer_;
   Token current_;
 

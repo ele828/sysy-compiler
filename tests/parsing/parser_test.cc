@@ -4,6 +4,7 @@
 
 #include <cstdio>
 
+#include "ast/ast_context.h"
 #include "base/type_casts.h"
 
 namespace sysy::test {
@@ -21,7 +22,8 @@ namespace {
 TEST(Parser, ParseCompilationUnit) {
   const char* source = "";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
 }
@@ -29,7 +31,8 @@ TEST(Parser, ParseCompilationUnit) {
 TEST(Parser, ParseConstDecl) {
   const char* source = "const int a = 1;";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
 }
@@ -38,7 +41,8 @@ TEST(Parser, ParseVarDecl) {
   return;
   const char* source = "int a = 1;";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
 }
@@ -47,7 +51,8 @@ TEST(Parser, ParseFunDecl) {
   return;
   const char* source = "void foo() {}";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
 }
@@ -55,7 +60,8 @@ TEST(Parser, ParseFunDecl) {
 TEST(Parser, ParseUnaryExpressionPlus) {
   const char* source = "+1";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<UnaryOperation>(expression));
@@ -67,7 +73,8 @@ TEST(Parser, ParseUnaryExpressionPlus) {
 TEST(Parser, ParseUnaryExpressionMinus) {
   const char* source = "-1";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<UnaryOperation>(expression));
@@ -79,7 +86,8 @@ TEST(Parser, ParseUnaryExpressionMinus) {
 TEST(Parser, ParseUnaryExpressionNot) {
   const char* source = "!1";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<UnaryOperation>(expression));
@@ -91,7 +99,8 @@ TEST(Parser, ParseUnaryExpressionNot) {
 TEST(Parser, ParseUnaryExpressionInt) {
   const char* source = "1";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<IntegerLiteral>(expression));
@@ -101,7 +110,8 @@ TEST(Parser, ParseUnaryExpressionInt) {
 TEST(Parser, ParseUnaryExpressionFloat) {
   const char* source = "1.1";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<FloatingLiteral>(expression));
@@ -110,7 +120,8 @@ TEST(Parser, ParseUnaryExpressionFloat) {
 TEST(Parser, ParseUnaryExpressionIdentifier) {
   const char* source = "a";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<VariableReference>(expression));
@@ -119,7 +130,8 @@ TEST(Parser, ParseUnaryExpressionIdentifier) {
 TEST(Parser, ParseUnaryExpressionArraySubscript) {
   const char* source = "arr[1][2]";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<ArraySubscriptExpression>(expression));
@@ -128,7 +140,8 @@ TEST(Parser, ParseUnaryExpressionArraySubscript) {
 TEST(Parser, ParseUnaryExpressionCallExpression) {
   const char* source = "fun(1, 2)";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<CallExpression>(expression));
@@ -139,7 +152,8 @@ TEST(Parser, ParseUnaryExpressionCallExpression) {
 TEST(Parser, ParseExpressionBinary) {
   const char* source = "1 + 1";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* expression = parser.ParseExpression();
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
@@ -153,7 +167,8 @@ TEST(Parser, ParseExpressionBinary) {
 TEST(Parser, ParseExpressionBinaryPrecedence) {
   const char* source = "1 + 2 * 3";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* expression = parser.ParseExpression();
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
@@ -172,7 +187,8 @@ TEST(Parser, ParseExpressionBinaryPrecedence) {
 TEST(Parser, ParseExpressionBinaryParenthesis) {
   const char* source = "1 + (2 + 3)";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* expression = parser.ParseExpression();
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
@@ -191,7 +207,8 @@ TEST(Parser, ParseExpressionBinaryParenthesis) {
 TEST(Parser, ParseFunctionDeclaration) {
   const char* source = "int foo(int a, float b) {}";
 
-  Parser parser(source);
+  ASTContext context;
+  Parser parser(context, source);
   auto* decl = parser.ParseDeclaration();
 
   EXPECT_FALSE(parser.has_errors());
