@@ -205,7 +205,7 @@ TEST(Parser, ParseExpressionBinaryParenthesis) {
 }
 
 TEST(Parser, ParseFunctionDeclaration) {
-  const char* source = "int foo(int a, float b) {}";
+  const char* source = "int foo(int a, float b[1+1][1]) {}";
 
   ASTContext context;
   Parser parser(context, source);
