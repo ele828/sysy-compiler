@@ -41,6 +41,22 @@ class Parser {
 
   ParameterDeclaration* ParseFunctionParameter();
 
+  Statement* ParseBlock();
+
+  Statement* ParseStatement();
+
+  IfStatement* ParseIfStatement();
+
+  WhileStatement* ParseWhileStatement();
+
+  BreakStatement* ParseBreakStatement();
+
+  ContinueStatement* ParseContinueStatement();
+
+  ReturnStatement* ParseReturnStatement();
+
+  ExpressionStatement* ParseExpressionStatement();
+
   Expression* ParseBinaryOperation(int min_precedence, Expression* lhs);
 
   ArraySubscriptExpression* ParseArraySubscriptExpression();

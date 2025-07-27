@@ -182,6 +182,8 @@ VariableDeclaration* Parser::ParseVariableDeclaration() {
   [[maybe_unused]] Type* type = ResolveType(Consume());
   [[maybe_unused]] std::string_view name =
       Consume(TokenType::kIdentifier).value();
+  // TODO(eric): parse
+
   return {};
 }
 
@@ -199,7 +201,9 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
   }
   Consume(TokenType::kRightParen);
 
-  return zone()->New<FunctionDeclaration>(type, name, std::move(parameters));
+  Statement* body = ParseBlock();
+  return zone()->New<FunctionDeclaration>(type, name, std::move(parameters),
+                                          body);
 }
 
 ParameterDeclaration* Parser::ParseFunctionParameter() {
@@ -220,6 +224,92 @@ ParameterDeclaration* Parser::ParseFunctionParameter() {
   }
 
   return zone()->New<ParameterDeclaration>(type, name);
+}
+
+Statement* Parser::ParseBlock() {
+  Consume(TokenType::kLeftBrace);
+
+  ZoneVector<Statement*> body(zone());
+  while (!Match(TokenType::kRightBrace) && !Match(TokenType::kEof)) {
+    body.push_back(ParseStatement());
+  }
+  Consume(TokenType::kRightBrace);
+  return zone()->New<CompoundStatement>(std::move(body));
+}
+
+Statement* Parser::ParseStatement() {
+  switch (current_.type()) {
+    case TokenType::kKeywordIf:
+      return ParseIfStatement();
+    case TokenType::kKeywordWhile:
+      return ParseWhileStatement();
+    case TokenType::kKeywordBreak:
+      return ParseBreakStatement();
+    case TokenType::kKeywordContinue:
+      return ParseContinueStatement();
+    case TokenType::kKeywordReturn:
+      return ParseReturnStatement();
+    case TokenType::kLeftBrace:
+      return ParseBlock();
+    default:
+      return ParseExpressionStatement();
+  }
+}
+
+IfStatement* Parser::ParseIfStatement() {
+  Consume(TokenType::kKeywordIf);
+
+  Consume(TokenType::kLeftParen);
+  Expression* condition = ParseExpression();
+  Consume(TokenType::kRightParen);
+
+  Statement* then_stmt = ParseStatement();
+
+  Statement* else_stmt{};
+  if (Match(TokenType::kKeywordElse)) {
+    else_stmt = ParseStatement();
+  }
+  return zone()->New<IfStatement>(condition, then_stmt, else_stmt);
+}
+
+WhileStatement* Parser::ParseWhileStatement() {
+  Consume(TokenType::kKeywordWhile);
+
+  Consume(TokenType::kLeftParen);
+  Expression* condition = ParseExpression();
+  Consume(TokenType::kRightParen);
+
+  Statement* body = ParseStatement();
+  return zone()->New<WhileStatement>(condition, body);
+}
+
+BreakStatement* Parser::ParseBreakStatement() {
+  Consume(TokenType::kKeywordBreak);
+  Consume(TokenType::kSemicolon);
+  return zone()->New<BreakStatement>();
+}
+
+ContinueStatement* Parser::ParseContinueStatement() {
+  Consume(TokenType::kKeywordContinue);
+  Consume(TokenType::kSemicolon);
+  return zone()->New<ContinueStatement>();
+}
+
+ReturnStatement* Parser::ParseReturnStatement() {
+  Consume(TokenType::kKeywordReturn);
+  if (Match(TokenType::kSemicolon)) {
+    Consume();
+    return zone()->New<ReturnStatement>(nullptr);
+  }
+
+  Expression* expression = ParseExpression();
+  Consume(TokenType::kSemicolon);
+  return zone()->New<ReturnStatement>(expression);
+}
+
+ExpressionStatement* Parser::ParseExpressionStatement() {
+  Expression* expression = ParseExpression();
+  return zone()->New<ExpressionStatement>(expression);
 }
 
 Expression* Parser::ParseExpression() {
@@ -328,9 +418,8 @@ Expression* Parser::ParseUnaryExpression() {
         }
       }
     }
-    default: {
-      Unexpected(current_.type());
-    }
+    default:
+      break;
   }
   return {};
 }

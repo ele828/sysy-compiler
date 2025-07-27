@@ -11,6 +11,7 @@ namespace sysy {
 
 class Expression;
 class Declaration;
+class Statement;
 
 enum class UnaryOperator : uint8_t {
   kInvalid,
@@ -50,8 +51,9 @@ class AstNode : public ZoneObject {
     // Declaration end
 
     // Statement begin
-    kNullStatement,
     kCompoundStatement,
+    kDeclarationStatement,
+    kExpressionStatement,
     kIfStatement,
     kWhileStatement,
     kBreakStatement,
@@ -180,11 +182,13 @@ class ParameterDeclaration : public Declaration {
 class FunctionDeclaration : public Declaration {
  public:
   FunctionDeclaration(Type* type, std::string_view name,
-                      ZoneVector<ParameterDeclaration*> parameters)
+                      ZoneVector<ParameterDeclaration*> parameters,
+                      Statement* body)
       : Declaration(Kind::kFunctionDelcaration),
         type_(type),
         name_(name),
-        parameters_(std::move(parameters)) {}
+        parameters_(std::move(parameters)),
+        body_(body) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kFunctionDelcaration;
@@ -195,11 +199,13 @@ class FunctionDeclaration : public Declaration {
   const ZoneVector<ParameterDeclaration*>& parameters() const {
     return parameters_;
   }
+  Statement* body() const { return body_; }
 
  private:
   Type* type_;
   std::string_view name_;
   ZoneVector<ParameterDeclaration*> parameters_;
+  Statement* body_;
 };
 
 class Statement : public AstNode {
@@ -207,17 +213,8 @@ class Statement : public AstNode {
   explicit Statement(Kind kind) : AstNode(kind) {}
 
   static bool classof(const AstNode& n) {
-    return n.kind() >= Kind::kNullStatement &&
+    return n.kind() >= Kind::kCompoundStatement &&
            n.kind() <= Kind::kReturnStatement;
-  }
-};
-
-class NullStatement : public Statement {
- public:
-  NullStatement() : Statement(Kind::kNullStatement) {}
-
-  static bool classof(const AstNode& n) {
-    return n.kind() == Kind::kNullStatement;
   }
 };
 
@@ -236,6 +233,36 @@ class CompoundStatement : public Statement {
   ZoneVector<Statement*> body_;
 };
 
+class DeclarationStatement : public Statement {
+ public:
+  explicit DeclarationStatement(Declaration* declaration)
+      : Statement(Kind::kDeclarationStatement), declaration_(declaration) {}
+
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kDeclarationStatement;
+  }
+
+  Declaration* declaration() const { return declaration_; }
+
+ private:
+  Declaration* declaration_;
+};
+
+class ExpressionStatement : public Statement {
+ public:
+  explicit ExpressionStatement(Expression* expression)
+      : Statement(Kind::kExpressionStatement), expression_(expression) {}
+
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kExpressionStatement;
+  }
+
+  Expression* expression() const { return expression_; }
+
+ private:
+  Expression* expression_;
+};
+
 class IfStatement : public Statement {
  public:
   IfStatement(Expression* condition, Statement* then, Statement* else_stmt)
@@ -249,7 +276,7 @@ class IfStatement : public Statement {
   }
 
   Expression* condition() const { return condition_; }
-  Statement* then() const { return then_; }
+  Statement* get_then() const { return then_; }
   Statement* get_else() const { return else_; }
 
  private:
