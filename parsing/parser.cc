@@ -128,8 +128,6 @@ Declaration* Parser::ParseDeclaration() {
       return ParseFunctionDeclaration();
     }
     return ParseVariableDeclaration();
-  } else {
-    Unexpected(current_.type());
   }
   return {};
 }
@@ -140,9 +138,10 @@ ConstantDeclaration* Parser::ParseConstantDeclaration() {
     return {};
   }
 
-  Type* type = ResolveType(Consume());
+  Type* type = ResolveBuiltinType(Consume());
   std::string_view identifier = Consume(TokenType::kIdentifier).value();
   Expression* array_length_expression{};
+  // FIXME(eric): support multi-dimensional array
   if (Match(TokenType::kLeftBracket)) {
     array_length_expression = ParseExpression();
     Consume(TokenType::kRightBracket);
@@ -150,6 +149,7 @@ ConstantDeclaration* Parser::ParseConstantDeclaration() {
 
   Consume(TokenType::kEqual);
   auto* init_value = ParseInitValue();
+  Consume(TokenType::kSemicolon);
   return zone()->New<ConstantDeclaration>(type, array_length_expression,
                                           identifier, init_value);
 }
@@ -160,18 +160,17 @@ Expression* Parser::ParseInitValue() {
 
     ZoneVector<Expression*> list(zone());
     while (!Match(TokenType::kRightBrace) && !Match(TokenType::kEof)) {
-      auto init_value = ParseInitValue();
+      Expression* init_value = ParseInitValue();
       if (!init_value) {
         break;
       }
-
       list.push_back(init_value);
 
       if (Match(TokenType::kComma)) {
         Consume();
       }
     }
-
+    Consume(TokenType::kRightBrace);
     return zone()->New<InitListExpression>(std::move(list));
   }
 
@@ -179,16 +178,35 @@ Expression* Parser::ParseInitValue() {
 }
 
 VariableDeclaration* Parser::ParseVariableDeclaration() {
-  [[maybe_unused]] Type* type = ResolveType(Consume());
-  [[maybe_unused]] std::string_view name =
-      Consume(TokenType::kIdentifier).value();
-  // TODO(eric): parse
+  Type* type = ResolveBuiltinType(Consume());
 
-  return {};
+  while (!Match(TokenType::kSemicolon) && !Match(TokenType::kEof)) {
+    std::string_view name = Consume(TokenType::kIdentifier).value();
+
+    if (Match(TokenType::kLeftBracket)) {
+      while (Match(TokenType::kLeftBracket) && !Match(TokenType::kEof)) {
+        Consume();
+        auto* size_expression = ParseExpression();
+        Consume(TokenType::kRightBracket);
+      }
+    }
+
+    if (Match(TokenType::kEqual)) {
+      auto* init_value = ParseInitValue();
+    }
+
+    // FIXME(eric): how do we handle multiple declarations here?
+    if (Match(TokenType::kComma)) {
+      Consume();
+    }
+  }
+
+  Consume(TokenType::kSemicolon);
+  return zone()->New<VariableDeclaration>();
 }
 
 FunctionDeclaration* Parser::ParseFunctionDeclaration() {
-  Type* type = ResolveType(Consume());
+  Type* type = ResolveBuiltinType(Consume());
   std::string_view name = Consume(TokenType::kIdentifier).value();
 
   Consume(TokenType::kLeftParen);
@@ -207,7 +225,7 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
 }
 
 ParameterDeclaration* Parser::ParseFunctionParameter() {
-  Type* type = ResolveType(Consume());
+  Type* type = ResolveBuiltinType(Consume());
   std::string_view name = Consume(TokenType::kIdentifier).value();
 
   // parse array declaration
@@ -231,7 +249,14 @@ Statement* Parser::ParseBlock() {
 
   ZoneVector<Statement*> body(zone());
   while (!Match(TokenType::kRightBrace) && !Match(TokenType::kEof)) {
-    body.push_back(ParseStatement());
+    auto* declaration = ParseDeclaration();
+    if (declaration) {
+      DeclarationStatement* declaration_stmt =
+          zone()->New<DeclarationStatement>(declaration);
+      body.push_back(declaration_stmt);
+    } else {
+      body.push_back(ParseStatement());
+    }
   }
   Consume(TokenType::kRightBrace);
   return zone()->New<CompoundStatement>(std::move(body));
@@ -264,7 +289,6 @@ IfStatement* Parser::ParseIfStatement() {
   Consume(TokenType::kRightParen);
 
   Statement* then_stmt = ParseStatement();
-
   Statement* else_stmt{};
   if (Match(TokenType::kKeywordElse)) {
     else_stmt = ParseStatement();
@@ -496,7 +520,7 @@ void Parser::Unexpected(TokenType type) {
                           magic_enum::enum_name(type)));
 }
 
-Type* Parser::ResolveType(const Token& token) {
+Type* Parser::ResolveBuiltinType(const Token& token) {
   switch (token.type()) {
     case TokenType::kKeywordVoid:
       return context_.void_type();
