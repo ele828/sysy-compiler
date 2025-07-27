@@ -14,19 +14,6 @@ namespace sysy {
 
 namespace {
 
-constexpr Type GetType(const Token& token) {
-  switch (token.type()) {
-    case TokenType::kKeywordVoid:
-      return Type::kVoid;
-    case TokenType::kKeywordInt:
-      return Type::kInt;
-    case TokenType::kKeywordFloat:
-      return Type::kFloat;
-    default:
-      return Type::kInvalid;
-  }
-}
-
 BinaryOperator GetBinaryOperator(const Token& token) {
   switch (token.type()) {
     case TokenType::kPlus:
@@ -109,7 +96,8 @@ constexpr OperatorPrecedenceTable operator_precedence_table;
 
 }  // namespace
 
-Parser::Parser(std::string_view source) : lexer_(source) {
+Parser::Parser(std::shared_ptr<ASTContext> context, std::string_view source)
+    : context_(std::move(context)), lexer_(source) {
   // make current_ point to the first token
   Consume();
 }
@@ -152,7 +140,7 @@ ConstantDeclaration* Parser::ParseConstantDeclaration() {
     return {};
   }
 
-  Type type = GetType(Consume());
+  Type* type = BuiltinType::Resolve(zone(), Consume());
   std::string_view identifier = Consume(TokenType::kIdentifier).value();
   Expression* array_length_expression{};
   if (Match(TokenType::kLeftBracket)) {
@@ -191,14 +179,14 @@ Expression* Parser::ParseInitValue() {
 }
 
 VariableDeclaration* Parser::ParseVariableDeclaration() {
-  [[maybe_unused]] Type type = GetType(Consume());
+  [[maybe_unused]] Type* type = ResolveType(Consume());
   [[maybe_unused]] std::string_view name =
       Consume(TokenType::kIdentifier).value();
   return {};
 }
 
 FunctionDeclaration* Parser::ParseFunctionDeclaration() {
-  Type type = GetType(Consume());
+  Type* type = ResolveType(Consume());
   std::string_view name = Consume(TokenType::kIdentifier).value();
 
   Consume(TokenType::kLeftParen);
@@ -215,8 +203,9 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
 }
 
 ParameterDeclaration* Parser::ParseFunctionParameter() {
-  Type type = GetType(Consume());
-  std::string_view name = Consume(TokenType::kIdentifier).value();
+  [[maybe_unused]] Type* type = ResolveType(Consume());
+  [[maybe_unused]] std::string_view name =
+      Consume(TokenType::kIdentifier).value();
 
   // parse array declaration
   bool is_first_dimension = true;
@@ -232,8 +221,6 @@ ParameterDeclaration* Parser::ParseFunctionParameter() {
     }
     Consume(TokenType::kRightBracket);
   }
-
-  std::println("func param: {}, type: {}", name, magic_enum::enum_name(type));
 
   return zone()->New<ParameterDeclaration>();
 }
@@ -421,6 +408,20 @@ void Parser::SyntaxError(std::string error) {
 void Parser::Unexpected(TokenType type) {
   SyntaxError(std::format("parse error: unexpected token type: {}",
                           magic_enum::enum_name(type)));
+}
+
+Type* Parser::ResolveType(const Token& token) {
+  switch (token.type()) {
+    case TokenType::kKeywordVoid:
+      return context_->void_type();
+    case TokenType::kKeywordInt:
+      return context_->int_type();
+    case TokenType::kKeywordFloat:
+      return context_->float_type();
+    default:
+      SyntaxError(std::format("Unknown type: {}", token.value()));
+      return {};
+  }
 }
 
 }  // namespace sysy

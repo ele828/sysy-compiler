@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "ast/ast.h"
+#include "ast/ast_context.h"
 #include "base/zone.h"
 #include "parsing/lexer.h"
 
@@ -24,7 +25,7 @@ enum Precedence {
 
 class Parser {
  public:
-  explicit Parser(std::string_view source);
+  Parser(std::shared_ptr<ASTContext> context, std::string_view source);
 
   CompilationUnit* ParseCompilationUnit();
 
@@ -73,15 +74,17 @@ class Parser {
   // Verify current token and advance
   Token Consume(TokenType type, const char* error_message = nullptr);
 
+  Type* ResolveType(const Token& token);
+
   void SyntaxError(std::string error);
 
   void Unexpected(TokenType type);
 
-  Zone* zone() { return &zone_; }
+  Zone* zone() { return context_->zone(); }
 
   Lexer* lexer() { return &lexer_; }
 
-  Zone zone_;
+  std::shared_ptr<ASTContext> context_;
   Lexer lexer_;
   Token current_;
 
