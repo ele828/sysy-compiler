@@ -49,6 +49,16 @@ class AstNode : public ZoneObject {
     kFunctionDelcaration,
     // Declaration end
 
+    // Statement begin
+    kNullStatement,
+    kCompoundStatement,
+    kIfStatement,
+    kWhileStatement,
+    kBreakStatement,
+    kContinueStatement,
+    kReturnStatement,
+    // Statement end
+
     // Expression begin
     kIntegerLiteral,
     kFloatingLiteral,
@@ -155,6 +165,10 @@ class ParameterDeclaration : public Declaration {
   ParameterDeclaration(Type* type, std::string_view name)
       : Declaration(Kind::kParameterDeclaration), type_(type), name_(name) {}
 
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kParameterDeclaration;
+  }
+
   Type* type() const { return type_; }
   std::string_view name() const { return name_; }
 
@@ -186,6 +200,112 @@ class FunctionDeclaration : public Declaration {
   Type* type_;
   std::string_view name_;
   ZoneVector<ParameterDeclaration*> parameters_;
+};
+
+class Statement : public AstNode {
+ public:
+  explicit Statement(Kind kind) : AstNode(kind) {}
+
+  static bool classof(const AstNode& n) {
+    return n.kind() >= Kind::kNullStatement &&
+           n.kind() <= Kind::kReturnStatement;
+  }
+};
+
+class NullStatement : public Statement {
+ public:
+  NullStatement() : Statement(Kind::kNullStatement) {}
+
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kNullStatement;
+  }
+};
+
+class CompoundStatement : public Statement {
+ public:
+  explicit CompoundStatement(ZoneVector<Statement*> body)
+      : Statement(Kind::kCompoundStatement), body_(std::move(body)) {}
+
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kCompoundStatement;
+  }
+
+  const ZoneVector<Statement*>& body() const { return body_; }
+
+ private:
+  ZoneVector<Statement*> body_;
+};
+
+class IfStatement : public Statement {
+ public:
+  IfStatement(Expression* condition, Statement* then, Statement* else_stmt)
+      : Statement(Kind::kIfStatement),
+        condition_(condition),
+        then_(then),
+        else_(else_stmt) {}
+
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kIfStatement;
+  }
+
+  Expression* condition() const { return condition_; }
+  Statement* then() const { return then_; }
+  Statement* get_else() const { return else_; }
+
+ private:
+  Expression* condition_;
+  Statement* then_;
+  Statement* else_;
+};
+
+class WhileStatement : public Statement {
+ public:
+  WhileStatement(Expression* condition, Statement* body)
+      : Statement(Kind::kWhileStatement), condition_(condition), body_(body) {}
+
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kWhileStatement;
+  }
+
+  Expression* condition() const { return condition_; }
+  Statement* body() const { return body_; }
+
+ private:
+  Expression* condition_;
+  Statement* body_;
+};
+
+class BreakStatement : public Statement {
+ public:
+  BreakStatement() : Statement(Kind::kBreakStatement) {}
+
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kBreakStatement;
+  }
+};
+
+class ContinueStatement : public Statement {
+ public:
+  ContinueStatement() : Statement(Kind::kContinueStatement) {}
+
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kContinueStatement;
+  }
+};
+
+class ReturnStatement : public Statement {
+ public:
+  explicit ReturnStatement(Expression* expression)
+      : Statement(Kind::kReturnStatement), expression_(expression) {}
+
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kReturnStatement;
+  }
+
+  Expression* expression() const { return expression_; }
+
+ private:
+  Expression* expression_;
 };
 
 class Expression : public AstNode {
