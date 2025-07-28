@@ -31,13 +31,13 @@ class Parser {
 
   ZoneVector<Declaration*> ParseDeclarations();
 
-  Declaration* ParseDeclaration();
+  ZoneVector<Declaration*> ParseDeclarationGroup();
 
   FunctionDeclaration* ParseFunctionDeclaration();
 
-  VariableDeclaration* ParseVariableDeclaration();
+  ZoneVector<Declaration*> ParseVariableDeclaration();
 
-  ConstantDeclaration* ParseConstantDeclaration();
+  ZoneVector<Declaration*> ParseConstantDeclaration();
 
   ParameterDeclaration* ParseFunctionParameter();
 

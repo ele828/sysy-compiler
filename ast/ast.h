@@ -223,17 +223,18 @@ class CompoundStatement : public Statement {
 
 class DeclarationStatement : public Statement {
  public:
-  explicit DeclarationStatement(Declaration* declaration)
-      : Statement(Kind::kDeclarationStatement), declaration_(declaration) {}
+  explicit DeclarationStatement(ZoneVector<Declaration*> declarations)
+      : Statement(Kind::kDeclarationStatement),
+        declarations_(std::move(declarations)) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kDeclarationStatement;
   }
 
-  Declaration* declaration() const { return declaration_; }
+  const ZoneVector<Declaration*>& declarations() const { return declarations_; }
 
  private:
-  Declaration* declaration_;
+  ZoneVector<Declaration*> declarations_;
 };
 
 class ExpressionStatement : public Statement {
