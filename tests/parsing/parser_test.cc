@@ -226,7 +226,7 @@ TEST(Parser, ParseFunctionDeclaration) {
 TEST(Parser, ParseFunctionDeclarationWithBody) {
   const char* source = R"(
     void fun() {
-      const int a = 10;
+      int a[0] = {1};
       return;
     }
   )";
@@ -236,6 +236,7 @@ TEST(Parser, ParseFunctionDeclarationWithBody) {
   auto decl_group = parser.ParseDeclarationGroup();
   auto decl = decl_group[0];
 
+  PrintErrors(parser);
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<FunctionDeclaration>(decl));
 

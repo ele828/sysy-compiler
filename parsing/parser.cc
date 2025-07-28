@@ -174,29 +174,6 @@ ZoneVector<Declaration*> Parser::ParseConstantDeclaration() {
   return declarations;
 }
 
-Expression* Parser::ParseInitValue() {
-  if (Match(TokenType::kLeftBrace)) {
-    Consume();
-
-    ZoneVector<Expression*> list(zone());
-    while (!Match(TokenType::kRightBrace) && !Match(TokenType::kEof)) {
-      Expression* init_value = ParseInitValue();
-      if (!init_value) {
-        break;
-      }
-      list.push_back(init_value);
-
-      if (Match(TokenType::kComma)) {
-        Consume();
-      }
-    }
-    Consume(TokenType::kRightBrace);
-    return zone()->New<InitListExpression>(std::move(list));
-  }
-
-  return ParseExpression();
-}
-
 ZoneVector<Declaration*> Parser::ParseVariableDeclaration() {
   ZoneVector<Declaration*> declarations(zone());
   Type* base_type = ResolveBuiltinType(Consume());
@@ -221,6 +198,7 @@ ZoneVector<Declaration*> Parser::ParseVariableDeclaration() {
 
     Expression* init_value{};
     if (Match(TokenType::kEqual)) {
+      Consume();
       init_value = ParseInitValue();
     }
 
@@ -235,6 +213,29 @@ ZoneVector<Declaration*> Parser::ParseVariableDeclaration() {
 
   Consume(TokenType::kSemicolon);
   return declarations;
+}
+
+Expression* Parser::ParseInitValue() {
+  if (Match(TokenType::kLeftBrace)) {
+    Consume();
+
+    ZoneVector<Expression*> list(zone());
+    while (!Match(TokenType::kRightBrace) && !Match(TokenType::kEof)) {
+      Expression* init_value = ParseInitValue();
+      if (!init_value) {
+        break;
+      }
+      list.push_back(init_value);
+
+      if (Match(TokenType::kComma)) {
+        Consume();
+      }
+    }
+    Consume(TokenType::kRightBrace);
+    return zone()->New<InitListExpression>(std::move(list));
+  }
+
+  return ParseExpression();
 }
 
 FunctionDeclaration* Parser::ParseFunctionDeclaration() {
@@ -540,6 +541,8 @@ Token Parser::Consume(TokenType type, const char* error_message) {
                             magic_enum::enum_name(type),
                             magic_enum::enum_name(current_.type())));
   }
+
+  Consume();
   return {};
 }
 
