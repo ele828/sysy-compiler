@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <cstdio>
+#include <ios>
 
 #include "ast/ast_context.h"
 #include "base/type_casts.h"
@@ -209,7 +210,8 @@ TEST(Parser, ParseFunctionDeclaration) {
 
   ASTContext context;
   Parser parser(context, source);
-  auto* decl = parser.ParseDeclaration();
+  auto decl_group = parser.ParseDeclarationGroup();
+  auto decl = decl_group[0];
 
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<FunctionDeclaration>(decl));
@@ -231,7 +233,8 @@ TEST(Parser, ParseFunctionDeclarationWithBody) {
 
   ASTContext context;
   Parser parser(context, source);
-  auto* decl = parser.ParseDeclaration();
+  auto decl_group = parser.ParseDeclarationGroup();
+  auto decl = decl_group[0];
 
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<FunctionDeclaration>(decl));

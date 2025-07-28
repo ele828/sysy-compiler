@@ -110,14 +110,15 @@ CompilationUnit* Parser::ParseCompilationUnit() {
 ZoneVector<Declaration*> Parser::ParseDeclarations() {
   ZoneVector<Declaration*> declarations(zone());
   while (!Match(TokenType::kEof)) {
-    auto* declaration = ParseDeclaration();
-    declarations.push_back(declaration);
+    ZoneVector<Declaration*> declaration_group = ParseDeclarationGroup();
+    declarations.insert(declarations.end(), declaration_group.begin(),
+                        declaration_group.end());
     Consume();
   }
   return declarations;
 }
 
-Declaration* Parser::ParseDeclaration() {
+ZoneVector<Declaration*> Parser::ParseDeclarationGroup() {
   if (Match(TokenType::kKeywordConst)) {
     Consume();
     return ParseConstantDeclaration();
@@ -125,33 +126,52 @@ Declaration* Parser::ParseDeclaration() {
     // skips type specifier and identifier
     auto third_token_after_current = lexer()->PeekToken(2);
     if (third_token_after_current.type() == TokenType::kLeftParen) {
-      return ParseFunctionDeclaration();
+      auto* function_declaration = ParseFunctionDeclaration();
+      ZoneVector<Declaration*> declarations(zone());
+      declarations.push_back(function_declaration);
+      return declarations;
     }
     return ParseVariableDeclaration();
   }
-  return {};
+  return ZoneVector<Declaration*>(zone());
 }
 
-ConstantDeclaration* Parser::ParseConstantDeclaration() {
-  if (!MatchTypeSpecifier()) {
-    SyntaxError("expect type specifier");
-    return {};
+ZoneVector<Declaration*> Parser::ParseConstantDeclaration() {
+  ZoneVector<Declaration*> declarations(zone());
+  Type* base_type = ResolveBuiltinType(Consume());
+
+  while (!Match(TokenType::kSemicolon) && !Match(TokenType::kEof)) {
+    Type* type = base_type;
+    std::string_view name = Consume(TokenType::kIdentifier).value();
+
+    if (Match(TokenType::kLeftBracket)) {
+      while (Match(TokenType::kLeftBracket) && !Match(TokenType::kEof)) {
+        Consume();
+        auto* size_expression = ParseExpression();
+        Consume(TokenType::kRightBracket);
+
+        if (size_expression) {
+          type = zone()->New<ConstantArrayType>(type, size_expression);
+        } else {
+          type = zone()->New<IncompleteArrayType>(type);
+        }
+      }
+    }
+
+    Consume(TokenType::kEqual);
+    Expression* init_value = ParseInitValue();
+
+    auto* declaration =
+        zone()->New<ConstantDeclaration>(type, name, init_value);
+    declarations.push_back(declaration);
+
+    if (Match(TokenType::kComma)) {
+      Consume();
+    }
   }
 
-  Type* type = ResolveBuiltinType(Consume());
-  std::string_view identifier = Consume(TokenType::kIdentifier).value();
-  Expression* array_length_expression{};
-  // FIXME(eric): support multi-dimensional array
-  if (Match(TokenType::kLeftBracket)) {
-    array_length_expression = ParseExpression();
-    Consume(TokenType::kRightBracket);
-  }
-
-  Consume(TokenType::kEqual);
-  auto* init_value = ParseInitValue();
   Consume(TokenType::kSemicolon);
-  return zone()->New<ConstantDeclaration>(type, array_length_expression,
-                                          identifier, init_value);
+  return declarations;
 }
 
 Expression* Parser::ParseInitValue() {
@@ -177,10 +197,12 @@ Expression* Parser::ParseInitValue() {
   return ParseExpression();
 }
 
-VariableDeclaration* Parser::ParseVariableDeclaration() {
-  Type* type = ResolveBuiltinType(Consume());
+ZoneVector<Declaration*> Parser::ParseVariableDeclaration() {
+  ZoneVector<Declaration*> declarations(zone());
+  Type* base_type = ResolveBuiltinType(Consume());
 
   while (!Match(TokenType::kSemicolon) && !Match(TokenType::kEof)) {
+    Type* type = base_type;
     std::string_view name = Consume(TokenType::kIdentifier).value();
 
     if (Match(TokenType::kLeftBracket)) {
@@ -188,21 +210,31 @@ VariableDeclaration* Parser::ParseVariableDeclaration() {
         Consume();
         auto* size_expression = ParseExpression();
         Consume(TokenType::kRightBracket);
+
+        if (size_expression) {
+          type = zone()->New<ConstantArrayType>(type, size_expression);
+        } else {
+          type = zone()->New<IncompleteArrayType>(type);
+        }
       }
     }
 
+    Expression* init_value{};
     if (Match(TokenType::kEqual)) {
-      auto* init_value = ParseInitValue();
+      init_value = ParseInitValue();
     }
 
-    // FIXME(eric): how do we handle multiple declarations here?
+    auto* declaration =
+        zone()->New<VariableDeclaration>(type, name, init_value);
+    declarations.push_back(declaration);
+
     if (Match(TokenType::kComma)) {
       Consume();
     }
   }
 
   Consume(TokenType::kSemicolon);
-  return zone()->New<VariableDeclaration>();
+  return declarations;
 }
 
 FunctionDeclaration* Parser::ParseFunctionDeclaration() {
@@ -249,10 +281,10 @@ Statement* Parser::ParseBlock() {
 
   ZoneVector<Statement*> body(zone());
   while (!Match(TokenType::kRightBrace) && !Match(TokenType::kEof)) {
-    auto* declaration = ParseDeclaration();
-    if (declaration) {
+    ZoneVector<Declaration*> declaration_group = ParseDeclarationGroup();
+    if (!declaration_group.empty()) {
       DeclarationStatement* declaration_stmt =
-          zone()->New<DeclarationStatement>(declaration);
+          zone()->New<DeclarationStatement>(declaration_group);
       body.push_back(declaration_stmt);
     } else {
       body.push_back(ParseStatement());
