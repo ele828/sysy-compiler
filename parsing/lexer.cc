@@ -318,10 +318,12 @@ Token Lexer::ParseNumericConstant(const char c) {
   // octal
   if (c == '0') {
     // followed by digits 0-7
-    while (IsOctalDigit(current())) {
-      Advance();
+    if (IsOctalDigit(current())) {
+      while (IsOctalDigit(current())) {
+        Advance();
+      }
+      return Token(TokenType::kIntOctalConst, lexeme());
     }
-    return Token(TokenType::kIntOctalConst, lexeme());
   }
 
   consume_digits();
