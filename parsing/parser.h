@@ -9,20 +9,6 @@
 
 namespace sysy {
 
-enum Precedence {
-  kNone,
-  kAssignment,  // =
-  kOr,          // ||
-  kAnd,         // &&
-  kEquality,    // == !=
-  kComparison,  // < <= > >=
-  kTerm,        // + -
-  kFactor,      // * / %
-  kUnary,       // + - !
-  kCall,        // ()
-  kPrimary
-};
-
 class Parser {
  public:
   Parser(ASTContext& context, std::string_view source);

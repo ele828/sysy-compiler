@@ -14,7 +14,7 @@ namespace sysy {
 
 namespace {
 
-BinaryOperator GetBinaryOperator(const Token& token) {
+constexpr BinaryOperator GetBinaryOperator(const Token& token) {
   switch (token.type()) {
     case TokenType::kPlus:
       return BinaryOperator::kAdd;
@@ -48,6 +48,20 @@ BinaryOperator GetBinaryOperator(const Token& token) {
       return BinaryOperator::kInvalid;
   }
 }
+
+enum Precedence {
+  kNone,
+  kAssignment,  // =
+  kOr,          // ||
+  kAnd,         // &&
+  kEquality,    // == !=
+  kComparison,  // < <= > >=
+  kTerm,        // + -
+  kFactor,      // * / %
+  kUnary,       // + - !
+  kCall,        // ()
+  kPrimary
+};
 
 class OperatorPrecedenceTable {
  public:
@@ -89,6 +103,7 @@ class OperatorPrecedenceTable {
       {TokenType::kExclaimEqual, Precedence::kEquality},
       {TokenType::kAmpAmp, Precedence::kAnd},
       {TokenType::kPipePipe, Precedence::kOr},
+      {TokenType::kEqual, Precedence::kAssignment},
   };
 };
 

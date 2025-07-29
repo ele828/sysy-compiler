@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <ios>
 
+#include "ast/ast.h"
 #include "ast/ast_context.h"
 #include "base/type_casts.h"
 
@@ -203,6 +204,21 @@ TEST(Parser, ParseExpressionBinaryParenthesis) {
   EXPECT_EQ(rhs_bin_expr->binary_operator(), BinaryOperator::kAdd);
   EXPECT_TRUE(IsA<IntegerLiteral>(rhs_bin_expr->lhs()));
   EXPECT_TRUE(IsA<IntegerLiteral>(rhs_bin_expr->rhs()));
+}
+
+TEST(Parser, ParseExpressionAssignment) {
+  const char* source = "a = 1";
+
+  ASTContext context;
+  Parser parser(context, source);
+  auto* expression = parser.ParseExpression();
+  EXPECT_FALSE(parser.has_errors());
+  EXPECT_TRUE(IsA<BinaryOperation>(expression));
+
+  auto* bin_expr = To<BinaryOperation>(expression);
+  EXPECT_EQ(bin_expr->binary_operator(), BinaryOperator::kAssign);
+  EXPECT_TRUE(IsA<VariableReference>(bin_expr->lhs()));
+  EXPECT_TRUE(IsA<IntegerLiteral>(bin_expr->rhs()));
 }
 
 TEST(Parser, ParseFunctionDeclaration) {
