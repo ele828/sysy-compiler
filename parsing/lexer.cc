@@ -106,13 +106,17 @@ Token Lexer::NextToken() {
       return Token(TokenType::kPercent, lexeme());
     case '&': {
       if (current() == '&') {
+        Advance();
         return Token(TokenType::kAmpAmp, lexeme());
       }
+      break;
     }
     case '|': {
       if (current() == '|') {
+        Advance();
         return Token(TokenType::kPipePipe, lexeme());
       }
+      break;
     }
     case '!': {
       if (current() == '=') {
