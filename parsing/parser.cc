@@ -137,7 +137,8 @@ ZoneVector<Declaration*> Parser::ParseDeclarationGroup() {
   if (Match(TokenType::kKeywordConst)) {
     Consume();
     return ParseConstantDeclaration();
-  } else if (MatchTypeSpecifier()) {
+  }
+  if (MatchTypeSpecifier()) {
     // skips type specifier and identifier
     auto third_token_after_current = lexer()->PeekToken(2);
     if (third_token_after_current.type() == TokenType::kLeftParen) {
@@ -331,6 +332,7 @@ IfStatement* Parser::ParseIfStatement() {
   Statement* then_stmt = ParseStatement();
   Statement* else_stmt{};
   if (Match(TokenType::kKeywordElse)) {
+    Consume();
     else_stmt = ParseStatement();
   }
   return zone()->New<IfStatement>(condition, then_stmt, else_stmt);
@@ -373,6 +375,7 @@ ReturnStatement* Parser::ParseReturnStatement() {
 
 ExpressionStatement* Parser::ParseExpressionStatement() {
   Expression* expression = ParseExpression();
+  Consume(TokenType::kSemicolon);
   return zone()->New<ExpressionStatement>(expression);
 }
 
