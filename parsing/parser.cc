@@ -393,6 +393,8 @@ Expression* Parser::ParseBinaryOperation(int min_precedence, Expression* lhs) {
     }
 
     BinaryOperator binary_operator = GetBinaryOperator(current_);
+
+    // Consume binary operator
     Consume();
 
     auto rhs = ParseUnaryExpression();
