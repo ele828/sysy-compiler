@@ -159,18 +159,9 @@ ZoneVector<Declaration*> Parser::ParseConstantDeclaration() {
     Type* type = base_type;
     std::string_view name = Consume(TokenType::kIdentifier).value();
 
+    // Parse array declaration
     if (Match(TokenType::kLeftBracket)) {
-      while (Match(TokenType::kLeftBracket) && !Match(TokenType::kEof)) {
-        Consume();
-        auto* size_expression = ParseExpression();
-        Consume(TokenType::kRightBracket);
-
-        if (size_expression) {
-          type = zone()->New<ConstantArrayType>(type, size_expression);
-        } else {
-          type = zone()->New<IncompleteArrayType>(type);
-        }
-      }
+      type = ParseArrayTypeDeclaration(type);
     }
 
     Consume(TokenType::kEqual);
@@ -197,18 +188,9 @@ ZoneVector<Declaration*> Parser::ParseVariableDeclaration() {
     Type* type = base_type;
     std::string_view name = Consume(TokenType::kIdentifier).value();
 
+    // Parse array declaration
     if (Match(TokenType::kLeftBracket)) {
-      while (Match(TokenType::kLeftBracket) && !Match(TokenType::kEof)) {
-        Consume();
-        auto* size_expression = ParseExpression();
-        Consume(TokenType::kRightBracket);
-
-        if (size_expression) {
-          type = zone()->New<ConstantArrayType>(type, size_expression);
-        } else {
-          type = zone()->New<IncompleteArrayType>(type);
-        }
-      }
+      type = ParseArrayTypeDeclaration(type);
     }
 
     Expression* init_value{};
@@ -276,20 +258,30 @@ ParameterDeclaration* Parser::ParseFunctionParameter() {
   Type* type = ResolveBuiltinType(Consume());
   std::string_view name = Consume(TokenType::kIdentifier).value();
 
-  // parse array declaration
-  while (Match(TokenType::kLeftBracket) && !Match(TokenType::kEof)) {
-    // consume left bracket
-    Consume();
-    auto* expression = ParseExpression();
-    if (!expression) {
-      type = zone()->New<IncompleteArrayType>(type);
-    } else {
-      type = zone()->New<ConstantArrayType>(type, expression);
-    }
-    Consume(TokenType::kRightBracket);
+  // Parse array declaration
+  if (Match(TokenType::kLeftBracket)) {
+    type = ParseArrayTypeDeclaration(type);
   }
 
   return zone()->New<ParameterDeclaration>(type, name);
+}
+
+ArrayType* Parser::ParseArrayTypeDeclaration(Type* builtin_type) {
+  Consume(TokenType::kLeftBracket);
+  auto* size_expression = ParseExpression();
+  Consume(TokenType::kRightBracket);
+
+  Type* child_type{};
+  if (Match(TokenType::kLeftBracket)) {
+    child_type = ParseArrayTypeDeclaration(builtin_type);
+  } else {
+    child_type = builtin_type;
+  }
+
+  if (!size_expression) {
+    return zone()->New<IncompleteArrayType>(child_type);
+  }
+  return zone()->New<ConstantArrayType>(child_type, size_expression);
 }
 
 Statement* Parser::ParseBlock() {

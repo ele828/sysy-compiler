@@ -25,6 +25,8 @@ class Parser {
 
   ZoneVector<Declaration*> ParseConstantDeclaration();
 
+  ArrayType* ParseArrayTypeDeclaration(Type* builtin_type);
+
   ParameterDeclaration* ParseFunctionParameter();
 
   Statement* ParseBlock();
