@@ -1,6 +1,7 @@
 #include "parsing/parser.h"
 
 #include <array>
+#include <cmath>
 #include <format>
 #include <print>
 
@@ -124,7 +125,7 @@ CompilationUnit* Parser::ParseCompilationUnit() {
 
 ZoneVector<Declaration*> Parser::ParseDeclarations() {
   ZoneVector<Declaration*> declarations(zone());
-  while (!Match(TokenType::kEof)) {
+  while (!done()) {
     ZoneVector<Declaration*> declaration_group = ParseDeclarationGroup();
     declarations.insert(declarations.end(), declaration_group.begin(),
                         declaration_group.end());
@@ -156,7 +157,7 @@ ZoneVector<Declaration*> Parser::ParseConstantDeclaration() {
   ZoneVector<Declaration*> declarations(zone());
   Type* base_type = ResolveBuiltinType(Consume());
 
-  while (!Match(TokenType::kSemicolon) && !Match(TokenType::kEof)) {
+  while (!done() && !Match(TokenType::kSemicolon)) {
     Type* type = base_type;
     std::string_view name = Consume(TokenType::kIdentifier).value();
 
@@ -185,7 +186,7 @@ ZoneVector<Declaration*> Parser::ParseVariableDeclaration() {
   ZoneVector<Declaration*> declarations(zone());
   Type* base_type = ResolveBuiltinType(Consume());
 
-  while (!Match(TokenType::kSemicolon) && !Match(TokenType::kEof)) {
+  while (!done() && !Match(TokenType::kSemicolon)) {
     Type* type = base_type;
     std::string_view name = Consume(TokenType::kIdentifier).value();
 
@@ -218,7 +219,7 @@ Expression* Parser::ParseInitValue() {
     Consume();
 
     ZoneVector<Expression*> list(zone());
-    while (!Match(TokenType::kRightBrace) && !Match(TokenType::kEof)) {
+    while (!done() && !Match(TokenType::kRightBrace)) {
       Expression* init_value = ParseInitValue();
       if (!init_value) {
         break;
@@ -242,7 +243,7 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
 
   Consume(TokenType::kLeftParen);
   ZoneVector<ParameterDeclaration*> parameters(zone());
-  while (!Match(TokenType::kRightParen) && !Match(TokenType::kEof)) {
+  while (!done() && !Match(TokenType::kRightParen)) {
     parameters.push_back(ParseFunctionParameter());
     if (Match(TokenType::kComma)) {
       Consume();
@@ -289,7 +290,7 @@ Statement* Parser::ParseBlock() {
   Consume(TokenType::kLeftBrace);
 
   ZoneVector<Statement*> body(zone());
-  while (!Match(TokenType::kRightBrace) && !Match(TokenType::kEof)) {
+  while (!done() && !Match(TokenType::kRightBrace)) {
     ZoneVector<Declaration*> declaration_group = ParseDeclarationGroup();
     if (!declaration_group.empty()) {
       DeclarationStatement* declaration_stmt =
@@ -442,7 +443,9 @@ Expression* Parser::ParseUnaryExpression() {
     }
     case TokenType::kLeftParen: {
       Consume();
-      return ParseExpression();
+      auto* expression = ParseExpression();
+      Consume(TokenType::kRightParen);
+      return expression;
     }
     case TokenType::kIntConst: {
       auto result = current_.GetIntValue();
@@ -519,7 +522,7 @@ CallExpression* Parser::ParseCallExpression() {
   Token name = Consume();
   Consume(TokenType::kLeftParen);
   ZoneVector<Expression*> arguments(zone());
-  while (!Match(TokenType::kRightParen) && !Match(TokenType::kEof)) {
+  while (!done() && !Match(TokenType::kRightParen)) {
     auto* expression = ParseExpression();
     if (!expression) {
       break;

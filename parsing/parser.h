@@ -61,6 +61,8 @@ class Parser {
 
   bool has_errors() const { return !errors_.empty(); }
 
+  bool done() const { return Match(TokenType::kEof); }
+
   const std::vector<std::string>& errors() const { return errors_; }
 
  private:
