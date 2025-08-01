@@ -6,6 +6,8 @@
 #include <print>
 #include <vector>
 
+#include "parsing/parser.h"
+
 namespace sysy::test {
 
 namespace fs = std::filesystem;
@@ -35,6 +37,12 @@ inline std::vector<Fixture> DiscoverFixtures(std::filesystem::path path) {
     }
   }
   return fixtures;
+}
+
+inline void PrintErrors(const Parser& parser) {
+  for (auto& error : parser.errors()) {
+    std::println(stderr, "{}", error);
+  }
 }
 
 }  // namespace sysy::test
