@@ -8,20 +8,14 @@
 #include "ast/ast.h"
 #include "ast/ast_context.h"
 #include "base/type_casts.h"
+#include "tests/utils.h"
 
 namespace sysy::test {
 
 namespace {
 
-[[maybe_unused]] inline void PrintErrors(const Parser& parser) {
-  for (auto& error : parser.errors()) {
-    std::println(stderr, "{}", error);
-  }
-}
-
-void TestSimpleBinaryExpression(std::string_view source, BinaryOperator op,
-                                AstNode::Kind lhs_kind,
-                                AstNode::Kind rhs_kind) {
+void TestBinaryExpression(std::string_view source, BinaryOperator op,
+                          AstNode::Kind lhs_kind, AstNode::Kind rhs_kind) {
   ASTContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
@@ -138,7 +132,6 @@ TEST(Parser, ParseFunctionDeclarationWithBody) {
   auto decl_group = parser.ParseDeclarationGroup();
   auto decl = decl_group[0];
 
-  PrintErrors(parser);
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(IsA<FunctionDeclaration>(decl));
 
@@ -217,9 +210,9 @@ TEST(Parser, ParseUnaryExpressionCallExpression) {
 }
 
 TEST(Parser, ParseExpressionBinary) {
-  TestSimpleBinaryExpression("1 + 1", BinaryOperator::kAdd,
-                             AstNode::Kind::kIntegerLiteral,
-                             AstNode::Kind::kIntegerLiteral);
+  TestBinaryExpression("1 + 1", BinaryOperator::kAdd,
+                       AstNode::Kind::kIntegerLiteral,
+                       AstNode::Kind::kIntegerLiteral);
 }
 
 TEST(Parser, ParseExpressionBinaryOperationAddWithMul) {
@@ -328,21 +321,21 @@ TEST(Parser, ParseExpressionBinaryParenthesis) {
 }
 
 TEST(Parser, ParseExpressionAssignment) {
-  TestSimpleBinaryExpression("a = 1", BinaryOperator::kAssign,
-                             AstNode::Kind::kVariableReference,
-                             AstNode::Kind::kIntegerLiteral);
+  TestBinaryExpression("a = 1", BinaryOperator::kAssign,
+                       AstNode::Kind::kVariableReference,
+                       AstNode::Kind::kIntegerLiteral);
 }
 
 TEST(Parser, ParseExpressionLogicalAnd) {
-  TestSimpleBinaryExpression("a && b", BinaryOperator::kLAnd,
-                             AstNode::Kind::kVariableReference,
-                             AstNode::Kind::kVariableReference);
+  TestBinaryExpression("a && b", BinaryOperator::kLAnd,
+                       AstNode::Kind::kVariableReference,
+                       AstNode::Kind::kVariableReference);
 }
 
 TEST(Parser, ParseExpressionLogicalOr) {
-  TestSimpleBinaryExpression("a || b", BinaryOperator::kLOr,
-                             AstNode::Kind::kVariableReference,
-                             AstNode::Kind::kVariableReference);
+  TestBinaryExpression("a || b", BinaryOperator::kLOr,
+                       AstNode::Kind::kVariableReference,
+                       AstNode::Kind::kVariableReference);
 }
 
 TEST(Parser, ParseExpressionLogicalCombined) {
@@ -365,39 +358,39 @@ TEST(Parser, ParseExpressionLogicalCombined) {
 }
 
 TEST(Parser, ParseEqualityExpression) {
-  TestSimpleBinaryExpression("a == b", BinaryOperator::kEq,
-                             AstNode::Kind::kVariableReference,
-                             AstNode::Kind::kVariableReference);
+  TestBinaryExpression("a == b", BinaryOperator::kEq,
+                       AstNode::Kind::kVariableReference,
+                       AstNode::Kind::kVariableReference);
 }
 
 TEST(Parser, ParseEqualityExpressionNotEq) {
-  TestSimpleBinaryExpression("a != b", BinaryOperator::kNeq,
-                             AstNode::Kind::kVariableReference,
-                             AstNode::Kind::kVariableReference);
+  TestBinaryExpression("a != b", BinaryOperator::kNeq,
+                       AstNode::Kind::kVariableReference,
+                       AstNode::Kind::kVariableReference);
 }
 
 TEST(Parser, ParseRelationalExpressionLt) {
-  TestSimpleBinaryExpression("a > b", BinaryOperator::kGt,
-                             AstNode::Kind::kVariableReference,
-                             AstNode::Kind::kVariableReference);
+  TestBinaryExpression("a > b", BinaryOperator::kGt,
+                       AstNode::Kind::kVariableReference,
+                       AstNode::Kind::kVariableReference);
 }
 
 TEST(Parser, ParseRelationalExpressionGt) {
-  TestSimpleBinaryExpression("a < b", BinaryOperator::kLt,
-                             AstNode::Kind::kVariableReference,
-                             AstNode::Kind::kVariableReference);
+  TestBinaryExpression("a < b", BinaryOperator::kLt,
+                       AstNode::Kind::kVariableReference,
+                       AstNode::Kind::kVariableReference);
 }
 
 TEST(Parser, ParseRelationalExpressionLe) {
-  TestSimpleBinaryExpression("a <= b", BinaryOperator::kLe,
-                             AstNode::Kind::kVariableReference,
-                             AstNode::Kind::kVariableReference);
+  TestBinaryExpression("a <= b", BinaryOperator::kLe,
+                       AstNode::Kind::kVariableReference,
+                       AstNode::Kind::kVariableReference);
 }
 
 TEST(Parser, ParseRelationalExpressionGe) {
-  TestSimpleBinaryExpression("a >= b", BinaryOperator::kGe,
-                             AstNode::Kind::kVariableReference,
-                             AstNode::Kind::kVariableReference);
+  TestBinaryExpression("a >= b", BinaryOperator::kGe,
+                       AstNode::Kind::kVariableReference,
+                       AstNode::Kind::kVariableReference);
 }
 
 TEST(Parser, ParseIfStatement) {
@@ -446,6 +439,124 @@ TEST(Parser, ParseIfStatementElse) {
   EXPECT_TRUE(IsA<CompoundStatement>(if_stmt->get_else()));
   auto* else_block = To<CompoundStatement>(if_stmt->get_else());
   EXPECT_EQ(else_block->body().size(), 1u);
+}
+
+TEST(Parser, ParseIfStatementWithSingleStatementBody) {
+  const char* source = R"(
+    if (1 == 1) a = 1;
+    else a = 2;
+  )";
+
+  ASTContext context;
+  Parser parser(context, source);
+  auto* statement = parser.ParseStatement();
+  EXPECT_FALSE(parser.has_errors());
+
+  EXPECT_TRUE(IsA<IfStatement>(statement));
+  auto* if_stmt = To<IfStatement>(statement);
+  EXPECT_TRUE(IsA<BinaryOperation>(if_stmt->condition()));
+
+  EXPECT_TRUE(IsA<ExpressionStatement>(if_stmt->get_then()));
+  auto* then_block = To<ExpressionStatement>(if_stmt->get_then());
+  EXPECT_NE(then_block->expression(), nullptr);
+
+  EXPECT_TRUE(IsA<ExpressionStatement>(if_stmt->get_else()));
+  auto* else_block = To<ExpressionStatement>(if_stmt->get_else());
+  EXPECT_NE(else_block->expression(), nullptr);
+}
+
+TEST(Parser, ParseWhileStatement) {
+  const char* source = R"(
+    while (1 == 1) {
+      a = 1;
+    }
+  )";
+
+  ASTContext context;
+  Parser parser(context, source);
+  auto* statement = parser.ParseStatement();
+  EXPECT_FALSE(parser.has_errors());
+
+  EXPECT_TRUE(IsA<WhileStatement>(statement));
+  auto* while_stmt = To<WhileStatement>(statement);
+  EXPECT_TRUE(IsA<BinaryOperation>(while_stmt->condition()));
+
+  EXPECT_TRUE(IsA<CompoundStatement>(while_stmt->body()));
+  auto* block = To<CompoundStatement>(while_stmt->body());
+  EXPECT_EQ(block->body().size(), 1u);
+}
+
+TEST(Parser, ParseWhileStatementWithSingleStatementBody) {
+  const char* source = R"(
+    while (1 == 1) a = 1;
+  )";
+
+  ASTContext context;
+  Parser parser(context, source);
+  auto* statement = parser.ParseStatement();
+  EXPECT_FALSE(parser.has_errors());
+
+  EXPECT_TRUE(IsA<WhileStatement>(statement));
+  auto* while_stmt = To<WhileStatement>(statement);
+  EXPECT_TRUE(IsA<BinaryOperation>(while_stmt->condition()));
+
+  EXPECT_TRUE(IsA<ExpressionStatement>(while_stmt->body()));
+  auto* expr_stmt = To<ExpressionStatement>(while_stmt->body());
+  EXPECT_NE(expr_stmt->expression(), nullptr);
+}
+
+TEST(Parser, ParseBreakStatement) {
+  const char* source = R"(
+    break;
+  )";
+
+  ASTContext context;
+  Parser parser(context, source);
+  auto* statement = parser.ParseStatement();
+  EXPECT_FALSE(parser.has_errors());
+  EXPECT_TRUE(IsA<BreakStatement>(statement));
+}
+
+TEST(Parser, ParseContinueStatement) {
+  const char* source = R"(
+    continue;
+  )";
+
+  ASTContext context;
+  Parser parser(context, source);
+  auto* statement = parser.ParseStatement();
+  EXPECT_FALSE(parser.has_errors());
+  EXPECT_TRUE(IsA<ContinueStatement>(statement));
+}
+
+TEST(Parser, ParseReturnStatementValuedVoid) {
+  const char* source = R"(
+    return;
+  )";
+
+  ASTContext context;
+  Parser parser(context, source);
+  auto* statement = parser.ParseStatement();
+  EXPECT_FALSE(parser.has_errors());
+  EXPECT_TRUE(IsA<ReturnStatement>(statement));
+
+  auto* return_stmt = To<ReturnStatement>(statement);
+  EXPECT_EQ(return_stmt->expression(), nullptr);
+}
+
+TEST(Parser, ParseReturnStatementValuedExpression) {
+  const char* source = R"(
+    return 1;
+  )";
+
+  ASTContext context;
+  Parser parser(context, source);
+  auto* statement = parser.ParseStatement();
+  EXPECT_FALSE(parser.has_errors());
+  EXPECT_TRUE(IsA<ReturnStatement>(statement));
+
+  auto* return_stmt = To<ReturnStatement>(statement);
+  EXPECT_TRUE(IsA<IntegerLiteral>(return_stmt->expression()));
 }
 
 }  // namespace sysy::test
