@@ -195,11 +195,13 @@ void Lexer::SkipWhitespace() {
     // Line comment //
     char next = Peek();
     if (next == '/') {
+      Advance(2);
       while (!IsLineTerminator(current()) && !IsAtEnd()) {
         Advance();
       }
     } else if (next == '*') {
       // Block comment /*
+      Advance(2);
       while (!IsAtEnd()) {
         if (current() == '*' && Peek() == '/') {
           Advance(2);
