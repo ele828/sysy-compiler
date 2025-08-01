@@ -20,12 +20,26 @@ TEST(Lexer, SkipLineComment) {
   EXPECT_EQ(next_token.type(), TokenType::kEof);
 }
 
+TEST(Lexer, SkipLineComment2) {
+  const char* source = "//// comment";
+  Lexer lexer(source);
+  Token next_token = lexer.NextToken();
+  EXPECT_EQ(next_token.type(), TokenType::kEof);
+}
+
 TEST(Lexer, SkipBlockComment) {
   const char* source = R"(
     /**
      * multi-line comment
      */
   )";
+  Lexer lexer(source);
+  Token next_token = lexer.NextToken();
+  EXPECT_EQ(next_token.type(), TokenType::kEof);
+}
+
+TEST(Lexer, SkipBlockComment2) {
+  const char* source = "/*/skipher/*/";
   Lexer lexer(source);
   Token next_token = lexer.NextToken();
   EXPECT_EQ(next_token.type(), TokenType::kEof);
