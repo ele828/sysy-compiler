@@ -14,12 +14,18 @@ namespace sysy::test {
 
 namespace {
 
+void CheckParserStates(const Parser& parser) {
+  EXPECT_FALSE(parser.has_errors());
+  EXPECT_TRUE(parser.done());
+}
+
 void TestBinaryExpression(std::string_view source, BinaryOperator op,
                           AstNode::Kind lhs_kind, AstNode::Kind rhs_kind) {
   ASTContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
+
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
@@ -34,7 +40,7 @@ void TestUnaryExpression(std::string_view source, UnaryOperator op,
   ASTContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<UnaryOperation>(expression));
 
   auto* unary_expr = To<UnaryOperation>(expression);
@@ -109,7 +115,7 @@ TEST(Parser, ParseFunctionDeclaration) {
   auto decl_group = parser.ParseDeclarationGroup();
   auto decl = decl_group[0];
 
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<FunctionDeclaration>(decl));
 
   auto* fun_decl = To<FunctionDeclaration>(decl);
@@ -132,7 +138,7 @@ TEST(Parser, ParseFunctionDeclarationWithBody) {
   auto decl_group = parser.ParseDeclarationGroup();
   auto decl = decl_group[0];
 
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<FunctionDeclaration>(decl));
 
   auto* fun_decl = To<FunctionDeclaration>(decl);
@@ -162,7 +168,7 @@ TEST(Parser, ParseUnaryExpressionInt) {
   ASTContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<IntegerLiteral>(expression));
   EXPECT_EQ(To<IntegerLiteral>(expression)->value(), 1);
 }
@@ -173,7 +179,7 @@ TEST(Parser, ParseUnaryExpressionFloat) {
   ASTContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<FloatingLiteral>(expression));
 }
 
@@ -183,7 +189,7 @@ TEST(Parser, ParseUnaryExpressionIdentifier) {
   ASTContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<VariableReference>(expression));
 }
 
@@ -193,7 +199,7 @@ TEST(Parser, ParseUnaryExpressionArraySubscript) {
   ASTContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<ArraySubscriptExpression>(expression));
 }
 
@@ -203,7 +209,7 @@ TEST(Parser, ParseUnaryExpressionCallExpression) {
   ASTContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<CallExpression>(expression));
   EXPECT_EQ(To<CallExpression>(expression)->name(), "fun");
   EXPECT_EQ(To<CallExpression>(expression)->arguments().size(), 2);
@@ -221,7 +227,7 @@ TEST(Parser, ParseExpressionBinaryOperationAddWithMul) {
   ASTContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
@@ -241,7 +247,7 @@ TEST(Parser, ParseExpressionBinaryOperationAddWithDiv) {
   ASTContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
@@ -261,7 +267,7 @@ TEST(Parser, ParseExpressionBinaryOperationAddWithRem) {
   ASTContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
@@ -281,7 +287,7 @@ TEST(Parser, ParseExpressionBinaryOperationCombined) {
   ASTContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
@@ -306,7 +312,7 @@ TEST(Parser, ParseExpressionBinaryParenthesis) {
   ASTContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
@@ -344,7 +350,7 @@ TEST(Parser, ParseExpressionLogicalCombined) {
   ASTContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
@@ -403,7 +409,7 @@ TEST(Parser, ParseIfStatement) {
   ASTContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
 
   EXPECT_TRUE(IsA<IfStatement>(statement));
   auto* if_stmt = To<IfStatement>(statement);
@@ -426,7 +432,7 @@ TEST(Parser, ParseIfStatementElse) {
   ASTContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
 
   EXPECT_TRUE(IsA<IfStatement>(statement));
   auto* if_stmt = To<IfStatement>(statement);
@@ -450,7 +456,7 @@ TEST(Parser, ParseIfStatementWithSingleStatementBody) {
   ASTContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
 
   EXPECT_TRUE(IsA<IfStatement>(statement));
   auto* if_stmt = To<IfStatement>(statement);
@@ -475,7 +481,7 @@ TEST(Parser, ParseWhileStatement) {
   ASTContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
 
   EXPECT_TRUE(IsA<WhileStatement>(statement));
   auto* while_stmt = To<WhileStatement>(statement);
@@ -494,7 +500,7 @@ TEST(Parser, ParseWhileStatementWithSingleStatementBody) {
   ASTContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
 
   EXPECT_TRUE(IsA<WhileStatement>(statement));
   auto* while_stmt = To<WhileStatement>(statement);
@@ -513,7 +519,7 @@ TEST(Parser, ParseBreakStatement) {
   ASTContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<BreakStatement>(statement));
 }
 
@@ -525,7 +531,7 @@ TEST(Parser, ParseContinueStatement) {
   ASTContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<ContinueStatement>(statement));
 }
 
@@ -537,7 +543,7 @@ TEST(Parser, ParseReturnStatementValuedVoid) {
   ASTContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<ReturnStatement>(statement));
 
   auto* return_stmt = To<ReturnStatement>(statement);
@@ -552,7 +558,7 @@ TEST(Parser, ParseReturnStatementValuedExpression) {
   ASTContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
-  EXPECT_FALSE(parser.has_errors());
+  CheckParserStates(parser);
   EXPECT_TRUE(IsA<ReturnStatement>(statement));
 
   auto* return_stmt = To<ReturnStatement>(statement);
