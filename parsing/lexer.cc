@@ -65,16 +65,16 @@ Token Lexer::NextToken() {
   }
 
   const char c = current();
-  Advance();
 
   if (IsIdentifier(c)) {
     return ParseIdentifier();
   }
 
-  if (IsDigit(c)) {
-    return ParseNumericConstant(c);
+  if (c == '.' || IsDigit(c)) {
+    return ParseNumericConstant();
   }
 
+  Advance();
   switch (c) {
     case '(':
       return Token(TokenType::kLeftParen, lexeme());
@@ -282,7 +282,7 @@ Token Lexer::ParseIdentifier() {
   return Token(TokenType::kIdentifier, lexeme);
 }
 
-Token Lexer::ParseNumericConstant(const char c) {
+Token Lexer::ParseNumericConstant() {
   auto consume_digits = [&] {
     while (IsDigit(current())) {
       Advance();
@@ -295,12 +295,34 @@ Token Lexer::ParseNumericConstant(const char c) {
     }
   };
 
-  // IntConst | FloatConst
-  const char next = current();
-  // hexadecimal
-  if (next == 'x' || next == 'X') {
-    // consume 'x' or 'X'
+  auto consume_float_exponent_part = [&] -> bool {
+    if (IsExponentPart(current())) {
+      Advance();
+      if (IsSign(current())) {
+        Advance();
+      }
+      consume_digits();
+      return true;
+    }
+    return false;
+  };
+
+  auto consume_float_fractional_part = [&] {
     Advance();
+    consume_digits();
+    consume_float_exponent_part();
+  };
+
+  // Consume float starts with dot
+  if (current() == '.') {
+    consume_float_fractional_part();
+    return Token(TokenType::kFloatConst, lexeme());
+  }
+
+  // hexadecimal
+  if (IsDigit(current()) && (Peek() == 'x' || Peek() == 'X')) {
+    // consume '0x' or '0X'
+    Advance(2);
 
     consume_hex_digits();
 
@@ -322,27 +344,25 @@ Token Lexer::ParseNumericConstant(const char c) {
   }
 
   // octal
-  if (c == '0') {
+  if (current() == '0') {
     // followed by digits 0-7
-    if (IsOctalDigit(current())) {
+    if (IsOctalDigit(Peek())) {
       while (IsOctalDigit(current())) {
         Advance();
       }
-      return Token(TokenType::kIntOctalConst, lexeme());
+      if (current() != '.') {
+        return Token(TokenType::kIntOctalConst, lexeme());
+      }
     }
   }
 
   consume_digits();
   if (current() == '.') {
-    Advance();
-    consume_digits();
-    if (IsExponentPart(current())) {
-      Advance();
-      if (IsSign(current())) {
-        Advance();
-      }
-      consume_digits();
-    }
+    consume_float_fractional_part();
+    return Token(TokenType::kFloatConst, lexeme());
+  }
+
+  if (consume_float_exponent_part()) {
     return Token(TokenType::kFloatConst, lexeme());
   }
 

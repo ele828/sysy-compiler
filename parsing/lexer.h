@@ -31,7 +31,7 @@ class Lexer final {
 
   Token ParseIdentifier();
 
-  Token ParseNumericConstant(const char c);
+  Token ParseNumericConstant();
 
   bool IsAtEnd() const { return position_ >= source_.length(); }
 
