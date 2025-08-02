@@ -8,7 +8,7 @@ namespace sysy {
 template <typename Derived>
 class TypeVisitor {
  public:
-  void Visit(Type* type) {
+  void Visit(const Type* type) {
     switch (type->type_class()) {
       case Type::TypeClass::kBuiltin:
         return derived()->VisitBuiltinType(To<BuiltinType>(type));
@@ -20,13 +20,13 @@ class TypeVisitor {
     }
   }
 
-  void VisitBuiltinType(BuiltinType* type) {}
+  void VisitBuiltinType(const BuiltinType* type) {}
 
-  void VisitConstantArrayType(ConstantArrayType* type) {
+  void VisitConstantArrayType(const ConstantArrayType* type) {
     Visit(type->element_type());
   }
 
-  void VisitIncompleteArrayType(IncompleteArrayType* type) {
+  void VisitIncompleteArrayType(const IncompleteArrayType* type) {
     Visit(type->element_type());
   }
 

@@ -12,21 +12,21 @@ class TypeDumper final : public TypeVisitor<TypeDumper>,
   using Base = TypeVisitor<TypeDumper>;
 
  public:
-  void VisitBuiltinType(BuiltinType* type) {
+  void VisitBuiltinType(const BuiltinType* type) {
     PrefixWriterScope scope(*this);
     std::string str = std::format("BuiltinType: {}", type->name());
     Write(str);
     Base::VisitBuiltinType(type);
   }
 
-  void VisitConstantArrayType(ConstantArrayType* type) {
+  void VisitConstantArrayType(const ConstantArrayType* type) {
     PrefixWriterScope scope(*this);
     std::string str = std::format("ConstantArrayType size: *");
     Write(str);
     Base::VisitConstantArrayType(type);
   }
 
-  void VisitIncompleteArrayType(IncompleteArrayType* type) {
+  void VisitIncompleteArrayType(const IncompleteArrayType* type) {
     PrefixWriterScope scope(*this);
     std::string str = std::format("IncompleteArrayType");
     Write(str);
