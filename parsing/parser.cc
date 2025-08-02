@@ -146,6 +146,9 @@ ZoneVector<Declaration*> Parser::ParseDeclarationGroup() {
   }
 
   Unexpected(current_.type());
+  // Meet unknown declaration, we still need to consume other wise it'll be in
+  // an infinite loop.
+  Consume();
   return ZoneVector<Declaration*>(zone());
 }
 
