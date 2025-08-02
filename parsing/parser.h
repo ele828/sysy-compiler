@@ -11,6 +11,11 @@ namespace sysy {
 
 class Parser {
  public:
+  struct Error {
+    std::string error_message;
+    Location location;
+  };
+
   Parser(ASTContext& context, std::string_view source);
 
   CompilationUnit* ParseCompilationUnit();
@@ -63,7 +68,7 @@ class Parser {
 
   bool done() const { return Match(TokenType::kEof); }
 
-  const std::vector<std::string>& errors() const { return errors_; }
+  const std::vector<Error>& errors() const { return errors_; }
 
  private:
   int GetCurrentPrecedence();
@@ -84,7 +89,7 @@ class Parser {
 
   bool MatchDeclaration();
 
-  void SyntaxError(std::string error);
+  void SyntaxError(std::string error, Location location);
 
   void Unexpected(TokenType type);
 
@@ -95,8 +100,7 @@ class Parser {
   ASTContext& context_;
   Lexer lexer_;
   Token current_;
-
-  std::vector<std::string> errors_;
+  std::vector<Error> errors_;
 };
 
 }  // namespace sysy

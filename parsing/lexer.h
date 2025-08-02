@@ -16,6 +16,14 @@ class Lexer final {
   Token PeekToken(size_t n = 1);
 
  private:
+  class PeekStateSaver;
+
+  struct LexState {
+    Token token;
+    size_t end_position;
+    Location location_;
+  };
+
   char current() const { return source_[position_]; }
 
   char Peek() const {
@@ -23,15 +31,28 @@ class Lexer final {
     return source_[position_ + 1];
   }
 
-  void Advance() { ++position_; }
+  void Advance() {
+    ++position_;
+    ++location_.column;
+  }
 
-  void Advance(size_t step) { position_ += step; }
+  void Advance(size_t step) {
+    position_ += step;
+    location_.column += step;
+  }
 
   void SkipWhitespace();
 
   Token ParseIdentifier();
 
   Token ParseNumericConstant();
+
+  Token CreateToken(TokenType type) { return Token(type, lexeme(), location_); }
+
+  void StartNewLine() {
+    ++location_.line;
+    location_.column = 0;
+  }
 
   bool IsAtEnd() const { return position_ >= source_.length(); }
 
@@ -45,10 +66,8 @@ class Lexer final {
   size_t position_{0u};
   size_t start_{0u};
 
-  struct LexState {
-    Token token;
-    size_t end_position;
-  };
+  Location location_;
+
   base::RingBuffer<LexState, kMaxLookahead> lookahead_buffer_;
   bool peek_mode_{false};
 };

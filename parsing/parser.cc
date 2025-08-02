@@ -1,13 +1,9 @@
 #include "parsing/parser.h"
 
-#include <array>
-#include <cmath>
 #include <format>
-#include <print>
 
 #include "ast/ast.h"
 #include "ast/type.h"
-#include "base/logging.h"
 #include "magic_enum/magic_enum.hpp"
 #include "parsing/token.h"
 
@@ -469,10 +465,10 @@ Expression* Parser::ParseUnaryExpression() {
       Consume();
       if (!result.has_value()) {
         if (result.error() == Token::ConversionError::kInvalid) {
-          SyntaxError("Invalid integer");
+          SyntaxError("Invalid integer", current_.location());
           return {};
         } else if (result.error() == Token::ConversionError::kOutOfRange) {
-          SyntaxError("Integer is out of range");
+          SyntaxError("Integer is out of range", current_.location());
           return {};
         }
       }
@@ -484,10 +480,10 @@ Expression* Parser::ParseUnaryExpression() {
       Consume();
       if (!result.has_value()) {
         if (result.error() == Token::ConversionError::kInvalid) {
-          SyntaxError("Invalid integer");
+          SyntaxError("Invalid integer", current_.location());
           return {};
         } else if (result.error() == Token::ConversionError::kOutOfRange) {
-          SyntaxError("Integer is out of range");
+          SyntaxError("Integer is out of range", current_.location());
           return {};
         }
       }
@@ -568,24 +564,30 @@ Token Parser::Consume(TokenType type, const char* error_message) {
   }
 
   if (error_message) {
-    SyntaxError(error_message);
+    SyntaxError(error_message, current_.location());
   } else {
     SyntaxError(std::format("parse error: expected token type {}, but got {}",
                             magic_enum::enum_name(type),
-                            magic_enum::enum_name(current_.type())));
+                            magic_enum::enum_name(current_.type())),
+                current_.location());
   }
 
   Consume();
   return {};
 }
 
-void Parser::SyntaxError(std::string error) {
-  errors_.push_back(std::move(error));
+void Parser::SyntaxError(std::string error, Location location) {
+  Error syntax_error{
+      .error_message = std::move(error),
+      .location = location,
+  };
+  errors_.push_back(std::move(syntax_error));
 }
 
 void Parser::Unexpected(TokenType type) {
-  SyntaxError(std::format("parse error: unexpected token type: {}",
-                          magic_enum::enum_name(type)));
+  std::string error_message = std::format(
+      "parse error: unexpected token type: {}", magic_enum::enum_name(type));
+  SyntaxError(std::move(error_message), current_.location());
 }
 
 Type* Parser::ResolveBuiltinType(const Token& token) {
@@ -597,7 +599,8 @@ Type* Parser::ResolveBuiltinType(const Token& token) {
     case TokenType::kKeywordFloat:
       return context_.float_type();
     default:
-      SyntaxError(std::format("Unknown type: {}", token.value()));
+      SyntaxError(std::format("Unknown type: {}", token.value()),
+                  token.location());
       return {};
   }
 }

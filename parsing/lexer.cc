@@ -1,8 +1,5 @@
 #include "parsing/lexer.h"
 
-#include <atomic>
-#include <print>
-
 #include "base/bounds.h"
 #include "base/logging.h"
 #include "parsing/token.h"
@@ -48,12 +45,34 @@ constexpr bool MatchKeyword(std::string_view input, std::string_view expected) {
 
 }  // namespace
 
+class Lexer::PeekStateSaver {
+ public:
+  explicit PeekStateSaver(Lexer& lexer)
+      : lexer_(lexer),
+        position_(lexer_.position_),
+        location_(lexer_.location_) {
+    lexer_.peek_mode_ = true;
+  }
+
+  ~PeekStateSaver() {
+    lexer_.position_ = position_;
+    lexer_.location_ = location_;
+    lexer_.peek_mode_ = false;
+  }
+
+ private:
+  Lexer& lexer_;
+  size_t position_;
+  Location location_;
+};
+
 Lexer::Lexer(std::string_view source) : source_(source) {}
 
 Token Lexer::NextToken() {
   if (!peek_mode_ && !lookahead_buffer_.is_empty()) {
     auto state = lookahead_buffer_.Pop();
     position_ = state.end_position;
+    location_ = state.location_;
     return state.token;
   }
 
@@ -61,7 +80,7 @@ Token Lexer::NextToken() {
   start_ = position_;
 
   if (IsAtEnd()) {
-    return Token(TokenType::kEof, {});
+    return CreateToken(TokenType::kEof);
   }
 
   const char c = current();
@@ -77,92 +96,88 @@ Token Lexer::NextToken() {
   Advance();
   switch (c) {
     case '(':
-      return Token(TokenType::kLeftParen, lexeme());
+      return CreateToken(TokenType::kLeftParen);
     case ')':
-      return Token(TokenType::kRightParen, lexeme());
+      return CreateToken(TokenType::kRightParen);
     case '{':
-      return Token(TokenType::kLeftBrace, lexeme());
+      return CreateToken(TokenType::kLeftBrace);
     case '}':
-      return Token(TokenType::kRightBrace, lexeme());
+      return CreateToken(TokenType::kRightBrace);
     case '[':
-      return Token(TokenType::kLeftBracket, lexeme());
+      return CreateToken(TokenType::kLeftBracket);
     case ']':
-      return Token(TokenType::kRightBracket, lexeme());
+      return CreateToken(TokenType::kRightBracket);
     case ';':
-      return Token(TokenType::kSemicolon, lexeme());
+      return CreateToken(TokenType::kSemicolon);
     case ',':
-      return Token(TokenType::kComma, lexeme());
+      return CreateToken(TokenType::kComma);
     case '.':
-      return Token(TokenType::kPeriod, lexeme());
+      return CreateToken(TokenType::kPeriod);
     case '+':
-      return Token(TokenType::kPlus, lexeme());
+      return CreateToken(TokenType::kPlus);
     case '-':
-      return Token(TokenType::kMinus, lexeme());
+      return CreateToken(TokenType::kMinus);
     case '*':
-      return Token(TokenType::kStar, lexeme());
+      return CreateToken(TokenType::kStar);
     case '/':
-      return Token(TokenType::kSlash, lexeme());
+      return CreateToken(TokenType::kSlash);
     case '%':
-      return Token(TokenType::kPercent, lexeme());
+      return CreateToken(TokenType::kPercent);
     case '&': {
       if (current() == '&') {
         Advance();
-        return Token(TokenType::kAmpAmp, lexeme());
+        return CreateToken(TokenType::kAmpAmp);
       }
       break;
     }
     case '|': {
       if (current() == '|') {
         Advance();
-        return Token(TokenType::kPipePipe, lexeme());
+        return CreateToken(TokenType::kPipePipe);
       }
       break;
     }
     case '!': {
       if (current() == '=') {
         Advance();
-        return Token(TokenType::kExclaimEqual, lexeme());
+        return CreateToken(TokenType::kExclaimEqual);
       } else {
-        return Token(TokenType::kExclaim, lexeme());
+        return CreateToken(TokenType::kExclaim);
       }
     }
     case '=': {
       if (current() == '=') {
         Advance();
-        return Token(TokenType::kEqualEqual, lexeme());
+        return CreateToken(TokenType::kEqualEqual);
       } else {
-        return Token(TokenType::kEqual, lexeme());
+        return CreateToken(TokenType::kEqual);
       }
     }
     case '<': {
       if (current() == '=') {
         Advance();
-        return Token(TokenType::kLessEqual, lexeme());
+        return CreateToken(TokenType::kLessEqual);
       } else {
-        return Token(TokenType::kLess, lexeme());
+        return CreateToken(TokenType::kLess);
       }
     }
     case '>': {
       if (current() == '=') {
         Advance();
-        return Token(TokenType::kGreaterEqual, lexeme());
+        return CreateToken(TokenType::kGreaterEqual);
       } else {
-        return Token(TokenType::kGreater, lexeme());
+        return CreateToken(TokenType::kGreater);
       }
     }
   }
 
-  NOTREACHED();
-
-  return {};
+  return CreateToken(TokenType::kIllegal);
 }
 
 Token Lexer::PeekToken(size_t n) {
   DCHECK(n > 0 && n <= kMaxLookahead);
 
-  // save states
-  size_t saved_position = position_;
-  peek_mode_ = true;
+  PeekStateSaver saver(*this);
 
   Token token;
   while (n-- > 0) {
@@ -170,13 +185,11 @@ Token Lexer::PeekToken(size_t n) {
     LexState state{
         .token = token,
         .end_position = position_,
+        .location_ = location_,
     };
     lookahead_buffer_.Push(state);
   }
 
-  // restore states
-  position_ = saved_position;
-  peek_mode_ = false;
   return token;
 }
 
@@ -184,6 +197,9 @@ void Lexer::SkipWhitespace() {
   while (true) {
     const char c = current();
     if (IsWhiteSpace(c)) {
+      if (c == '\n') {
+        StartNewLine();
+      }
       Advance();
       continue;
     }
@@ -226,60 +242,60 @@ Token Lexer::ParseIdentifier() {
   switch (lexeme[0]) {
     case 'c': {
       if (MatchKeyword(lexeme, "const")) {
-        return Token(TokenType::kKeywordConst, lexeme);
+        return CreateToken(TokenType::kKeywordConst);
       }
       if (MatchKeyword(lexeme, "continue")) {
-        return Token(TokenType::kKeywordContinue, lexeme);
+        return CreateToken(TokenType::kKeywordContinue);
       }
       break;
     }
     case 'i': {
       if (MatchKeyword(lexeme, "if")) {
-        return Token(TokenType::kKeywordIf, lexeme);
+        return CreateToken(TokenType::kKeywordIf);
       }
       if (MatchKeyword(lexeme, "int")) {
-        return Token(TokenType::kKeywordInt, lexeme);
+        return CreateToken(TokenType::kKeywordInt);
       }
       break;
     }
     case 'f': {
       if (MatchKeyword(lexeme, "float")) {
-        return Token(TokenType::kKeywordFloat, lexeme);
+        return CreateToken(TokenType::kKeywordFloat);
       }
       break;
     }
     case 'v': {
       if (MatchKeyword(lexeme, "void")) {
-        return Token(TokenType::kKeywordVoid, lexeme);
+        return CreateToken(TokenType::kKeywordVoid);
       }
       break;
     }
     case 'e': {
       if (MatchKeyword(lexeme, "else")) {
-        return Token(TokenType::kKeywordElse, lexeme);
+        return CreateToken(TokenType::kKeywordElse);
       }
       break;
     }
     case 'w': {
       if (MatchKeyword(lexeme, "while")) {
-        return Token(TokenType::kKeywordWhile, lexeme);
+        return CreateToken(TokenType::kKeywordWhile);
       }
       break;
     }
     case 'b': {
       if (MatchKeyword(lexeme, "break")) {
-        return Token(TokenType::kKeywordBreak, lexeme);
+        return CreateToken(TokenType::kKeywordBreak);
       }
       break;
     }
     case 'r': {
       if (MatchKeyword(lexeme, "return")) {
-        return Token(TokenType::kKeywordReturn, lexeme);
+        return CreateToken(TokenType::kKeywordReturn);
       }
       break;
     }
   }
-  return Token(TokenType::kIdentifier, lexeme);
+  return CreateToken(TokenType::kIdentifier);
 }
 
 Token Lexer::ParseNumericConstant() {
@@ -316,7 +332,7 @@ Token Lexer::ParseNumericConstant() {
   // Consume float starts with dot
   if (current() == '.') {
     consume_float_fractional_part();
-    return Token(TokenType::kFloatConst, lexeme());
+    return CreateToken(TokenType::kFloatConst);
   }
 
   // hexadecimal
@@ -336,11 +352,11 @@ Token Lexer::ParseNumericConstant() {
           Advance();
         }
         consume_digits();
-        return Token(TokenType::kFloatHexConst, lexeme());
+        return CreateToken(TokenType::kFloatHexConst);
       }
     }
 
-    return Token(TokenType::kIntHexConst, lexeme());
+    return CreateToken(TokenType::kIntHexConst);
   }
 
   // octal
@@ -351,7 +367,7 @@ Token Lexer::ParseNumericConstant() {
         Advance();
       }
       if (current() != '.') {
-        return Token(TokenType::kIntOctalConst, lexeme());
+        return CreateToken(TokenType::kIntOctalConst);
       }
     }
   }
@@ -359,14 +375,14 @@ Token Lexer::ParseNumericConstant() {
   consume_digits();
   if (current() == '.') {
     consume_float_fractional_part();
-    return Token(TokenType::kFloatConst, lexeme());
+    return CreateToken(TokenType::kFloatConst);
   }
 
   if (consume_float_exponent_part()) {
-    return Token(TokenType::kFloatConst, lexeme());
+    return CreateToken(TokenType::kFloatConst);
   }
 
-  return Token(TokenType::kIntConst, lexeme());
+  return CreateToken(TokenType::kIntConst);
 }
 
 }  // namespace sysy
