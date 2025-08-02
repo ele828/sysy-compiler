@@ -82,6 +82,8 @@ class Parser {
 
   Type* ResolveBuiltinType(const Token& token);
 
+  bool MatchDeclarationGroup();
+
   void SyntaxError(std::string error);
 
   void Unexpected(TokenType type);

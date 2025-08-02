@@ -1,5 +1,7 @@
 #pragma once
 
+#include <gtest/gtest.h>
+
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -43,6 +45,12 @@ inline void PrintErrors(const Parser& parser) {
   for (auto& error : parser.errors()) {
     std::println(stderr, "{}", error);
   }
+}
+
+inline void CheckParserStates(const Parser& parser) {
+  PrintErrors(parser);
+  EXPECT_FALSE(parser.has_errors());
+  EXPECT_TRUE(parser.done());
 }
 
 }  // namespace sysy::test

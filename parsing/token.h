@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <expected>
+#include <format>
 #include <string_view>
 
 #include "magic_enum/magic_enum.hpp"
@@ -82,3 +83,13 @@ class Token {
 };
 
 }  // namespace sysy
+
+template <>
+struct std::formatter<sysy::Token> {
+  constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
+
+  auto format(const sysy::Token& token, std::format_context& ctx) const {
+    return std::format_to(ctx.out(), "Token({}, {})",
+                          magic_enum::enum_name(token.type()), token.value());
+  }
+};

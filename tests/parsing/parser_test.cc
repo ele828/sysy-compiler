@@ -14,11 +14,6 @@ namespace sysy::test {
 
 namespace {
 
-void CheckParserStates(const Parser& parser) {
-  EXPECT_FALSE(parser.has_errors());
-  EXPECT_TRUE(parser.done());
-}
-
 void TestBinaryExpression(std::string_view source, BinaryOperator op,
                           AstNode::Kind lhs_kind, AstNode::Kind rhs_kind) {
   ASTContext context;
@@ -122,6 +117,7 @@ TEST(Parser, ParseFunctionDeclaration) {
   EXPECT_EQ(fun_decl->name(), "fun");
   EXPECT_EQ(fun_decl->type(), context.void_type());
   EXPECT_EQ(fun_decl->parameters().size(), 2u);
+
   EXPECT_TRUE(IsA<CompoundStatement>(fun_decl->body()));
 }
 

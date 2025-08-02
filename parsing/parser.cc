@@ -129,14 +129,12 @@ ZoneVector<Declaration*> Parser::ParseDeclarations() {
     ZoneVector<Declaration*> declaration_group = ParseDeclarationGroup();
     declarations.insert(declarations.end(), declaration_group.begin(),
                         declaration_group.end());
-    Consume();
   }
   return declarations;
 }
 
 ZoneVector<Declaration*> Parser::ParseDeclarationGroup() {
   if (Match(TokenType::kKeywordConst)) {
-    Consume();
     return ParseConstantDeclaration();
   }
   if (MatchTypeSpecifier()) {
@@ -150,10 +148,27 @@ ZoneVector<Declaration*> Parser::ParseDeclarationGroup() {
     }
     return ParseVariableDeclaration();
   }
+
+  Unexpected(current_.type());
   return ZoneVector<Declaration*>(zone());
 }
 
+bool Parser::MatchDeclarationGroup() {
+  if (Match(TokenType::kKeywordConst)) {
+    // Constant Declaration
+    return true;
+  }
+  if (MatchTypeSpecifier()) {
+    // Function Declaration or Variable Declaration
+    return true;
+  }
+  return false;
+}
+
 ZoneVector<Declaration*> Parser::ParseConstantDeclaration() {
+  // Consume const keyword
+  Consume();
+
   ZoneVector<Declaration*> declarations(zone());
   Type* base_type = ResolveBuiltinType(Consume());
 
@@ -291,8 +306,8 @@ Statement* Parser::ParseBlock() {
 
   ZoneVector<Statement*> body(zone());
   while (!done() && !Match(TokenType::kRightBrace)) {
-    ZoneVector<Declaration*> declaration_group = ParseDeclarationGroup();
-    if (!declaration_group.empty()) {
+    if (MatchDeclarationGroup()) {
+      ZoneVector<Declaration*> declaration_group = ParseDeclarationGroup();
       DeclarationStatement* declaration_stmt =
           zone()->New<DeclarationStatement>(declaration_group);
       body.push_back(declaration_stmt);
@@ -447,7 +462,9 @@ Expression* Parser::ParseUnaryExpression() {
       Consume(TokenType::kRightParen);
       return expression;
     }
-    case TokenType::kIntConst: {
+    case TokenType::kIntConst:
+    case TokenType::kIntHexConst:
+    case TokenType::kIntOctalConst: {
       auto result = current_.GetIntValue();
       Consume();
       if (!result.has_value()) {
@@ -461,7 +478,8 @@ Expression* Parser::ParseUnaryExpression() {
       }
       return zone()->New<IntegerLiteral>(result.value());
     }
-    case TokenType::kFloatConst: {
+    case TokenType::kFloatConst:
+    case TokenType::kFloatHexConst: {
       auto result = current_.GetFloatValue();
       Consume();
       if (!result.has_value()) {
