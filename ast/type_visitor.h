@@ -5,28 +5,26 @@
 
 namespace sysy {
 
-template <typename RetTy = void>
+template <typename Derived>
 class TypeVisitor {
  public:
-  RetTy Visit(const Type* type) {
+  void Visit(const Type* type) {
     switch (type->type_class()) {
       case Type::TypeClass::kBuiltin:
-        return VisitBuiltinType(To<BuiltinType>(type));
+        return derived()->VisitBuiltinType(To<BuiltinType>(type));
       case Type::TypeClass::kConstantArray:
-        return VisitBuiltinType(To<ConstantArrayType>(type));
+        return derived()->VisitBuiltinType(To<ConstantArrayType>(type));
       case Type::TypeClass::kIncompleteArray:
-        return VisitBuiltinType(To<IncompleteArrayType>(type));
-      default:
-        return VisitType(type);
+        return derived()->VisitBuiltinType(To<IncompleteArrayType>(type));
     }
   }
 
-  RetTy VisitBuiltinType(const BuiltinType*);
-  RetTy VisitConstantArrayType(const ConstantArrayType*);
-  RetTy VisitIncompleteArrayType(const IncompleteArrayType*);
+  void VisitBuiltinType(const BuiltinType*) {}
+  void VisitConstantArrayType(const ConstantArrayType*) {}
+  void VisitIncompleteArrayType(const IncompleteArrayType*) {}
 
-  // default fallback
-  RetTy VisitType(const Type*) {}
+ private:
+  const Derived* derived() { return static_cast<Derived*>(this); }
 };
 
 }  // namespace sysy
