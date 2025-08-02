@@ -12,6 +12,7 @@ add_dependencies()
 
 # sysy library
 set(SOURCE_FILES
+  ast/ast.cc
   ast/ast_context.cc
   base/zone.cc
   parsing/lexer.cc

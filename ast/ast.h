@@ -1,7 +1,7 @@
 #pragma once
 
-#include <atomic>
 #include <cstdint>
+#include <format>
 
 #include "ast/type.h"
 #include "base/zone.h"
@@ -76,6 +76,8 @@ class AstNode : public ZoneObject {
   explicit AstNode(Kind kind) : kind_(kind) {}
 
   Kind kind() const { return kind_; }
+
+  void Dump();
 
  private:
   Kind kind_;
@@ -444,8 +446,8 @@ class ArraySubscriptExpression : public Expression {
     return n.kind() == Kind::kArraySubscript;
   }
 
-  const Expression* base() const { return base_; }
-  const Expression* dimension() const { return dimension_; }
+  Expression* base() const { return base_; }
+  Expression* dimension() const { return dimension_; }
 
  private:
   Expression* base_;
@@ -472,3 +474,68 @@ class CallExpression : public Expression {
 };
 
 }  // namespace sysy
+
+namespace std {
+
+using namespace sysy;
+
+template <>
+struct std::formatter<sysy::UnaryOperator> {
+  constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
+
+  auto format(const UnaryOperator& op, std::format_context& ctx) const {
+    switch (op) {
+      case UnaryOperator::kInvalid:
+        return std::format_to(ctx.out(), "@");
+      case UnaryOperator::kPlus:
+        return std::format_to(ctx.out(), "+");
+      case UnaryOperator::kMinus:
+        return std::format_to(ctx.out(), "-");
+      case UnaryOperator::kLNot:
+        return std::format_to(ctx.out(), "!");
+    }
+  }
+};
+
+template <>
+struct std::formatter<sysy::BinaryOperator> {
+  constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
+
+  auto format(const sysy::BinaryOperator& op, std::format_context& ctx) const {
+    using namespace sysy;
+    switch (op) {
+      case BinaryOperator::kInvalid:
+        return std::format_to(ctx.out(), "@");
+      case BinaryOperator::kAdd:
+        return std::format_to(ctx.out(), "+");
+      case BinaryOperator::kSub:
+        return std::format_to(ctx.out(), "-");
+      case BinaryOperator::kMul:
+        return std::format_to(ctx.out(), "*");
+      case BinaryOperator::kDiv:
+        return std::format_to(ctx.out(), "/");
+      case BinaryOperator::kRem:
+        return std::format_to(ctx.out(), "%");
+      case BinaryOperator::kLt:
+        return std::format_to(ctx.out(), "<");
+      case BinaryOperator::kGt:
+        return std::format_to(ctx.out(), ">");
+      case BinaryOperator::kGe:
+        return std::format_to(ctx.out(), ">=");
+      case BinaryOperator::kLe:
+        return std::format_to(ctx.out(), "<=");
+      case BinaryOperator::kEq:
+        return std::format_to(ctx.out(), "==");
+      case BinaryOperator::kNeq:
+        return std::format_to(ctx.out(), "!=");
+      case BinaryOperator::kLAnd:
+        return std::format_to(ctx.out(), "&&");
+      case BinaryOperator::kLOr:
+        return std::format_to(ctx.out(), "||");
+      case BinaryOperator::kAssign:
+        return std::format_to(ctx.out(), "=");
+    }
+  }
+};
+
+}  // namespace std
