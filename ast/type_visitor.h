@@ -13,9 +13,10 @@ class TypeVisitor {
       case Type::TypeClass::kBuiltin:
         return derived()->VisitBuiltinType(To<BuiltinType>(type));
       case Type::TypeClass::kConstantArray:
-        return derived()->VisitBuiltinType(To<ConstantArrayType>(type));
+        return derived()->VisitConstantArrayType(To<ConstantArrayType>(type));
       case Type::TypeClass::kIncompleteArray:
-        return derived()->VisitBuiltinType(To<IncompleteArrayType>(type));
+        return derived()->VisitIncompleteArrayType(
+            To<IncompleteArrayType>(type));
     }
   }
 
@@ -30,7 +31,7 @@ class TypeVisitor {
   }
 
  private:
-  const Derived* derived() { return static_cast<Derived*>(this); }
+  Derived* derived() { return static_cast<Derived*>(this); }
 };
 
 }  // namespace sysy
