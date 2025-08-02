@@ -82,7 +82,7 @@ class Parser {
 
   Type* ResolveBuiltinType(const Token& token);
 
-  bool MatchDeclarationGroup();
+  bool MatchDeclaration();
 
   void SyntaxError(std::string error);
 

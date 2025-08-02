@@ -153,7 +153,7 @@ ZoneVector<Declaration*> Parser::ParseDeclarationGroup() {
   return ZoneVector<Declaration*>(zone());
 }
 
-bool Parser::MatchDeclarationGroup() {
+bool Parser::MatchDeclaration() {
   if (Match(TokenType::kKeywordConst)) {
     // Constant Declaration
     return true;
@@ -306,7 +306,7 @@ Statement* Parser::ParseBlock() {
 
   ZoneVector<Statement*> body(zone());
   while (!done() && !Match(TokenType::kRightBrace)) {
-    if (MatchDeclarationGroup()) {
+    if (MatchDeclaration()) {
       ZoneVector<Declaration*> declaration_group = ParseDeclarationGroup();
       DeclarationStatement* declaration_stmt =
           zone()->New<DeclarationStatement>(declaration_group);
