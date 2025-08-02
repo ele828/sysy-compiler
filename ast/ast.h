@@ -246,6 +246,7 @@ class ExpressionStatement : public Statement {
     return n.kind() == Kind::kExpressionStatement;
   }
 
+  // Maybe nullptr if it's an empty statment.
   Expression* expression() const { return expression_; }
 
  private:
@@ -421,6 +422,19 @@ class VariableReference : public Expression {
   std::string_view variable_;
 };
 
+class InitListExpression : public Expression {
+ public:
+  explicit InitListExpression(ZoneVector<Expression*> list)
+      : Expression(Kind::kInitList), list_(std::move(list)) {}
+
+  static bool classof(const AstNode& n) { return n.kind() == Kind::kInitList; }
+
+  const ZoneVector<Expression*>& list() const { return list_; }
+
+ private:
+  ZoneVector<Expression*> list_;
+};
+
 class ArraySubscriptExpression : public Expression {
  public:
   ArraySubscriptExpression(Expression* base, Expression* dimension)
@@ -455,19 +469,6 @@ class CallExpression : public Expression {
  private:
   std::string_view name_;
   ZoneVector<Expression*> arguments_;
-};
-
-class InitListExpression : public Expression {
- public:
-  explicit InitListExpression(ZoneVector<Expression*> list)
-      : Expression(Kind::kInitList), list_(std::move(list)) {}
-
-  static bool classof(const AstNode& n) { return n.kind() == Kind::kInitList; }
-
-  const ZoneVector<Expression*>& list() const { return list_; }
-
- private:
-  ZoneVector<Expression*> list_;
 };
 
 }  // namespace sysy

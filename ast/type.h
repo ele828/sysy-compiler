@@ -22,6 +22,8 @@ class Type : public ZoneObject {
 
   TypeClass type_class() const { return type_class_; }
 
+  void Dump();
+
  private:
   TypeClass type_class_;
 };
