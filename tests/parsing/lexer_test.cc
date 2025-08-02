@@ -109,6 +109,38 @@ TEST(Lexer, FloatConstHexademical) {
   EXPECT_EQ(next_token.value(), "0x1.3P-2");
 }
 
+TEST(Lexer, FloatConstHexademical2) {
+  const char* source = "0x1.921fb6p+1";
+  Lexer lexer(source);
+  Token next_token = lexer.NextToken();
+  EXPECT_EQ(next_token.type(), TokenType::kFloatHexConst);
+  EXPECT_EQ(next_token.value(), "0x1.921fb6p+1");
+}
+
+TEST(Lexer, FloatStartWith0) {
+  const char* source = "03.141592653589793";
+  Lexer lexer(source);
+  Token next_token = lexer.NextToken();
+  EXPECT_EQ(next_token.type(), TokenType::kFloatConst);
+  EXPECT_EQ(next_token.value(), "03.141592653589793");
+}
+
+TEST(Lexer, FloatWithExponent) {
+  const char* source = "1e-6";
+  Lexer lexer(source);
+  Token next_token = lexer.NextToken();
+  EXPECT_EQ(next_token.type(), TokenType::kFloatConst);
+  EXPECT_EQ(next_token.value(), "1e-6");
+}
+
+TEST(Lexer, FloatWithoutIntegerPart) {
+  const char* source = ".5";
+  Lexer lexer(source);
+  Token next_token = lexer.NextToken();
+  EXPECT_EQ(next_token.type(), TokenType::kFloatConst);
+  EXPECT_EQ(next_token.value(), ".5");
+}
+
 TEST(Lexer, VariableDecl) {
   const char* source = "int a;";
   Lexer lexer(source);
