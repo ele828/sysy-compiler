@@ -43,7 +43,8 @@ inline std::vector<Fixture> DiscoverFixtures(std::filesystem::path path) {
 
 inline void PrintErrors(const Parser& parser) {
   for (auto& error : parser.errors()) {
-    std::println(stderr, "{}", error);
+    std::println(stderr, "{} at line: {} column: {}", error.error_message,
+                 error.location.line, error.location.column);
   }
 }
 

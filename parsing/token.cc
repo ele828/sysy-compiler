@@ -7,8 +7,8 @@
 
 namespace sysy {
 
-Token::Token(TokenType type, std::string_view value)
-    : type_(type), value_(value) {}
+Token::Token(TokenType type, std::string_view value, Location location)
+    : type_(type), value_(value), location_(location) {}
 
 std::expected<int, Token::ConversionError> Token::GetIntValue() {
   DCHECK(type_ == TokenType::kIntConst || type_ == TokenType::kIntHexConst ||

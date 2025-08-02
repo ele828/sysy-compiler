@@ -60,13 +60,20 @@ enum class TokenType : uint8_t {
 
 constexpr size_t kTokenTypeCount = magic_enum::enum_count<TokenType>();
 
+struct Location {
+  size_t line{1u};
+  size_t column{0u};
+};
+
 class Token {
  public:
   Token() = default;
-  Token(TokenType type, std::string_view value);
+  Token(TokenType type, std::string_view value, Location location);
 
   [[nodiscard]] TokenType type() const { return type_; }
   [[nodiscard]] std::string_view value() const { return value_; }
+
+  Location location() const { return location_; }
 
   enum class ConversionError {
     kInvalid,
@@ -80,6 +87,7 @@ class Token {
  private:
   TokenType type_{TokenType::kIllegal};
   std::string_view value_;
+  Location location_;
 };
 
 }  // namespace sysy
