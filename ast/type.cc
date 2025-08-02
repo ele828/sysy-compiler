@@ -3,28 +3,41 @@
 #include <print>
 
 #include "ast/type_visitor.h"
+#include "base/tree_dumper.h"
 
 namespace sysy {
 
+class TypeDumper final : public TypeVisitor<TypeDumper>,
+                         public base::TreeDumper {
+  using Base = TypeVisitor<TypeDumper>;
+
+ public:
+  void VisitBuiltinType(BuiltinType* type) {
+    PrefixWriterScope scope(*this);
+    std::string str = std::format("BuiltinType: {}", type->name());
+    Write(str);
+    Base::VisitBuiltinType(type);
+  }
+
+  void VisitConstantArrayType(ConstantArrayType* type) {
+    PrefixWriterScope scope(*this);
+    std::string str = std::format("ConstantArrayType size: *");
+    Write(str);
+    Base::VisitConstantArrayType(type);
+  }
+
+  void VisitIncompleteArrayType(IncompleteArrayType* type) {
+    PrefixWriterScope scope(*this);
+    std::string str = std::format("IncompleteArrayType");
+    Write(str);
+    Base::VisitIncompleteArrayType(type);
+  }
+};
+
 void Type::Dump() {
-  using RetTy = void;
-  class TypeDumper final : public TypeVisitor<RetTy> {
-   public:
-    RetTy VisitBuiltinType(const BuiltinType* ty) {
-      std::print("BuiltinType: {}", ty->name());
-    }
-
-    RetTy VisitConstantArrayType(const ConstantArrayType*) {
-      std::print("ConstantArrayType");
-    }
-
-    RetTy VisitIncompleteArrayType(const IncompleteArrayType*) {
-      std::print("IncompleteArrayType");
-    }
-  };
-
   TypeDumper dumper;
   dumper.Visit(this);
+  std::println("{}", dumper.str());
 }
 
 std::string_view BuiltinType::name() const {
