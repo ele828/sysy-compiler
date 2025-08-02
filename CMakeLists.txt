@@ -45,7 +45,7 @@ target_link_libraries(
 # fixtures test
 add_executable(
   sysy_fixtures_test 
-  tests/parsing/lexer_fixtures.cc)
+  tests/parsing/fixtures_test.cc)
 target_compile_definitions(sysy_fixtures_test
   PUBLIC
   PROJECT_ROOT_PATH="${CMAKE_SOURCE_DIR}")
