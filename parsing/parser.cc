@@ -245,10 +245,16 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
 
   ExpectAndConsume(TokenType::kLeftParen);
   ZoneVector<ParameterDeclaration*> parameters(zone());
-  while (!done() && !Match(TokenType::kRightParen)) {
-    parameters.push_back(ParseFunctionParameter());
-    TryConsume(TokenType::kComma);
-  }
+
+  do {
+    // Does not have parameters
+    if (!MatchTypeSpecifier()) {
+      break;
+    }
+    auto* parameter_declaration = ParseFunctionParameter();
+    parameters.push_back(parameter_declaration);
+  } while (TryConsume(TokenType::kComma));
+
   ExpectAndConsume(TokenType::kRightParen);
 
   Statement* body = ParseBlock();
