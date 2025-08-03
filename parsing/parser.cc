@@ -171,7 +171,7 @@ ZoneVector<Declaration*> Parser::ParseConstantDeclaration() {
   ZoneVector<Declaration*> declarations(zone());
   Type* base_type = ResolveBuiltinType(Consume());
 
-  while (!done() && !Match(TokenType::kSemicolon)) {
+  do {
     Type* type = base_type;
     std::string_view name = ExpectAndConsume(TokenType::kIdentifier).value();
 
@@ -186,9 +186,7 @@ ZoneVector<Declaration*> Parser::ParseConstantDeclaration() {
     auto* declaration =
         zone()->New<ConstantDeclaration>(type, name, init_value);
     declarations.push_back(declaration);
-
-    TryConsume(TokenType::kComma);
-  }
+  } while (TryConsume(TokenType::kComma));
 
   ExpectAndConsume(TokenType::kSemicolon);
   return declarations;
@@ -198,7 +196,7 @@ ZoneVector<Declaration*> Parser::ParseVariableDeclaration() {
   ZoneVector<Declaration*> declarations(zone());
   Type* base_type = ResolveBuiltinType(Consume());
 
-  while (!done() && !Match(TokenType::kSemicolon)) {
+  do {
     Type* type = base_type;
     std::string_view name = ExpectAndConsume(TokenType::kIdentifier).value();
 
@@ -215,9 +213,7 @@ ZoneVector<Declaration*> Parser::ParseVariableDeclaration() {
     auto* declaration =
         zone()->New<VariableDeclaration>(type, name, init_value);
     declarations.push_back(declaration);
-
-    TryConsume(TokenType::kComma);
-  }
+  } while (TryConsume(TokenType::kComma));
 
   ExpectAndConsume(TokenType::kSemicolon);
   return declarations;
