@@ -248,11 +248,10 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
   ZoneVector<ParameterDeclaration*> parameters(zone());
 
   do {
-    // Does not have parameters
-    if (!MatchTypeSpecifier()) {
+    auto* parameter_declaration = ParseFunctionParameter();
+    if (!parameter_declaration) {
       break;
     }
-    auto* parameter_declaration = ParseFunctionParameter();
     parameters.push_back(parameter_declaration);
   } while (TryConsume(TokenType::kComma));
 
@@ -270,6 +269,7 @@ ParameterDeclaration* Parser::ParseFunctionParameter() {
   Type* type = ResolveBuiltinType(Consume());
   std::string_view name = ExpectAndConsume(TokenType::kIdentifier).value();
   if (name.empty()) {
+    SyntaxError("expect a non-empty parameter name", current_.location());
     return nullptr;
   }
 
@@ -537,14 +537,13 @@ CallExpression* Parser::ParseCallExpression() {
   Token name = Consume();
   ExpectAndConsume(TokenType::kLeftParen);
   ZoneVector<Expression*> arguments(zone());
-  while (!done() && !Match(TokenType::kRightParen)) {
+  do {
     auto* expression = ParseExpression();
     if (!expression) {
       break;
     }
     arguments.push_back(expression);
-    TryConsume(TokenType::kComma);
-  }
+  } while (TryConsume(TokenType::kComma));
   ExpectAndConsume(TokenType::kRightParen);
   return zone()->New<CallExpression>(name.value(), std::move(arguments));
 }
