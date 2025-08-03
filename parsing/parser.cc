@@ -173,26 +173,24 @@ ZoneVector<Declaration*> Parser::ParseConstantDeclaration() {
 
   while (!done() && !Match(TokenType::kSemicolon)) {
     Type* type = base_type;
-    std::string_view name = Consume(TokenType::kIdentifier).value();
+    std::string_view name = ExpectAndConsume(TokenType::kIdentifier).value();
 
     // Parse array declaration
     if (Match(TokenType::kLeftBracket)) {
       type = ParseArrayTypeDeclaration(type);
     }
 
-    Consume(TokenType::kEqual);
+    ExpectAndConsume(TokenType::kEqual);
     Expression* init_value = ParseInitValue();
 
     auto* declaration =
         zone()->New<ConstantDeclaration>(type, name, init_value);
     declarations.push_back(declaration);
 
-    if (Match(TokenType::kComma)) {
-      Consume();
-    }
+    TryConsume(TokenType::kComma);
   }
 
-  Consume(TokenType::kSemicolon);
+  ExpectAndConsume(TokenType::kSemicolon);
   return declarations;
 }
 
@@ -202,7 +200,7 @@ ZoneVector<Declaration*> Parser::ParseVariableDeclaration() {
 
   while (!done() && !Match(TokenType::kSemicolon)) {
     Type* type = base_type;
-    std::string_view name = Consume(TokenType::kIdentifier).value();
+    std::string_view name = ExpectAndConsume(TokenType::kIdentifier).value();
 
     // Parse array declaration
     if (Match(TokenType::kLeftBracket)) {
@@ -210,8 +208,7 @@ ZoneVector<Declaration*> Parser::ParseVariableDeclaration() {
     }
 
     Expression* init_value{};
-    if (Match(TokenType::kEqual)) {
-      Consume();
+    if (TryConsume(TokenType::kEqual)) {
       init_value = ParseInitValue();
     }
 
@@ -219,12 +216,10 @@ ZoneVector<Declaration*> Parser::ParseVariableDeclaration() {
         zone()->New<VariableDeclaration>(type, name, init_value);
     declarations.push_back(declaration);
 
-    if (Match(TokenType::kComma)) {
-      Consume();
-    }
+    TryConsume(TokenType::kComma);
   }
 
-  Consume(TokenType::kSemicolon);
+  ExpectAndConsume(TokenType::kSemicolon);
   return declarations;
 }
 
@@ -240,11 +235,9 @@ Expression* Parser::ParseInitValue() {
       }
       list.push_back(init_value);
 
-      if (Match(TokenType::kComma)) {
-        Consume();
-      }
+      TryConsume(TokenType::kComma);
     }
-    Consume(TokenType::kRightBrace);
+    ExpectAndConsume(TokenType::kRightBrace);
     return zone()->New<InitListExpression>(std::move(list));
   }
 
@@ -253,17 +246,15 @@ Expression* Parser::ParseInitValue() {
 
 FunctionDeclaration* Parser::ParseFunctionDeclaration() {
   Type* type = ResolveBuiltinType(Consume());
-  std::string_view name = Consume(TokenType::kIdentifier).value();
+  std::string_view name = ExpectAndConsume(TokenType::kIdentifier).value();
 
-  Consume(TokenType::kLeftParen);
+  ExpectAndConsume(TokenType::kLeftParen);
   ZoneVector<ParameterDeclaration*> parameters(zone());
   while (!done() && !Match(TokenType::kRightParen)) {
     parameters.push_back(ParseFunctionParameter());
-    if (Match(TokenType::kComma)) {
-      Consume();
-    }
+    TryConsume(TokenType::kComma);
   }
-  Consume(TokenType::kRightParen);
+  ExpectAndConsume(TokenType::kRightParen);
 
   Statement* body = ParseBlock();
   return zone()->New<FunctionDeclaration>(type, name, std::move(parameters),
@@ -272,7 +263,7 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
 
 ParameterDeclaration* Parser::ParseFunctionParameter() {
   Type* type = ResolveBuiltinType(Consume());
-  std::string_view name = Consume(TokenType::kIdentifier).value();
+  std::string_view name = ExpectAndConsume(TokenType::kIdentifier).value();
 
   // Parse array declaration
   if (Match(TokenType::kLeftBracket)) {
@@ -283,9 +274,9 @@ ParameterDeclaration* Parser::ParseFunctionParameter() {
 }
 
 ArrayType* Parser::ParseArrayTypeDeclaration(Type* builtin_type) {
-  Consume(TokenType::kLeftBracket);
+  ExpectAndConsume(TokenType::kLeftBracket);
   auto* size_expression = ParseExpression();
-  Consume(TokenType::kRightBracket);
+  ExpectAndConsume(TokenType::kRightBracket);
 
   Type* child_type{};
   if (Match(TokenType::kLeftBracket)) {
@@ -301,7 +292,7 @@ ArrayType* Parser::ParseArrayTypeDeclaration(Type* builtin_type) {
 }
 
 Statement* Parser::ParseBlock() {
-  Consume(TokenType::kLeftBrace);
+  ExpectAndConsume(TokenType::kLeftBrace);
 
   ZoneVector<Statement*> body(zone());
   while (!done() && !Match(TokenType::kRightBrace)) {
@@ -314,7 +305,7 @@ Statement* Parser::ParseBlock() {
       body.push_back(ParseStatement());
     }
   }
-  Consume(TokenType::kRightBrace);
+  ExpectAndConsume(TokenType::kRightBrace);
   return zone()->New<CompoundStatement>(std::move(body));
 }
 
@@ -338,11 +329,11 @@ Statement* Parser::ParseStatement() {
 }
 
 IfStatement* Parser::ParseIfStatement() {
-  Consume(TokenType::kKeywordIf);
+  ExpectAndConsume(TokenType::kKeywordIf);
 
-  Consume(TokenType::kLeftParen);
+  ExpectAndConsume(TokenType::kLeftParen);
   Expression* condition = ParseExpression();
-  Consume(TokenType::kRightParen);
+  ExpectAndConsume(TokenType::kRightParen);
 
   Statement* then_stmt = ParseStatement();
   Statement* else_stmt{};
@@ -354,43 +345,42 @@ IfStatement* Parser::ParseIfStatement() {
 }
 
 WhileStatement* Parser::ParseWhileStatement() {
-  Consume(TokenType::kKeywordWhile);
+  ExpectAndConsume(TokenType::kKeywordWhile);
 
-  Consume(TokenType::kLeftParen);
+  ExpectAndConsume(TokenType::kLeftParen);
   Expression* condition = ParseExpression();
-  Consume(TokenType::kRightParen);
+  ExpectAndConsume(TokenType::kRightParen);
 
   Statement* body = ParseStatement();
   return zone()->New<WhileStatement>(condition, body);
 }
 
 BreakStatement* Parser::ParseBreakStatement() {
-  Consume(TokenType::kKeywordBreak);
-  Consume(TokenType::kSemicolon);
+  ExpectAndConsume(TokenType::kKeywordBreak);
+  ExpectAndConsume(TokenType::kSemicolon);
   return zone()->New<BreakStatement>();
 }
 
 ContinueStatement* Parser::ParseContinueStatement() {
-  Consume(TokenType::kKeywordContinue);
-  Consume(TokenType::kSemicolon);
+  ExpectAndConsume(TokenType::kKeywordContinue);
+  ExpectAndConsume(TokenType::kSemicolon);
   return zone()->New<ContinueStatement>();
 }
 
 ReturnStatement* Parser::ParseReturnStatement() {
-  Consume(TokenType::kKeywordReturn);
-  if (Match(TokenType::kSemicolon)) {
-    Consume();
+  ExpectAndConsume(TokenType::kKeywordReturn);
+  if (TryConsume(TokenType::kSemicolon)) {
     return zone()->New<ReturnStatement>(nullptr);
   }
 
   Expression* expression = ParseExpression();
-  Consume(TokenType::kSemicolon);
+  ExpectAndConsume(TokenType::kSemicolon);
   return zone()->New<ReturnStatement>(expression);
 }
 
 ExpressionStatement* Parser::ParseExpressionStatement() {
   Expression* expression = ParseExpression();
-  Consume(TokenType::kSemicolon);
+  ExpectAndConsume(TokenType::kSemicolon);
   return zone()->New<ExpressionStatement>(expression);
 }
 
@@ -458,7 +448,7 @@ Expression* Parser::ParseUnaryExpression() {
     case TokenType::kLeftParen: {
       Consume();
       auto* expression = ParseExpression();
-      Consume(TokenType::kRightParen);
+      ExpectAndConsume(TokenType::kRightParen);
       return expression;
     }
     case TokenType::kIntConst:
@@ -521,9 +511,9 @@ ArraySubscriptExpression* Parser::ParseArraySubscriptExpression() {
 
 ArraySubscriptExpression* Parser::ParseArraySubscriptDimension(
     Expression* base) {
-  Consume(TokenType::kLeftBracket);
+  ExpectAndConsume(TokenType::kLeftBracket);
   Expression* dimension = ParseExpression();
-  Consume(TokenType::kRightBracket);
+  ExpectAndConsume(TokenType::kRightBracket);
 
   auto array_subscript_expression =
       zone()->New<ArraySubscriptExpression>(base, dimension);
@@ -537,7 +527,7 @@ ArraySubscriptExpression* Parser::ParseArraySubscriptDimension(
 
 CallExpression* Parser::ParseCallExpression() {
   Token name = Consume();
-  Consume(TokenType::kLeftParen);
+  ExpectAndConsume(TokenType::kLeftParen);
   ZoneVector<Expression*> arguments(zone());
   while (!done() && !Match(TokenType::kRightParen)) {
     auto* expression = ParseExpression();
@@ -545,11 +535,9 @@ CallExpression* Parser::ParseCallExpression() {
       break;
     }
     arguments.push_back(expression);
-    if (Match(TokenType::kComma)) {
-      Consume();
-    }
+    TryConsume(TokenType::kComma);
   }
-  Consume(TokenType::kRightParen);
+  ExpectAndConsume(TokenType::kRightParen);
   return zone()->New<CallExpression>(name.value(), std::move(arguments));
 }
 
@@ -559,7 +547,7 @@ Token Parser::Consume() {
   return prev_token;
 }
 
-Token Parser::Consume(TokenType type, const char* error_message) {
+Token Parser::ExpectAndConsume(TokenType type, const char* error_message) {
   if (Match(type)) {
     auto prev_token = current_;
     Consume();
@@ -577,6 +565,14 @@ Token Parser::Consume(TokenType type, const char* error_message) {
 
   Consume();
   return {};
+}
+
+bool Parser::TryConsume(TokenType type) {
+  if (Match(type)) {
+    current_ = lexer()->NextToken();
+    return true;
+  }
+  return false;
 }
 
 void Parser::SyntaxError(std::string error, Location location) {

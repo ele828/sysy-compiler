@@ -83,7 +83,10 @@ class Parser {
   Token Consume();
 
   // Verify current token and advance
-  Token Consume(TokenType type, const char* error_message = nullptr);
+  Token ExpectAndConsume(TokenType type, const char* error_message = nullptr);
+
+  // Return true and consume when current token type matches type
+  bool TryConsume(TokenType type);
 
   Type* ResolveBuiltinType(const Token& token);
 
