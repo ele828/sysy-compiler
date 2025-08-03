@@ -4,7 +4,6 @@
 
 #include "ast/ast.h"
 #include "ast/type.h"
-#include "magic_enum/magic_enum.hpp"
 #include "parsing/token.h"
 
 namespace sysy {
@@ -553,10 +552,9 @@ Token Parser::ExpectAndConsume(TokenType type, const char* error_message) {
   if (error_message) {
     SyntaxError(error_message, current_.location());
   } else {
-    SyntaxError(std::format("parse error: expected token type {}, but got {}",
-                            magic_enum::enum_name(type),
-                            magic_enum::enum_name(current_.type())),
-                current_.location());
+    SyntaxError(
+        std::format("Expected token {}, but got {}", type, current_.type()),
+        current_.location());
   }
 
   Consume();
@@ -580,8 +578,7 @@ void Parser::SyntaxError(std::string error, Location location) {
 }
 
 void Parser::Unexpected(TokenType type) {
-  std::string error_message = std::format(
-      "parse error: unexpected token type: {}", magic_enum::enum_name(type));
+  std::string error_message = std::format("Unexpected token {}", type);
   SyntaxError(std::move(error_message), current_.location());
 }
 
@@ -594,7 +591,7 @@ Type* Parser::ResolveBuiltinType(const Token& token) {
     case TokenType::kKeywordFloat:
       return context_.float_type();
     default:
-      SyntaxError(std::format("Unknown type: {}", token.value()),
+      SyntaxError(std::format("Unknown type {}", token.value()),
                   token.location());
       return {};
   }
