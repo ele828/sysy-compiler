@@ -92,8 +92,12 @@ class Token {
 
 }  // namespace sysy
 
+namespace std {
+
+using namespace sysy;
+
 template <>
-struct std::formatter<sysy::Token> {
+struct std::formatter<Token> {
   constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
 
   auto format(const sysy::Token& token, std::format_context& ctx) const {
@@ -101,3 +105,16 @@ struct std::formatter<sysy::Token> {
                           magic_enum::enum_name(token.type()), token.value());
   }
 };
+
+template <>
+struct std::formatter<TokenType> {
+  constexpr std::format_parse_context::iterator parse(
+      std::format_parse_context& ctx) {
+    return ctx.begin();
+  }
+
+  std::format_context::iterator format(const sysy::TokenType& type,
+                                       std::format_context& ctx) const;
+};
+
+}  // namespace std

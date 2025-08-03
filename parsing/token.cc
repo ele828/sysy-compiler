@@ -1,7 +1,6 @@
 #include "parsing/token.h"
 
 #include <charconv>
-#include <print>
 
 #include "base/logging.h"
 
@@ -82,3 +81,136 @@ std::expected<float, Token::ConversionError> Token::GetFloatValue() {
 }
 
 }  // namespace sysy
+
+namespace std {
+
+std::format_context::iterator formatter<TokenType>::format(
+    const sysy::TokenType& type, std::format_context& ctx) const {
+  std::string_view output = "";
+  switch (type) {
+    case TokenType::kIllegal:
+      output = "illegal";
+      break;
+    case TokenType::kEof:
+      output = "eof";
+      break;
+    case TokenType::kIdentifier:
+      output = "identifier";
+      break;
+    case TokenType::kIntConst:
+    case TokenType::kIntHexConst:
+    case TokenType::kIntOctalConst:
+      output = "int";
+      break;
+    case TokenType::kFloatConst:
+    case TokenType::kFloatHexConst:
+      output = "float";
+      break;
+    case TokenType::kLeftParen:
+      output = "(";
+      break;
+    case TokenType::kRightParen:
+      output = ")";
+      break;
+    case TokenType::kLeftBrace:
+      output = "{";
+      break;
+    case TokenType::kRightBrace:
+      output = "}";
+      break;
+    case TokenType::kLeftBracket:
+      output = "[";
+      break;
+    case TokenType::kRightBracket:
+      output = "]";
+      break;
+    case TokenType::kSemicolon:
+      output = ";";
+      break;
+    case TokenType::kComma:
+      output = ",";
+      break;
+    case TokenType::kPeriod:
+      output = ".";
+      break;
+    case TokenType::kEqual:
+      output = ".";
+      break;
+    case TokenType::kPlus:
+      output = "+";
+      break;
+    case TokenType::kMinus:
+      output = "-";
+      break;
+    case TokenType::kStar:
+      output = "*";
+      break;
+    case TokenType::kSlash:
+      output = "/";
+      break;
+    case TokenType::kPercent:
+      output = "%";
+      break;
+    case TokenType::kExclaim:
+      output = "!";
+      break;
+    case TokenType::kAmpAmp:
+      output = "&&";
+      break;
+    case TokenType::kPipePipe:
+      output = "||";
+      break;
+    case TokenType::kEqualEqual:
+      output = "==";
+      break;
+    case TokenType::kExclaimEqual:
+      output = "!=";
+      break;
+    case TokenType::kLess:
+      output = "<";
+      break;
+    case TokenType::kGreater:
+      output = ">";
+      break;
+    case TokenType::kLessEqual:
+      output = "<=";
+      break;
+    case TokenType::kGreaterEqual:
+      output = ">=";
+      break;
+    case TokenType::kKeywordConst:
+      output = "const";
+      break;
+    case TokenType::kKeywordInt:
+      output = "int";
+      break;
+    case TokenType::kKeywordFloat:
+      output = "float";
+      break;
+    case TokenType::kKeywordVoid:
+      output = "void";
+      break;
+    case TokenType::kKeywordIf:
+      output = "if";
+      break;
+    case TokenType::kKeywordElse:
+      output = "else";
+      break;
+    case TokenType::kKeywordWhile:
+      output = "while";
+      break;
+    case TokenType::kKeywordBreak:
+      output = "break";
+      break;
+    case TokenType::kKeywordContinue:
+      output = "continue";
+      break;
+    case TokenType::kKeywordReturn:
+      output = "return";
+      break;
+  }
+
+  return std::format_to(ctx.out(), "{}", output);
+}
+
+}  // namespace std
