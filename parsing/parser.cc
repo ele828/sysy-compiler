@@ -1,6 +1,7 @@
 #include "parsing/parser.h"
 
 #include <format>
+#include <print>
 
 #include "ast/ast.h"
 #include "ast/type.h"
@@ -263,8 +264,14 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
 }
 
 ParameterDeclaration* Parser::ParseFunctionParameter() {
+  if (!MatchTypeSpecifier()) {
+    return nullptr;
+  }
   Type* type = ResolveBuiltinType(Consume());
   std::string_view name = ExpectAndConsume(TokenType::kIdentifier).value();
+  if (name.empty()) {
+    return nullptr;
+  }
 
   // Parse array declaration
   if (Match(TokenType::kLeftBracket)) {
@@ -388,7 +395,7 @@ ExpressionStatement* Parser::ParseExpressionStatement() {
 Expression* Parser::ParseExpression() {
   auto lhs = ParseUnaryExpression();
   if (!lhs) {
-    return {};
+    return nullptr;
   }
 
   return ParseBinaryOperation(Precedence::kAssignment, lhs);
@@ -408,14 +415,14 @@ Expression* Parser::ParseBinaryOperation(int min_precedence, Expression* lhs) {
 
     auto rhs = ParseUnaryExpression();
     if (!rhs) {
-      return {};
+      return nullptr;
     }
 
     int next_precedence = GetCurrentPrecedence();
     if (current_precedence < next_precedence) {
       rhs = ParseBinaryOperation(current_precedence + 1, rhs);
       if (!rhs) {
-        return {};
+        return nullptr;
       }
     }
 
@@ -460,10 +467,10 @@ Expression* Parser::ParseUnaryExpression() {
       if (!result.has_value()) {
         if (result.error() == Token::ConversionError::kInvalid) {
           SyntaxError("Invalid integer", current_.location());
-          return {};
+          return nullptr;
         } else if (result.error() == Token::ConversionError::kOutOfRange) {
           SyntaxError("Integer is out of range", current_.location());
-          return {};
+          return nullptr;
         }
       }
       return zone()->New<IntegerLiteral>(result.value());
@@ -475,10 +482,10 @@ Expression* Parser::ParseUnaryExpression() {
       if (!result.has_value()) {
         if (result.error() == Token::ConversionError::kInvalid) {
           SyntaxError("Invalid integer", current_.location());
-          return {};
+          return nullptr;
         } else if (result.error() == Token::ConversionError::kOutOfRange) {
           SyntaxError("Integer is out of range", current_.location());
-          return {};
+          return nullptr;
         }
       }
       return zone()->New<FloatingLiteral>(result.value());
@@ -501,7 +508,7 @@ Expression* Parser::ParseUnaryExpression() {
     default:
       break;
   }
-  return {};
+  return nullptr;
 }
 
 ArraySubscriptExpression* Parser::ParseArraySubscriptExpression() {
@@ -599,7 +606,7 @@ Type* Parser::ResolveBuiltinType(const Token& token) {
     default:
       SyntaxError(std::format("Unknown type {}", token.value()),
                   token.location());
-      return {};
+      return nullptr;
   }
 }
 
