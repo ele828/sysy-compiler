@@ -16,7 +16,7 @@ namespace {
 
 void TestBinaryExpression(std::string_view source, BinaryOperator op,
                           AstNode::Kind lhs_kind, AstNode::Kind rhs_kind) {
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
   CheckParserStates(parser);
@@ -32,7 +32,7 @@ void TestBinaryExpression(std::string_view source, BinaryOperator op,
 
 void TestUnaryExpression(std::string_view source, UnaryOperator op,
                          AstNode::Kind kind) {
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   CheckParserStates(parser);
@@ -48,7 +48,7 @@ void TestUnaryExpression(std::string_view source, UnaryOperator op,
 TEST(Parser, ParseCompilationUnit) {
   const char* source = "";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
@@ -57,7 +57,7 @@ TEST(Parser, ParseCompilationUnit) {
 TEST(Parser, ParseConstantaDeclaration) {
   const char* source = "const int a = 1;";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
@@ -66,7 +66,7 @@ TEST(Parser, ParseConstantaDeclaration) {
 TEST(Parser, ParseConstantDeclarationMultiples) {
   const char* source = "const int a = 1, b[1] = {1}, c[2] = {1,2};";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
@@ -76,7 +76,7 @@ TEST(Parser, ParseVariableDeclaration) {
   return;
   const char* source = "int a = 1;";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
@@ -86,7 +86,7 @@ TEST(Parser, ParseVariableDeclarationMultiples) {
   return;
   const char* source = "int a = 1, b[1] = {1}, c[2] = {1, 2}, d;";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
@@ -96,7 +96,7 @@ TEST(Parser, ParseFunctionDeclarationSimple) {
   return;
   const char* source = "void foo() {}";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
@@ -105,7 +105,7 @@ TEST(Parser, ParseFunctionDeclarationSimple) {
 TEST(Parser, ParseFunctionDeclaration) {
   const char* source = "void fun(int a, float b[1+1][1]) {}";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto decl_group = parser.ParseDeclarationGroup();
   auto decl = decl_group[0];
@@ -129,7 +129,7 @@ TEST(Parser, ParseFunctionDeclarationWithBody) {
     }
   )";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto decl_group = parser.ParseDeclarationGroup();
   auto decl = decl_group[0];
@@ -161,7 +161,7 @@ TEST(Parser, ParseUnaryExpressionNot) {
 TEST(Parser, ParseUnaryExpressionInt) {
   const char* source = "1";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   CheckParserStates(parser);
@@ -172,7 +172,7 @@ TEST(Parser, ParseUnaryExpressionInt) {
 TEST(Parser, ParseUnaryExpressionFloat) {
   const char* source = "1.1";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   CheckParserStates(parser);
@@ -182,7 +182,7 @@ TEST(Parser, ParseUnaryExpressionFloat) {
 TEST(Parser, ParseUnaryExpressionIdentifier) {
   const char* source = "a";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   CheckParserStates(parser);
@@ -192,7 +192,7 @@ TEST(Parser, ParseUnaryExpressionIdentifier) {
 TEST(Parser, ParseUnaryExpressionArraySubscript) {
   const char* source = "arr[1][2]";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   CheckParserStates(parser);
@@ -202,7 +202,7 @@ TEST(Parser, ParseUnaryExpressionArraySubscript) {
 TEST(Parser, ParseUnaryExpressionCallExpression) {
   const char* source = "fun(1, 2)";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   CheckParserStates(parser);
@@ -220,7 +220,7 @@ TEST(Parser, ParseExpressionBinary) {
 TEST(Parser, ParseExpressionBinaryOperationAddWithMul) {
   const char* source = "1 + 2 * 3";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
   CheckParserStates(parser);
@@ -240,7 +240,7 @@ TEST(Parser, ParseExpressionBinaryOperationAddWithMul) {
 TEST(Parser, ParseExpressionBinaryOperationAddWithDiv) {
   const char* source = "1 + 2 / 3";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
   CheckParserStates(parser);
@@ -260,7 +260,7 @@ TEST(Parser, ParseExpressionBinaryOperationAddWithDiv) {
 TEST(Parser, ParseExpressionBinaryOperationAddWithRem) {
   const char* source = "1 + 2 % 3";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
   CheckParserStates(parser);
@@ -280,7 +280,7 @@ TEST(Parser, ParseExpressionBinaryOperationAddWithRem) {
 TEST(Parser, ParseExpressionBinaryOperationCombined) {
   const char* source = "1 * 2 + 3 / 4";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
   CheckParserStates(parser);
@@ -305,7 +305,7 @@ TEST(Parser, ParseExpressionBinaryOperationCombined) {
 TEST(Parser, ParseExpressionBinaryParenthesis) {
   const char* source = "1 + (2 + 3)";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
   CheckParserStates(parser);
@@ -343,7 +343,7 @@ TEST(Parser, ParseExpressionLogicalOr) {
 TEST(Parser, ParseExpressionLogicalCombined) {
   const char* source = "a && b || c && d";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
   CheckParserStates(parser);
@@ -402,7 +402,7 @@ TEST(Parser, ParseIfStatement) {
     }
   )";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
   CheckParserStates(parser);
@@ -425,7 +425,7 @@ TEST(Parser, ParseIfStatementElse) {
     }
   )";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
   CheckParserStates(parser);
@@ -449,7 +449,7 @@ TEST(Parser, ParseIfStatementWithSingleStatementBody) {
     else a = 2;
   )";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
   CheckParserStates(parser);
@@ -474,7 +474,7 @@ TEST(Parser, ParseWhileStatement) {
     }
   )";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
   CheckParserStates(parser);
@@ -493,7 +493,7 @@ TEST(Parser, ParseWhileStatementWithSingleStatementBody) {
     while (1 == 1) a = 1;
   )";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
   CheckParserStates(parser);
@@ -512,7 +512,7 @@ TEST(Parser, ParseBreakStatement) {
     break;
   )";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
   CheckParserStates(parser);
@@ -524,7 +524,7 @@ TEST(Parser, ParseContinueStatement) {
     continue;
   )";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
   CheckParserStates(parser);
@@ -536,7 +536,7 @@ TEST(Parser, ParseReturnStatementValuedVoid) {
     return;
   )";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
   CheckParserStates(parser);
@@ -551,7 +551,7 @@ TEST(Parser, ParseReturnStatementValuedExpression) {
     return 1;
   )";
 
-  ASTContext context;
+  AstContext context;
   Parser parser(context, source);
   auto* statement = parser.ParseStatement();
   CheckParserStates(parser);

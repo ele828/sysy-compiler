@@ -16,7 +16,7 @@ class Parser {
     Location location;
   };
 
-  Parser(ASTContext& context, std::string_view source);
+  Parser(AstContext& context, std::string_view source);
 
   CompilationUnit* ParseCompilationUnit();
 
@@ -100,7 +100,7 @@ class Parser {
 
   Lexer* lexer() { return &lexer_; }
 
-  ASTContext& context_;
+  AstContext& context_;
   Lexer lexer_;
   Token current_;
   std::vector<Error> errors_;

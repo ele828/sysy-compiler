@@ -2,7 +2,7 @@
 
 namespace sysy {
 
-ASTContext::ASTContext() {
+AstContext::AstContext() {
   // Initialize builtin types
   builtin_types_.void_type = zone()->New<BuiltinType>(BuiltinType::Kind::kVoid);
   builtin_types_.int_type = zone()->New<BuiltinType>(BuiltinType::Kind::kInt);

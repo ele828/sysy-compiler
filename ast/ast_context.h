@@ -5,9 +5,9 @@
 
 namespace sysy {
 
-class ASTContext final {
+class AstContext final {
  public:
-  ASTContext();
+  AstContext();
 
   Zone* zone() { return &zone_; }
 
