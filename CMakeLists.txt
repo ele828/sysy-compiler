@@ -18,7 +18,8 @@ set(SOURCE_FILES
   base/zone.cc
   parsing/lexer.cc
   parsing/parser.cc
-  parsing/token.cc)
+  parsing/token.cc
+  semantic/semantic_analyzer.cc)
 
 add_library(sysy ${SOURCE_FILES})
 target_link_libraries(sysy PUBLIC magic_enum)
