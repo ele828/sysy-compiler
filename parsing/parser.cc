@@ -108,7 +108,7 @@ constexpr OperatorPrecedenceTable operator_precedence_table;
 
 }  // namespace
 
-Parser::Parser(ASTContext& context, std::string_view source)
+Parser::Parser(AstContext& context, std::string_view source)
     : context_(context), lexer_(source) {
   // make current_ point to the first token
   Consume();

@@ -33,7 +33,7 @@ class ParserFixtureTest : public testing::Test {
   explicit ParserFixtureTest(std::string code) : code_(std::move(code)) {}
 
   void TestBody() override {
-    ASTContext context;
+    AstContext context;
     Parser parser(context, code_);
     auto* compilation_unit = parser.ParseCompilationUnit();
     CheckParserStates(parser);
