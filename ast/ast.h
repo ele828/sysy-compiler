@@ -100,73 +100,62 @@ class CompilationUnit : public AstNode {
 
 class Declaration : public AstNode {
  public:
-  explicit Declaration(Kind kind) : AstNode(kind) {}
+  explicit Declaration(Kind kind, Type* type, std::string_view name)
+      : AstNode(kind), type_(type), name_(name) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() >= Kind::kConstantDeclaration &&
            n.kind() <= Kind::kFunctionDelcaration;
   }
+
+  Type* type() const { return type_; }
+  std::string_view name() const { return name_; }
+
+ private:
+  Type* type_;
+  std::string_view name_;
 };
 
 class ConstantDeclaration : public Declaration {
  public:
   ConstantDeclaration(Type* type, std::string_view name, Expression* init_value)
-      : Declaration(Kind::kConstantDeclaration),
-        type_(type),
-        name_(name),
+      : Declaration(Kind::kConstantDeclaration, type, name),
         init_value_(init_value) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kConstantDeclaration;
   }
 
-  Type* type() const { return type_; }
-  std::string_view name() const { return name_; }
   Expression* init_value() const { return init_value_; }
 
  private:
-  Type* type_;
-  std::string_view name_;
   Expression* init_value_;
 };
 
 class VariableDeclaration : public Declaration {
  public:
   VariableDeclaration(Type* type, std::string_view name, Expression* init_value)
-      : Declaration(Kind::kVariableDeclaration),
-        type_(type),
-        name_(name),
+      : Declaration(Kind::kVariableDeclaration, type, name),
         init_value_(init_value) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kVariableDeclaration;
   }
 
-  Type* type() const { return type_; }
-  std::string_view name() const { return name_; }
   Expression* init_value() const { return init_value_; }
 
  private:
-  Type* type_;
-  std::string_view name_;
   Expression* init_value_;
 };
 
 class ParameterDeclaration : public Declaration {
  public:
   ParameterDeclaration(Type* type, std::string_view name)
-      : Declaration(Kind::kParameterDeclaration), type_(type), name_(name) {}
+      : Declaration(Kind::kParameterDeclaration, type, name) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kParameterDeclaration;
   }
-
-  Type* type() const { return type_; }
-  std::string_view name() const { return name_; }
-
- private:
-  Type* type_;
-  std::string_view name_;
 };
 
 class FunctionDeclaration : public Declaration {
@@ -174,9 +163,7 @@ class FunctionDeclaration : public Declaration {
   FunctionDeclaration(Type* type, std::string_view name,
                       ZoneVector<ParameterDeclaration*> parameters,
                       Statement* body)
-      : Declaration(Kind::kFunctionDelcaration),
-        type_(type),
-        name_(name),
+      : Declaration(Kind::kFunctionDelcaration, type, name),
         parameters_(std::move(parameters)),
         body_(body) {}
 
@@ -184,16 +171,12 @@ class FunctionDeclaration : public Declaration {
     return n.kind() == Kind::kFunctionDelcaration;
   }
 
-  Type* type() const { return type_; }
-  std::string_view name() const { return name_; }
   const ZoneVector<ParameterDeclaration*>& parameters() const {
     return parameters_;
   }
   Statement* body() const { return body_; }
 
  private:
-  Type* type_;
-  std::string_view name_;
   ZoneVector<ParameterDeclaration*> parameters_;
   Statement* body_;
 };

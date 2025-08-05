@@ -2,41 +2,20 @@
 
 namespace sysy {
 
-bool Scope::AddSymbol(std::string_view symbol,
-                      DeclarationDescriptor declaration) {
-  auto it = symbols_.find(symbol);
-
-  // Redefinition symbol in current scope is not allowed
-  if (it != symbols_.end()) return false;
-
-  symbols_.emplace(symbol, declaration);
-  return true;
-}
-
-std::optional<DeclarationDescriptor> Scope::ResolveSymbol(
-    std::string_view symbol) {
-  auto it = symbols_.find(symbol);
-  if (it != symbols_.end()) {
-    return it->second;
-  }
-  if (outer_scope_) {
-    return outer_scope_->ResolveSymbol(symbol);
-  }
-  return {};
-}
-
-class SemanticsAnalyzer::DeclarationScope {
+class SemanticsAnalyzer::NewScope {
  public:
-  explicit DeclarationScope(SemanticsAnalyzer& analyzer)
+  NewScope(Scope::Type type, SemanticsAnalyzer& analyzer)
       : analyzer_(analyzer), outer_scope_(analyzer.current_scope_) {
     analyzer_.current_scope_ =
-        analyzer_.context()->zone()->New<Scope>(outer_scope_);
+        analyzer_.context()->zone()->New<Scope>(type, outer_scope_);
   }
 
-  ~DeclarationScope() {
-    // Restore to previous scope
+  ~NewScope() {
+    // Restore to the previous scope
     analyzer_.current_scope_ = outer_scope_;
   }
+
+  Scope* outer_scope() const { return outer_scope_; }
 
  private:
   SemanticsAnalyzer& analyzer_;
@@ -44,32 +23,69 @@ class SemanticsAnalyzer::DeclarationScope {
 };
 
 SemanticsAnalyzer::SemanticsAnalyzer(AstContext& context)
-    : context_(context), current_scope_(context_.zone()->New<Scope>(nullptr)) {}
+    : context_(context),
+      current_scope_(
+          context_.zone()->New<Scope>(Scope::Type::kGlobal, nullptr)) {}
 
-void SemanticsAnalyzer::Analyze(AstNode* node) {
-  //
+bool SemanticsAnalyzer::Analyze(AstNode* node) {
   Visit(node);
+  return !has_errors();
 }
 
 void SemanticsAnalyzer::VisitCompilationUnit(CompilationUnit* node) {}
 
 void SemanticsAnalyzer::VisitConstantDeclaration(
-    ConstantDeclaration* const_decl) {}
+    ConstantDeclaration* const_decl) {
+  auto success = current_scope_->AddSymbol(const_decl->name(), const_decl);
+  if (!success) {
+    // TODO: Emit error: name conflicts.
+  }
+}
 
 void SemanticsAnalyzer::VisitVariableDeclaration(
-    VariableDeclaration* var_decl) {}
+    VariableDeclaration* var_decl) {
+  auto success = current_scope_->AddSymbol(var_decl->name(), var_decl);
+  if (!success) {
+    // TODO: Emit error: name conflicts.
+  }
+}
 
 void SemanticsAnalyzer::VisitParameterDeclaration(
-    ParameterDeclaration* param_decl) {}
+    ParameterDeclaration* param_decl) {
+  auto success = current_scope_->AddSymbol(param_decl->name(), param_decl);
+  if (!success) {
+    // TODO: Emit error: name conflicts.
+  }
+}
 
 void SemanticsAnalyzer::VisitFunctionDeclaration(
-    FunctionDeclaration* fun_decl) {}
+    FunctionDeclaration* fun_decl) {
+  NewScope scope(Scope::Type::kFunction, *this);
+
+  if (scope.outer_scope()->is_global_scope()) {
+    auto success = current_scope_->AddSymbol(fun_decl->name(), fun_decl);
+    if (!success) {
+      // TODO: Emit error: name conflicts.
+    }
+  } else {
+    // TODO: Emit error: function decl can only be in global scope.
+  }
+}
 
 void SemanticsAnalyzer::VisitCompoundStatement(
-    CompoundStatement* compound_stmt) {}
+    CompoundStatement* compound_stmt) {
+  NewScope scope(Scope::Type::kBlock, *this);
+}
 
 void SemanticsAnalyzer::VisitDeclarationStatement(
-    DeclarationStatement* decl_stmt) {}
+    DeclarationStatement* decl_stmt) {
+  for (auto* decl : decl_stmt->declarations()) {
+    auto success = current_scope_->AddSymbol(decl->name(), decl);
+    if (!success) {
+      // TODO: Emit error: name conflicts.
+    }
+  }
+}
 
 void SemanticsAnalyzer::VisitExpressionStatement(
     ExpressionStatement* expr_stmt) {}
