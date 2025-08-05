@@ -2,7 +2,49 @@
 
 namespace sysy {
 
-SemanticsAnalyzer::SemanticsAnalyzer(AstContext& context) : context_(context) {}
+bool Scope::AddSymbol(std::string_view symbol,
+                      DeclarationDescriptor declaration) {
+  auto it = symbols_.find(symbol);
+
+  // Redefinition symbol in current scope is not allowed
+  if (it != symbols_.end()) return false;
+
+  symbols_.emplace(symbol, declaration);
+  return true;
+}
+
+std::optional<DeclarationDescriptor> Scope::ResolveSymbol(
+    std::string_view symbol) {
+  auto it = symbols_.find(symbol);
+  if (it != symbols_.end()) {
+    return it->second;
+  }
+  if (outer_scope_) {
+    return outer_scope_->ResolveSymbol(symbol);
+  }
+  return {};
+}
+
+class SemanticsAnalyzer::DeclarationScope {
+ public:
+  explicit DeclarationScope(SemanticsAnalyzer& analyzer)
+      : analyzer_(analyzer), outer_scope_(analyzer.current_scope_) {
+    analyzer_.current_scope_ =
+        analyzer_.context()->zone()->New<Scope>(outer_scope_);
+  }
+
+  ~DeclarationScope() {
+    // Restore to previous scope
+    analyzer_.current_scope_ = outer_scope_;
+  }
+
+ private:
+  SemanticsAnalyzer& analyzer_;
+  Scope* outer_scope_;
+};
+
+SemanticsAnalyzer::SemanticsAnalyzer(AstContext& context)
+    : context_(context), current_scope_(context_.zone()->New<Scope>(nullptr)) {}
 
 void SemanticsAnalyzer::Analyze(AstNode* node) {
   //
