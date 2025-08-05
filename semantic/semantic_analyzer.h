@@ -1,10 +1,35 @@
 #pragma once
 
+#include <unordered_map>
+
 #include "ast/ast.h"
 #include "ast/ast_context.h"
 #include "ast/ast_recursive_visitor.h"
+#include "base/zone.h"
 
 namespace sysy {
+
+struct DeclarationDescriptor {
+  Declaration* declaration{};
+  bool is_constant{};
+};
+
+class Scope : public ZoneObject {
+ public:
+  explicit Scope(Scope* outer_scope) : outer_scope_(outer_scope) {}
+
+  // Returns false when symbol exists in current scope
+  bool AddSymbol(std::string_view symbol, DeclarationDescriptor declaration);
+
+  std::optional<DeclarationDescriptor> ResolveSymbol(std::string_view symbol);
+
+ private:
+  using SymbolTable =
+      std::unordered_map<std::string_view, DeclarationDescriptor>;
+
+  Scope* outer_scope_;
+  SymbolTable symbols_;
+};
 
 class SemanticsAnalyzer : public AstRecursiveVisitor<SemanticsAnalyzer> {
  public:
@@ -56,9 +81,13 @@ class SemanticsAnalyzer : public AstRecursiveVisitor<SemanticsAnalyzer> {
   void VisitCallExpression(CallExpression* call_expr);
 
  private:
-  AstContext* context() { return &context_; }
+  class DeclarationScope;
+
+  AstContext* context() const { return &context_; }
+  Scope* current_scope() const { return current_scope_; }
 
   AstContext& context_;
+  Scope* current_scope_;
 };
 
 }  // namespace sysy
