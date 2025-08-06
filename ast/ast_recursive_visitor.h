@@ -62,8 +62,8 @@ class AstRecursiveVisitor {
     }
   }
 
-  void VisitCompilationUnit(CompilationUnit* node) {
-    for (auto& decl : node->body()) {
+  void VisitCompilationUnit(CompilationUnit* comp_unit) {
+    for (auto& decl : comp_unit->body()) {
       Visit(decl);
     }
   }

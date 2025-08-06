@@ -8,6 +8,8 @@
 namespace sysy {
 
 class SemanticsAnalyzer : public AstRecursiveVisitor<SemanticsAnalyzer> {
+  using Base = AstRecursiveVisitor<SemanticsAnalyzer>;
+
  public:
   struct Error {};
 

@@ -13,11 +13,11 @@ class AstDumper : public AstRecursiveVisitor<AstDumper>,
   using Base = AstRecursiveVisitor<AstDumper>;
 
  public:
-  void VisitCompilationUnit(CompilationUnit* node) {
+  void VisitCompilationUnit(CompilationUnit* comp_unit) {
     std::string str =
-        std::format("CompilationUnit (size: {})", node->body().size());
+        std::format("CompilationUnit (size: {})", comp_unit->body().size());
     Write(str);
-    Base::VisitCompilationUnit(node);
+    Base::VisitCompilationUnit(comp_unit);
   }
 
   void VisitConstantDeclaration(ConstantDeclaration* const_decl) {
