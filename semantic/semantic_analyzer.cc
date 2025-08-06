@@ -32,7 +32,9 @@ bool SemanticsAnalyzer::Analyze(AstNode* node) {
   return !has_errors();
 }
 
-void SemanticsAnalyzer::VisitCompilationUnit(CompilationUnit* node) {}
+void SemanticsAnalyzer::VisitCompilationUnit(CompilationUnit* comp_unit) {
+  Base::VisitCompilationUnit(comp_unit);
+}
 
 void SemanticsAnalyzer::VisitConstantDeclaration(
     ConstantDeclaration* const_decl) {
@@ -40,6 +42,8 @@ void SemanticsAnalyzer::VisitConstantDeclaration(
   if (!success) {
     // TODO: Emit error: name conflicts.
   }
+
+  Base::VisitConstantDeclaration(const_decl);
 }
 
 void SemanticsAnalyzer::VisitVariableDeclaration(
@@ -48,6 +52,8 @@ void SemanticsAnalyzer::VisitVariableDeclaration(
   if (!success) {
     // TODO: Emit error: name conflicts.
   }
+
+  Base::VisitVariableDeclaration(var_decl);
 }
 
 void SemanticsAnalyzer::VisitParameterDeclaration(
@@ -56,6 +62,8 @@ void SemanticsAnalyzer::VisitParameterDeclaration(
   if (!success) {
     // TODO: Emit error: name conflicts.
   }
+
+  Base::VisitParameterDeclaration(param_decl);
 }
 
 void SemanticsAnalyzer::VisitFunctionDeclaration(
@@ -70,11 +78,15 @@ void SemanticsAnalyzer::VisitFunctionDeclaration(
   } else {
     // TODO: Emit error: function decl can only be in global scope.
   }
+
+  Base::VisitFunctionDeclaration(fun_decl);
 }
 
 void SemanticsAnalyzer::VisitCompoundStatement(
     CompoundStatement* compound_stmt) {
   NewScope scope(Scope::Type::kBlock, *this);
+
+  Base::VisitCompoundStatement(compound_stmt);
 }
 
 void SemanticsAnalyzer::VisitDeclarationStatement(
@@ -85,38 +97,67 @@ void SemanticsAnalyzer::VisitDeclarationStatement(
       // TODO: Emit error: name conflicts.
     }
   }
+
+  Base::VisitDeclarationStatement(decl_stmt);
 }
 
 void SemanticsAnalyzer::VisitExpressionStatement(
-    ExpressionStatement* expr_stmt) {}
+    ExpressionStatement* expr_stmt) {
+  Base::VisitExpressionStatement(expr_stmt);
+}
 
-void SemanticsAnalyzer::VisitIfStatement(IfStatement* if_stmt) {}
+void SemanticsAnalyzer::VisitIfStatement(IfStatement* if_stmt) {
+  Base::VisitIfStatement(if_stmt);
+}
 
-void SemanticsAnalyzer::VisitWhileStatement(WhileStatement* while_stmt) {}
+void SemanticsAnalyzer::VisitWhileStatement(WhileStatement* while_stmt) {
+  Base::VisitWhileStatement(while_stmt);
+}
 
-void SemanticsAnalyzer::VisitBreakStatement(BreakStatement* break_stmt) {}
+void SemanticsAnalyzer::VisitBreakStatement(BreakStatement* break_stmt) {
+  Base::VisitBreakStatement(break_stmt);
+}
 
 void SemanticsAnalyzer::VisitContinueStatement(
-    ContinueStatement* continue_stmt) {}
+    ContinueStatement* continue_stmt) {
+  Base::VisitContinueStatement(continue_stmt);
+}
 
-void SemanticsAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {}
+void SemanticsAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {
+  Base::VisitReturnStatement(return_stmt);
+}
 
-void SemanticsAnalyzer::VisitIntegerLiteral(IntegerLiteral* int_literal) {}
+void SemanticsAnalyzer::VisitIntegerLiteral(IntegerLiteral* int_literal) {
+  Base::VisitIntegerLiteral(int_literal);
+}
 
-void SemanticsAnalyzer::VisitFloatingLiteral(FloatingLiteral* float_literal) {}
+void SemanticsAnalyzer::VisitFloatingLiteral(FloatingLiteral* float_literal) {
+  Base::VisitFloatingLiteral(float_literal);
+}
 
-void SemanticsAnalyzer::VisitUnaryOperation(UnaryOperation* unary_op) {}
+void SemanticsAnalyzer::VisitUnaryOperation(UnaryOperation* unary_op) {
+  Base::VisitUnaryOperation(unary_op);
+}
 
-void SemanticsAnalyzer::VisitBinaryOperation(BinaryOperation* bin_op) {}
+void SemanticsAnalyzer::VisitBinaryOperation(BinaryOperation* bin_op) {
+  Base::VisitBinaryOperation(bin_op);
+}
 
-void SemanticsAnalyzer::VisitVariableReference(VariableReference* var_ref) {}
+void SemanticsAnalyzer::VisitVariableReference(VariableReference* var_ref) {
+  Base::VisitVariableReference(var_ref);
+}
 
 void SemanticsAnalyzer::VisitInitListExpression(InitListExpression* init_expr) {
+  Base::VisitInitListExpression(init_expr);
 }
 
 void SemanticsAnalyzer::VisitArraySubscriptExpression(
-    ArraySubscriptExpression* array_subscript_expr) {}
+    ArraySubscriptExpression* array_subscript_expr) {
+  Base::VisitArraySubscriptExpression(array_subscript_expr);
+}
 
-void SemanticsAnalyzer::VisitCallExpression(CallExpression* call_expr) {}
+void SemanticsAnalyzer::VisitCallExpression(CallExpression* call_expr) {
+  Base::VisitCallExpression(call_expr);
+}
 
 }  // namespace sysy
