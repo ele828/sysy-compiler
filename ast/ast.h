@@ -394,17 +394,21 @@ class BinaryOperation : public Expression {
 
 class VariableReference : public Expression {
  public:
-  explicit VariableReference(std::string_view variable)
-      : Expression(Kind::kVariableReference), variable_(variable) {}
+  explicit VariableReference(std::string_view name)
+      : Expression(Kind::kVariableReference), name_(name) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kVariableReference;
   }
 
-  std::string_view varaible() const { return variable_; }
+  void set_declaration(Declaration* declaration) { declaration_ = declaration; }
+
+  std::string_view name() const { return name_; }
+  Declaration* declaration() const { return declaration_; }
 
  private:
-  std::string_view variable_;
+  std::string_view name_;
+  Declaration* declaration_{};
 };
 
 class InitListExpression : public Expression {

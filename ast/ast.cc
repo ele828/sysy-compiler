@@ -128,7 +128,7 @@ class AstDumper : public AstRecursiveVisitor<AstDumper>,
 
   void VisitVariableReference(VariableReference* var_ref) {
     PrefixWriterScope scope(*this);
-    std::string str = std::format("VariableReference {}", var_ref->varaible());
+    std::string str = std::format("VariableReference {}", var_ref->name());
     Write(str);
     Base::VisitVariableReference(var_ref);
   }
