@@ -71,6 +71,8 @@ class SemanticsAnalyzer : public AstRecursiveVisitor<SemanticsAnalyzer> {
   AstContext* context() const { return &context_; }
   Scope* current_scope() const { return current_scope_; }
 
+  void SemanticError();
+
   AstContext& context_;
   Scope* current_scope_;
 

@@ -5,7 +5,7 @@ namespace sysy {
 class SemanticsAnalyzer::NewScope {
  public:
   NewScope(Scope::Type type, SemanticsAnalyzer& analyzer)
-      : analyzer_(analyzer), outer_scope_(analyzer.current_scope_) {
+      : analyzer_(analyzer), outer_scope_(analyzer.current_scope()) {
     analyzer_.current_scope_ =
         analyzer_.context()->zone()->New<Scope>(type, outer_scope_);
   }
@@ -38,7 +38,7 @@ void SemanticsAnalyzer::VisitCompilationUnit(CompilationUnit* comp_unit) {
 
 void SemanticsAnalyzer::VisitConstantDeclaration(
     ConstantDeclaration* const_decl) {
-  auto success = current_scope_->AddSymbol(const_decl->name(), const_decl);
+  auto success = current_scope()->AddSymbol(const_decl->name(), const_decl);
   if (!success) {
     // TODO: Emit error: name conflicts.
   }
@@ -48,7 +48,7 @@ void SemanticsAnalyzer::VisitConstantDeclaration(
 
 void SemanticsAnalyzer::VisitVariableDeclaration(
     VariableDeclaration* var_decl) {
-  auto success = current_scope_->AddSymbol(var_decl->name(), var_decl);
+  auto success = current_scope()->AddSymbol(var_decl->name(), var_decl);
   if (!success) {
     // TODO: Emit error: name conflicts.
   }
@@ -58,7 +58,7 @@ void SemanticsAnalyzer::VisitVariableDeclaration(
 
 void SemanticsAnalyzer::VisitParameterDeclaration(
     ParameterDeclaration* param_decl) {
-  auto success = current_scope_->AddSymbol(param_decl->name(), param_decl);
+  auto success = current_scope()->AddSymbol(param_decl->name(), param_decl);
   if (!success) {
     // TODO: Emit error: name conflicts.
   }
@@ -71,7 +71,7 @@ void SemanticsAnalyzer::VisitFunctionDeclaration(
   NewScope scope(Scope::Type::kFunction, *this);
 
   if (scope.outer_scope()->is_global_scope()) {
-    auto success = current_scope_->AddSymbol(fun_decl->name(), fun_decl);
+    auto success = current_scope()->AddSymbol(fun_decl->name(), fun_decl);
     if (!success) {
       // TODO: Emit error: name conflicts.
     }
@@ -92,7 +92,7 @@ void SemanticsAnalyzer::VisitCompoundStatement(
 void SemanticsAnalyzer::VisitDeclarationStatement(
     DeclarationStatement* decl_stmt) {
   for (auto* decl : decl_stmt->declarations()) {
-    auto success = current_scope_->AddSymbol(decl->name(), decl);
+    auto success = current_scope()->AddSymbol(decl->name(), decl);
     if (!success) {
       // TODO: Emit error: name conflicts.
     }
@@ -111,11 +111,15 @@ void SemanticsAnalyzer::VisitIfStatement(IfStatement* if_stmt) {
 }
 
 void SemanticsAnalyzer::VisitWhileStatement(WhileStatement* while_stmt) {
+  NewScope scope(Scope::Type::kWhileBlock, *this);
+
   Base::VisitWhileStatement(while_stmt);
 }
 
 void SemanticsAnalyzer::VisitBreakStatement(BreakStatement* break_stmt) {
   Base::VisitBreakStatement(break_stmt);
+
+  // TODO: emit error when it's not inside while scope
 }
 
 void SemanticsAnalyzer::VisitContinueStatement(
@@ -125,6 +129,8 @@ void SemanticsAnalyzer::VisitContinueStatement(
 
 void SemanticsAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {
   Base::VisitReturnStatement(return_stmt);
+
+  // TODO: emit error when it's not inside while scope
 }
 
 void SemanticsAnalyzer::VisitIntegerLiteral(IntegerLiteral* int_literal) {
@@ -144,6 +150,13 @@ void SemanticsAnalyzer::VisitBinaryOperation(BinaryOperation* bin_op) {
 }
 
 void SemanticsAnalyzer::VisitVariableReference(VariableReference* var_ref) {
+  auto* decl = current_scope()->ResolveSymbol(var_ref->name());
+  if (decl) {
+    var_ref->set_declaration(decl);
+  } else {
+    // TODO: emit undefined symbol error
+  }
+
   Base::VisitVariableReference(var_ref);
 }
 

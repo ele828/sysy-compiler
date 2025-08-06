@@ -14,6 +14,7 @@ class Scope : public ZoneObject {
     kGlobal,
     kFunction,
     kBlock,
+    kWhileBlock,
   };
 
   enum class Error {
@@ -31,6 +32,7 @@ class Scope : public ZoneObject {
   bool is_global_scope() const { return type_ == Type::kGlobal; }
   bool is_function_scope() const { return type_ == Type::kFunction; }
   bool is_block_scope() const { return type_ == Type::kBlock; }
+  bool is_while_scope() const { return type_ == Type::kWhileBlock; }
 
  private:
   using SymbolTable = std::unordered_map<std::string_view, Declaration*>;
