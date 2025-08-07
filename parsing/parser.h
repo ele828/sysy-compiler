@@ -13,7 +13,7 @@ class Parser {
  public:
   struct Error {
     std::string error_message;
-    Location location;
+    SourceLocation location;
   };
 
   Parser(AstContext& context, std::string_view source);
@@ -92,7 +92,7 @@ class Parser {
 
   bool MatchDeclaration();
 
-  void SyntaxError(std::string error, Location location);
+  void SyntaxError(std::string error, SourceLocation location);
 
   void Unexpected(TokenType type);
 

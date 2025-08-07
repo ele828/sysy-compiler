@@ -3,6 +3,7 @@
 #include <string_view>
 
 #include "base/ring_buffer.h"
+#include "common/source_location.h"
 #include "parsing/token.h"
 
 namespace sysy {
@@ -21,7 +22,7 @@ class Lexer final {
   struct LexState {
     Token token;
     size_t end_position;
-    Location location_;
+    SourceLocation location_;
   };
 
   char current() const { return source_[position_]; }
@@ -34,11 +35,15 @@ class Lexer final {
   void Advance() {
     ++position_;
     ++location_.column;
+
+    location_.offset = position_;
   }
 
   void Advance(size_t step) {
     position_ += step;
     location_.column += step;
+
+    location_.offset = position_;
   }
 
   void SkipWhitespace();
@@ -66,7 +71,7 @@ class Lexer final {
   size_t position_{0u};
   size_t start_{0u};
 
-  Location location_;
+  SourceLocation location_;
 
   base::RingBuffer<LexState, kMaxLookahead> lookahead_buffer_;
   bool peek_mode_{false};

@@ -6,7 +6,7 @@
 
 namespace sysy {
 
-Token::Token(TokenType type, std::string_view value, Location location)
+Token::Token(TokenType type, std::string_view value, SourceLocation location)
     : type_(type), value_(value), location_(location) {}
 
 std::expected<int, Token::ConversionError> Token::GetIntValue() {

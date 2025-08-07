@@ -5,6 +5,7 @@
 #include <format>
 #include <string_view>
 
+#include "common/source_location.h"
 #include "magic_enum/magic_enum.hpp"
 
 namespace sysy {
@@ -60,20 +61,15 @@ enum class TokenType : uint8_t {
 
 constexpr size_t kTokenTypeCount = magic_enum::enum_count<TokenType>();
 
-struct Location {
-  size_t line{1u};
-  size_t column{0u};
-};
-
 class Token {
  public:
   Token() = default;
-  Token(TokenType type, std::string_view value, Location location);
+  Token(TokenType type, std::string_view value, SourceLocation location);
 
   [[nodiscard]] TokenType type() const { return type_; }
   [[nodiscard]] std::string_view value() const { return value_; }
 
-  Location location() const { return location_; }
+  SourceLocation location() const { return location_; }
 
   enum class ConversionError {
     kInvalid,
@@ -87,7 +83,7 @@ class Token {
  private:
   TokenType type_{TokenType::kIllegal};
   std::string_view value_;
-  Location location_;
+  SourceLocation location_;
 };
 
 }  // namespace sysy

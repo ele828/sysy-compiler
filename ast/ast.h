@@ -6,6 +6,7 @@
 #include "ast/type.h"
 #include "base/zone.h"
 #include "base/zone_container.h"
+#include "common/source_location.h"
 
 namespace sysy {
 
@@ -73,20 +74,23 @@ class AstNode : public ZoneObject {
     // Expression end
   };
 
-  explicit AstNode(Kind kind) : kind_(kind) {}
+  AstNode(Kind kind, SourceLocation location)
+      : kind_(kind), location_(location) {}
 
   Kind kind() const { return kind_; }
+  SourceLocation location() const { return location_; }
 
   void Dump();
 
  private:
   Kind kind_;
+  SourceLocation location_;
 };
 
 class CompilationUnit : public AstNode {
  public:
-  explicit CompilationUnit(ZoneVector<Declaration*> body)
-      : AstNode(Kind::kCompilationUnit), body_(std::move(body)) {}
+  CompilationUnit(ZoneVector<Declaration*> body, SourceLocation location)
+      : AstNode(Kind::kCompilationUnit, location), body_(std::move(body)) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kCompilationUnit;
@@ -100,8 +104,9 @@ class CompilationUnit : public AstNode {
 
 class Declaration : public AstNode {
  public:
-  explicit Declaration(Kind kind, Type* type, std::string_view name)
-      : AstNode(kind), type_(type), name_(name) {}
+  Declaration(Kind kind, Type* type, std::string_view name,
+              SourceLocation location)
+      : AstNode(kind, location), type_(type), name_(name) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() >= Kind::kConstantDeclaration &&
@@ -118,8 +123,9 @@ class Declaration : public AstNode {
 
 class ConstantDeclaration : public Declaration {
  public:
-  ConstantDeclaration(Type* type, std::string_view name, Expression* init_value)
-      : Declaration(Kind::kConstantDeclaration, type, name),
+  ConstantDeclaration(Type* type, std::string_view name, Expression* init_value,
+                      SourceLocation location)
+      : Declaration(Kind::kConstantDeclaration, type, name, location),
         init_value_(init_value) {}
 
   static bool classof(const AstNode& n) {
@@ -134,8 +140,9 @@ class ConstantDeclaration : public Declaration {
 
 class VariableDeclaration : public Declaration {
  public:
-  VariableDeclaration(Type* type, std::string_view name, Expression* init_value)
-      : Declaration(Kind::kVariableDeclaration, type, name),
+  VariableDeclaration(Type* type, std::string_view name, Expression* init_value,
+                      SourceLocation location)
+      : Declaration(Kind::kVariableDeclaration, type, name, location),
         init_value_(init_value) {}
 
   static bool classof(const AstNode& n) {
@@ -150,8 +157,9 @@ class VariableDeclaration : public Declaration {
 
 class ParameterDeclaration : public Declaration {
  public:
-  ParameterDeclaration(Type* type, std::string_view name)
-      : Declaration(Kind::kParameterDeclaration, type, name) {}
+  ParameterDeclaration(Type* type, std::string_view name,
+                       SourceLocation location)
+      : Declaration(Kind::kParameterDeclaration, type, name, location) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kParameterDeclaration;
@@ -162,8 +170,8 @@ class FunctionDeclaration : public Declaration {
  public:
   FunctionDeclaration(Type* type, std::string_view name,
                       ZoneVector<ParameterDeclaration*> parameters,
-                      Statement* body)
-      : Declaration(Kind::kFunctionDelcaration, type, name),
+                      Statement* body, SourceLocation location)
+      : Declaration(Kind::kFunctionDelcaration, type, name, location),
         parameters_(std::move(parameters)),
         body_(body) {}
 
@@ -183,7 +191,7 @@ class FunctionDeclaration : public Declaration {
 
 class Statement : public AstNode {
  public:
-  explicit Statement(Kind kind) : AstNode(kind) {}
+  Statement(Kind kind, SourceLocation location) : AstNode(kind, location) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() >= Kind::kCompoundStatement &&
@@ -193,8 +201,8 @@ class Statement : public AstNode {
 
 class CompoundStatement : public Statement {
  public:
-  explicit CompoundStatement(ZoneVector<Statement*> body)
-      : Statement(Kind::kCompoundStatement), body_(std::move(body)) {}
+  CompoundStatement(ZoneVector<Statement*> body, SourceLocation location)
+      : Statement(Kind::kCompoundStatement, location), body_(std::move(body)) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kCompoundStatement;
@@ -208,8 +216,9 @@ class CompoundStatement : public Statement {
 
 class DeclarationStatement : public Statement {
  public:
-  explicit DeclarationStatement(ZoneVector<Declaration*> declarations)
-      : Statement(Kind::kDeclarationStatement),
+  DeclarationStatement(ZoneVector<Declaration*> declarations,
+                       SourceLocation location)
+      : Statement(Kind::kDeclarationStatement, location),
         declarations_(std::move(declarations)) {}
 
   static bool classof(const AstNode& n) {
@@ -224,8 +233,9 @@ class DeclarationStatement : public Statement {
 
 class ExpressionStatement : public Statement {
  public:
-  explicit ExpressionStatement(Expression* expression)
-      : Statement(Kind::kExpressionStatement), expression_(expression) {}
+  ExpressionStatement(Expression* expression, SourceLocation location)
+      : Statement(Kind::kExpressionStatement, location),
+        expression_(expression) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kExpressionStatement;
@@ -240,8 +250,9 @@ class ExpressionStatement : public Statement {
 
 class IfStatement : public Statement {
  public:
-  IfStatement(Expression* condition, Statement* then, Statement* else_stmt)
-      : Statement(Kind::kIfStatement),
+  IfStatement(Expression* condition, Statement* then, Statement* else_stmt,
+              SourceLocation location)
+      : Statement(Kind::kIfStatement, location),
         condition_(condition),
         then_(then),
         else_(else_stmt) {}
@@ -262,8 +273,11 @@ class IfStatement : public Statement {
 
 class WhileStatement : public Statement {
  public:
-  WhileStatement(Expression* condition, Statement* body)
-      : Statement(Kind::kWhileStatement), condition_(condition), body_(body) {}
+  WhileStatement(Expression* condition, Statement* body,
+                 SourceLocation location)
+      : Statement(Kind::kWhileStatement, location),
+        condition_(condition),
+        body_(body) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kWhileStatement;
@@ -279,7 +293,8 @@ class WhileStatement : public Statement {
 
 class BreakStatement : public Statement {
  public:
-  BreakStatement() : Statement(Kind::kBreakStatement) {}
+  explicit BreakStatement(SourceLocation location)
+      : Statement(Kind::kBreakStatement, location) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kBreakStatement;
@@ -288,7 +303,8 @@ class BreakStatement : public Statement {
 
 class ContinueStatement : public Statement {
  public:
-  ContinueStatement() : Statement(Kind::kContinueStatement) {}
+  explicit ContinueStatement(SourceLocation location)
+      : Statement(Kind::kContinueStatement, location) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kContinueStatement;
@@ -297,8 +313,8 @@ class ContinueStatement : public Statement {
 
 class ReturnStatement : public Statement {
  public:
-  explicit ReturnStatement(Expression* expression)
-      : Statement(Kind::kReturnStatement), expression_(expression) {}
+  ReturnStatement(Expression* expression, SourceLocation location)
+      : Statement(Kind::kReturnStatement, location), expression_(expression) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kReturnStatement;
@@ -312,7 +328,7 @@ class ReturnStatement : public Statement {
 
 class Expression : public AstNode {
  public:
-  explicit Expression(Kind kind) : AstNode(kind) {}
+  Expression(Kind kind, SourceLocation location) : AstNode(kind, location) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() >= Kind::kIntegerLiteral &&
@@ -322,8 +338,8 @@ class Expression : public AstNode {
 
 class IntegerLiteral : public Expression {
  public:
-  explicit IntegerLiteral(int value)
-      : Expression(Kind::kIntegerLiteral), value_(value) {}
+  IntegerLiteral(int value, SourceLocation location)
+      : Expression(Kind::kIntegerLiteral, location), value_(value) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kIntegerLiteral;
@@ -337,8 +353,8 @@ class IntegerLiteral : public Expression {
 
 class FloatingLiteral : public Expression {
  public:
-  explicit FloatingLiteral(float value)
-      : Expression(Kind::kFloatingLiteral), value_(value) {}
+  FloatingLiteral(float value, SourceLocation location)
+      : Expression(Kind::kFloatingLiteral, location), value_(value) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kFloatingLiteral;
@@ -352,8 +368,9 @@ class FloatingLiteral : public Expression {
 
 class UnaryOperation : public Expression {
  public:
-  UnaryOperation(UnaryOperator op, Expression* expression)
-      : Expression(Kind::kUnaryOperation),
+  UnaryOperation(UnaryOperator op, Expression* expression,
+                 SourceLocation location)
+      : Expression(Kind::kUnaryOperation, location),
         operator_(op),
         expression_(expression) {}
 
@@ -372,8 +389,8 @@ class UnaryOperation : public Expression {
 class BinaryOperation : public Expression {
  public:
   BinaryOperation(BinaryOperator binary_operator, Expression* lhs,
-                  Expression* rhs)
-      : Expression(Kind::kBinaryOperation),
+                  Expression* rhs, SourceLocation location)
+      : Expression(Kind::kBinaryOperation, location),
         binary_operator_(binary_operator),
         lhs_(lhs),
         rhs_(rhs) {}
@@ -394,8 +411,8 @@ class BinaryOperation : public Expression {
 
 class VariableReference : public Expression {
  public:
-  explicit VariableReference(std::string_view name)
-      : Expression(Kind::kVariableReference), name_(name) {}
+  VariableReference(std::string_view name, SourceLocation location)
+      : Expression(Kind::kVariableReference, location), name_(name) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kVariableReference;
@@ -413,8 +430,8 @@ class VariableReference : public Expression {
 
 class InitListExpression : public Expression {
  public:
-  explicit InitListExpression(ZoneVector<Expression*> list)
-      : Expression(Kind::kInitList), list_(std::move(list)) {}
+  InitListExpression(ZoneVector<Expression*> list, SourceLocation location)
+      : Expression(Kind::kInitList, location), list_(std::move(list)) {}
 
   static bool classof(const AstNode& n) { return n.kind() == Kind::kInitList; }
 
@@ -426,8 +443,11 @@ class InitListExpression : public Expression {
 
 class ArraySubscriptExpression : public Expression {
  public:
-  ArraySubscriptExpression(Expression* base, Expression* dimension)
-      : Expression(Kind::kArraySubscript), base_(base), dimension_(dimension) {}
+  ArraySubscriptExpression(Expression* base, Expression* dimension,
+                           SourceLocation location)
+      : Expression(Kind::kArraySubscript, location),
+        base_(base),
+        dimension_(dimension) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kArraySubscript;
@@ -443,8 +463,9 @@ class ArraySubscriptExpression : public Expression {
 
 class CallExpression : public Expression {
  public:
-  CallExpression(std::string_view name, ZoneVector<Expression*> arguments)
-      : Expression(Kind::kCallExpression),
+  CallExpression(std::string_view name, ZoneVector<Expression*> arguments,
+                 SourceLocation location)
+      : Expression(Kind::kCallExpression, location),
         name_(name),
         arguments_(std::move(arguments)) {}
 
