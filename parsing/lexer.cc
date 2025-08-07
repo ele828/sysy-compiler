@@ -63,7 +63,7 @@ class Lexer::PeekStateSaver {
  private:
   Lexer& lexer_;
   size_t position_;
-  Location location_;
+  SourceLocation location_;
 };
 
 Lexer::Lexer(std::string_view source) : source_(source) {}

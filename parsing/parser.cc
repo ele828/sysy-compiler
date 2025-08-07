@@ -116,7 +116,8 @@ Parser::Parser(AstContext& context, std::string_view source)
 
 CompilationUnit* Parser::ParseCompilationUnit() {
   auto declarations = ParseDeclarations();
-  return zone()->New<CompilationUnit>(std::move(declarations));
+  return zone()->New<CompilationUnit>(std::move(declarations),
+                                      current_.location());
 }
 
 ZoneVector<Declaration*> Parser::ParseDeclarations() {
@@ -183,8 +184,8 @@ ZoneVector<Declaration*> Parser::ParseConstantDeclaration() {
     ExpectAndConsume(TokenType::kEqual);
     Expression* init_value = ParseInitValue();
 
-    auto* declaration =
-        zone()->New<ConstantDeclaration>(type, name, init_value);
+    auto* declaration = zone()->New<ConstantDeclaration>(type, name, init_value,
+                                                         current_.location());
     declarations.push_back(declaration);
   } while (TryConsume(TokenType::kComma));
 
@@ -210,8 +211,8 @@ ZoneVector<Declaration*> Parser::ParseVariableDeclaration() {
       init_value = ParseInitValue();
     }
 
-    auto* declaration =
-        zone()->New<VariableDeclaration>(type, name, init_value);
+    auto* declaration = zone()->New<VariableDeclaration>(type, name, init_value,
+                                                         current_.location());
     declarations.push_back(declaration);
   } while (TryConsume(TokenType::kComma));
 
@@ -234,7 +235,8 @@ Expression* Parser::ParseInitValue() {
       TryConsume(TokenType::kComma);
     }
     ExpectAndConsume(TokenType::kRightBrace);
-    return zone()->New<InitListExpression>(std::move(list));
+    return zone()->New<InitListExpression>(std::move(list),
+                                           current_.location());
   }
 
   return ParseExpression();
@@ -259,7 +261,7 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
 
   Statement* body = ParseBlock();
   return zone()->New<FunctionDeclaration>(type, name, std::move(parameters),
-                                          body);
+                                          body, current_.location());
 }
 
 ParameterDeclaration* Parser::ParseFunctionParameter() {
@@ -278,7 +280,7 @@ ParameterDeclaration* Parser::ParseFunctionParameter() {
     type = ParseArrayTypeDeclaration(type);
   }
 
-  return zone()->New<ParameterDeclaration>(type, name);
+  return zone()->New<ParameterDeclaration>(type, name, current_.location());
 }
 
 ArrayType* Parser::ParseArrayTypeDeclaration(Type* builtin_type) {
@@ -307,14 +309,15 @@ Statement* Parser::ParseBlock() {
     if (MatchDeclaration()) {
       ZoneVector<Declaration*> declaration_group = ParseDeclarationGroup();
       DeclarationStatement* declaration_stmt =
-          zone()->New<DeclarationStatement>(declaration_group);
+          zone()->New<DeclarationStatement>(declaration_group,
+                                            current_.location());
       body.push_back(declaration_stmt);
     } else {
       body.push_back(ParseStatement());
     }
   }
   ExpectAndConsume(TokenType::kRightBrace);
-  return zone()->New<CompoundStatement>(std::move(body));
+  return zone()->New<CompoundStatement>(std::move(body), current_.location());
 }
 
 Statement* Parser::ParseStatement() {
@@ -349,7 +352,8 @@ IfStatement* Parser::ParseIfStatement() {
     Consume();
     else_stmt = ParseStatement();
   }
-  return zone()->New<IfStatement>(condition, then_stmt, else_stmt);
+  return zone()->New<IfStatement>(condition, then_stmt, else_stmt,
+                                  current_.location());
 }
 
 WhileStatement* Parser::ParseWhileStatement() {
@@ -360,36 +364,36 @@ WhileStatement* Parser::ParseWhileStatement() {
   ExpectAndConsume(TokenType::kRightParen);
 
   Statement* body = ParseStatement();
-  return zone()->New<WhileStatement>(condition, body);
+  return zone()->New<WhileStatement>(condition, body, current_.location());
 }
 
 BreakStatement* Parser::ParseBreakStatement() {
   ExpectAndConsume(TokenType::kKeywordBreak);
   ExpectAndConsume(TokenType::kSemicolon);
-  return zone()->New<BreakStatement>();
+  return zone()->New<BreakStatement>(current_.location());
 }
 
 ContinueStatement* Parser::ParseContinueStatement() {
   ExpectAndConsume(TokenType::kKeywordContinue);
   ExpectAndConsume(TokenType::kSemicolon);
-  return zone()->New<ContinueStatement>();
+  return zone()->New<ContinueStatement>(current_.location());
 }
 
 ReturnStatement* Parser::ParseReturnStatement() {
   ExpectAndConsume(TokenType::kKeywordReturn);
   if (TryConsume(TokenType::kSemicolon)) {
-    return zone()->New<ReturnStatement>(nullptr);
+    return zone()->New<ReturnStatement>(nullptr, current_.location());
   }
 
   Expression* expression = ParseExpression();
   ExpectAndConsume(TokenType::kSemicolon);
-  return zone()->New<ReturnStatement>(expression);
+  return zone()->New<ReturnStatement>(expression, current_.location());
 }
 
 ExpressionStatement* Parser::ParseExpressionStatement() {
   Expression* expression = ParseExpression();
   ExpectAndConsume(TokenType::kSemicolon);
-  return zone()->New<ExpressionStatement>(expression);
+  return zone()->New<ExpressionStatement>(expression, current_.location());
 }
 
 Expression* Parser::ParseExpression() {
@@ -426,7 +430,8 @@ Expression* Parser::ParseBinaryOperation(int min_precedence, Expression* lhs) {
       }
     }
 
-    lhs = zone()->New<BinaryOperation>(binary_operator, lhs, rhs);
+    lhs = zone()->New<BinaryOperation>(binary_operator, lhs, rhs,
+                                       current_.location());
   }
 
   return lhs;
@@ -441,17 +446,20 @@ Expression* Parser::ParseUnaryExpression() {
     case TokenType::kPlus: {
       Consume();
       auto* expression = ParseExpression();
-      return zone()->New<UnaryOperation>(UnaryOperator::kPlus, expression);
+      return zone()->New<UnaryOperation>(UnaryOperator::kPlus, expression,
+                                         current_.location());
     }
     case TokenType::kMinus: {
       Consume();
       auto* expression = ParseExpression();
-      return zone()->New<UnaryOperation>(UnaryOperator::kMinus, expression);
+      return zone()->New<UnaryOperation>(UnaryOperator::kMinus, expression,
+                                         current_.location());
     }
     case TokenType::kExclaim: {
       Consume();
       auto* expression = ParseExpression();
-      return zone()->New<UnaryOperation>(UnaryOperator::kLNot, expression);
+      return zone()->New<UnaryOperation>(UnaryOperator::kLNot, expression,
+                                         current_.location());
     }
     case TokenType::kLeftParen: {
       Consume();
@@ -473,7 +481,7 @@ Expression* Parser::ParseUnaryExpression() {
           return nullptr;
         }
       }
-      return zone()->New<IntegerLiteral>(result.value());
+      return zone()->New<IntegerLiteral>(result.value(), current_.location());
     }
     case TokenType::kFloatConst:
     case TokenType::kFloatHexConst: {
@@ -488,7 +496,7 @@ Expression* Parser::ParseUnaryExpression() {
           return nullptr;
         }
       }
-      return zone()->New<FloatingLiteral>(result.value());
+      return zone()->New<FloatingLiteral>(result.value(), current_.location());
     }
     case TokenType::kIdentifier: {
       Token next_token = lexer()->PeekToken();
@@ -501,7 +509,8 @@ Expression* Parser::ParseUnaryExpression() {
         }
         default: {
           Token identifier = Consume();
-          return zone()->New<VariableReference>(identifier.value());
+          return zone()->New<VariableReference>(identifier.value(),
+                                                current_.location());
         }
       }
     }
@@ -513,7 +522,8 @@ Expression* Parser::ParseUnaryExpression() {
 
 ArraySubscriptExpression* Parser::ParseArraySubscriptExpression() {
   Token identifier = Consume();
-  auto* base = zone()->New<VariableReference>(identifier.value());
+  auto* base =
+      zone()->New<VariableReference>(identifier.value(), current_.location());
   return ParseArraySubscriptDimension(base);
 }
 
@@ -523,8 +533,8 @@ ArraySubscriptExpression* Parser::ParseArraySubscriptDimension(
   Expression* dimension = ParseExpression();
   ExpectAndConsume(TokenType::kRightBracket);
 
-  auto array_subscript_expression =
-      zone()->New<ArraySubscriptExpression>(base, dimension);
+  auto array_subscript_expression = zone()->New<ArraySubscriptExpression>(
+      base, dimension, current_.location());
 
   if (Match(TokenType::kLeftBracket)) {
     return ParseArraySubscriptDimension(array_subscript_expression);
@@ -545,7 +555,8 @@ CallExpression* Parser::ParseCallExpression() {
     arguments.push_back(expression);
   } while (TryConsume(TokenType::kComma));
   ExpectAndConsume(TokenType::kRightParen);
-  return zone()->New<CallExpression>(name.value(), std::move(arguments));
+  return zone()->New<CallExpression>(name.value(), std::move(arguments),
+                                     current_.location());
 }
 
 Token Parser::Consume() {
@@ -581,7 +592,7 @@ bool Parser::TryConsume(TokenType type) {
   return false;
 }
 
-void Parser::SyntaxError(std::string error, Location location) {
+void Parser::SyntaxError(std::string error, SourceLocation location) {
   Error syntax_error{
       .error_message = std::move(error),
       .location = location,
