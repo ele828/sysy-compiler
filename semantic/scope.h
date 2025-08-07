@@ -17,10 +17,6 @@ class Scope : public ZoneObject {
     kWhileBlock,
   };
 
-  enum class Error {
-    kSymbolRedefinition,
-  };
-
   Scope(Type type, Scope* outer_scope)
       : type_(type), outer_scope_(outer_scope) {}
 
@@ -28,6 +24,9 @@ class Scope : public ZoneObject {
   bool AddSymbol(std::string_view symbol, Declaration* declaration);
 
   Declaration* ResolveSymbol(std::string_view symbol);
+
+  bool IsInFunctionScope();
+  bool IsInWhileScope();
 
   bool is_global_scope() const { return type_ == Type::kGlobal; }
   bool is_function_scope() const { return type_ == Type::kFunction; }

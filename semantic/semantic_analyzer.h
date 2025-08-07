@@ -3,6 +3,7 @@
 #include "ast/ast.h"
 #include "ast/ast_context.h"
 #include "ast/ast_recursive_visitor.h"
+#include "common/source_location.h"
 #include "semantic/scope.h"
 
 namespace sysy {
@@ -11,7 +12,10 @@ class SemanticsAnalyzer : public AstRecursiveVisitor<SemanticsAnalyzer> {
   using Base = AstRecursiveVisitor<SemanticsAnalyzer>;
 
  public:
-  struct Error {};
+  struct Error {
+    std::string error_message;
+    SourceLocation location;
+  };
 
   explicit SemanticsAnalyzer(AstContext& context);
 
@@ -71,7 +75,7 @@ class SemanticsAnalyzer : public AstRecursiveVisitor<SemanticsAnalyzer> {
   AstContext* context() const { return &context_; }
   Scope* current_scope() const { return current_scope_; }
 
-  void SemanticError();
+  void SemanticError(std::string error_message, SourceLocation location);
 
   AstContext& context_;
   Scope* current_scope_;

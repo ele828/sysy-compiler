@@ -26,4 +26,20 @@ Declaration* Scope::ResolveSymbol(std::string_view symbol) {
   return nullptr;
 }
 
+bool Scope::IsInFunctionScope() {
+  if (is_function_scope()) return true;
+  if (outer_scope_) {
+    return outer_scope_->IsInFunctionScope();
+  }
+  return false;
+}
+
+bool Scope::IsInWhileScope() {
+  if (is_while_scope()) return true;
+  if (outer_scope_) {
+    return outer_scope_->IsInWhileScope();
+  }
+  return false;
+}
+
 }  // namespace sysy
