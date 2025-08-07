@@ -19,6 +19,7 @@ set(SOURCE_FILES
   parsing/lexer.cc
   parsing/parser.cc
   parsing/token.cc
+  semantic/expression_evaluator.cc
   semantic/scope.cc
   semantic/semantic_analyzer.cc)
 
