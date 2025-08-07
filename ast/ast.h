@@ -391,7 +391,7 @@ class BinaryOperation : public Expression {
   BinaryOperation(BinaryOperator binary_operator, Expression* lhs,
                   Expression* rhs, SourceLocation location)
       : Expression(Kind::kBinaryOperation, location),
-        binary_operator_(binary_operator),
+        operator_(binary_operator),
         lhs_(lhs),
         rhs_(rhs) {}
 
@@ -399,12 +399,12 @@ class BinaryOperation : public Expression {
     return n.kind() == Kind::kBinaryOperation;
   }
 
-  BinaryOperator binary_operator() const { return binary_operator_; }
+  BinaryOperator op() const { return operator_; }
   Expression* lhs() const { return lhs_; }
   Expression* rhs() const { return rhs_; }
 
  private:
-  BinaryOperator binary_operator_;
+  BinaryOperator operator_;
   Expression* lhs_;
   Expression* rhs_;
 };
