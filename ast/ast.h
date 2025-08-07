@@ -473,12 +473,20 @@ class CallExpression : public Expression {
     return n.kind() == Kind::kCallExpression;
   }
 
+  void set_function_declaration(FunctionDeclaration* function_declaration) {
+    function_declaration_ = function_declaration;
+  }
+
   std::string_view name() const { return name_; }
   const ZoneVector<Expression*>& arguments() const { return arguments_; }
+  FunctionDeclaration* function_declaration() const {
+    return function_declaration_;
+  }
 
  private:
   std::string_view name_;
   ZoneVector<Expression*> arguments_;
+  FunctionDeclaration* function_declaration_;
 };
 
 }  // namespace sysy
