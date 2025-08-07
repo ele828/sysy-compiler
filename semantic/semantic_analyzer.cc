@@ -204,7 +204,7 @@ void SemanticsAnalyzer::VisitCallExpression(CallExpression* call_expr) {
       // Check if argument arity is matched
       if (fun_decl->parameters().size() != call_expr->arguments().size()) {
         SemanticError(
-            "Arguments length is not matched with function declaration",
+            "Arguments length does not match with function declaration",
             call_expr->location());
         return;
       }

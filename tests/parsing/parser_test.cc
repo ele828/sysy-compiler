@@ -24,7 +24,7 @@ void TestBinaryExpression(std::string_view source, BinaryOperator op,
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
-  EXPECT_EQ(bin_expr->binary_operator(), op);
+  EXPECT_EQ(bin_expr->op(), op);
 
   EXPECT_EQ(bin_expr->lhs()->kind(), lhs_kind);
   EXPECT_EQ(bin_expr->rhs()->kind(), rhs_kind);
@@ -227,12 +227,12 @@ TEST(Parser, ParseExpressionBinaryOperationAddWithMul) {
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
-  EXPECT_EQ(bin_expr->binary_operator(), BinaryOperator::kAdd);
+  EXPECT_EQ(bin_expr->op(), BinaryOperator::kAdd);
   EXPECT_TRUE(IsA<IntegerLiteral>(bin_expr->lhs()));
   EXPECT_TRUE(IsA<BinaryOperation>(bin_expr->rhs()));
 
   auto* rhs_bin_expr = To<BinaryOperation>(bin_expr->rhs());
-  EXPECT_EQ(rhs_bin_expr->binary_operator(), BinaryOperator::kMul);
+  EXPECT_EQ(rhs_bin_expr->op(), BinaryOperator::kMul);
   EXPECT_TRUE(IsA<IntegerLiteral>(rhs_bin_expr->lhs()));
   EXPECT_TRUE(IsA<IntegerLiteral>(rhs_bin_expr->rhs()));
 }
@@ -247,12 +247,12 @@ TEST(Parser, ParseExpressionBinaryOperationAddWithDiv) {
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
-  EXPECT_EQ(bin_expr->binary_operator(), BinaryOperator::kAdd);
+  EXPECT_EQ(bin_expr->op(), BinaryOperator::kAdd);
   EXPECT_TRUE(IsA<IntegerLiteral>(bin_expr->lhs()));
   EXPECT_TRUE(IsA<BinaryOperation>(bin_expr->rhs()));
 
   auto* rhs_bin_expr = To<BinaryOperation>(bin_expr->rhs());
-  EXPECT_EQ(rhs_bin_expr->binary_operator(), BinaryOperator::kDiv);
+  EXPECT_EQ(rhs_bin_expr->op(), BinaryOperator::kDiv);
   EXPECT_TRUE(IsA<IntegerLiteral>(rhs_bin_expr->lhs()));
   EXPECT_TRUE(IsA<IntegerLiteral>(rhs_bin_expr->rhs()));
 }
@@ -267,12 +267,12 @@ TEST(Parser, ParseExpressionBinaryOperationAddWithRem) {
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
-  EXPECT_EQ(bin_expr->binary_operator(), BinaryOperator::kAdd);
+  EXPECT_EQ(bin_expr->op(), BinaryOperator::kAdd);
   EXPECT_TRUE(IsA<IntegerLiteral>(bin_expr->lhs()));
   EXPECT_TRUE(IsA<BinaryOperation>(bin_expr->rhs()));
 
   auto* rhs_bin_expr = To<BinaryOperation>(bin_expr->rhs());
-  EXPECT_EQ(rhs_bin_expr->binary_operator(), BinaryOperator::kRem);
+  EXPECT_EQ(rhs_bin_expr->op(), BinaryOperator::kRem);
   EXPECT_TRUE(IsA<IntegerLiteral>(rhs_bin_expr->lhs()));
   EXPECT_TRUE(IsA<IntegerLiteral>(rhs_bin_expr->rhs()));
 }
@@ -287,17 +287,17 @@ TEST(Parser, ParseExpressionBinaryOperationCombined) {
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
-  EXPECT_EQ(bin_expr->binary_operator(), BinaryOperator::kAdd);
+  EXPECT_EQ(bin_expr->op(), BinaryOperator::kAdd);
   EXPECT_TRUE(IsA<BinaryOperation>(bin_expr->lhs()));
   EXPECT_TRUE(IsA<BinaryOperation>(bin_expr->rhs()));
 
   auto* lhs_bin_expr = To<BinaryOperation>(bin_expr->lhs());
-  EXPECT_EQ(lhs_bin_expr->binary_operator(), BinaryOperator::kMul);
+  EXPECT_EQ(lhs_bin_expr->op(), BinaryOperator::kMul);
   EXPECT_TRUE(IsA<IntegerLiteral>(lhs_bin_expr->lhs()));
   EXPECT_TRUE(IsA<IntegerLiteral>(lhs_bin_expr->rhs()));
 
   auto* rhs_bin_expr = To<BinaryOperation>(bin_expr->rhs());
-  EXPECT_EQ(rhs_bin_expr->binary_operator(), BinaryOperator::kDiv);
+  EXPECT_EQ(rhs_bin_expr->op(), BinaryOperator::kDiv);
   EXPECT_TRUE(IsA<IntegerLiteral>(rhs_bin_expr->lhs()));
   EXPECT_TRUE(IsA<IntegerLiteral>(rhs_bin_expr->rhs()));
 }
@@ -312,12 +312,12 @@ TEST(Parser, ParseExpressionBinaryParenthesis) {
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
-  EXPECT_EQ(bin_expr->binary_operator(), BinaryOperator::kAdd);
+  EXPECT_EQ(bin_expr->op(), BinaryOperator::kAdd);
   EXPECT_TRUE(IsA<IntegerLiteral>(bin_expr->lhs()));
   EXPECT_TRUE(IsA<BinaryOperation>(bin_expr->rhs()));
 
   auto* rhs_bin_expr = To<BinaryOperation>(bin_expr->rhs());
-  EXPECT_EQ(rhs_bin_expr->binary_operator(), BinaryOperator::kAdd);
+  EXPECT_EQ(rhs_bin_expr->op(), BinaryOperator::kAdd);
   EXPECT_TRUE(IsA<IntegerLiteral>(rhs_bin_expr->lhs()));
   EXPECT_TRUE(IsA<IntegerLiteral>(rhs_bin_expr->rhs()));
 }
@@ -350,13 +350,13 @@ TEST(Parser, ParseExpressionLogicalCombined) {
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
-  EXPECT_EQ(bin_expr->binary_operator(), BinaryOperator::kLOr);
+  EXPECT_EQ(bin_expr->op(), BinaryOperator::kLOr);
 
   auto* lhs_expr = To<BinaryOperation>(bin_expr->lhs());
-  EXPECT_EQ(lhs_expr->binary_operator(), BinaryOperator::kLAnd);
+  EXPECT_EQ(lhs_expr->op(), BinaryOperator::kLAnd);
 
   auto* rhs_expr = To<BinaryOperation>(bin_expr->rhs());
-  EXPECT_EQ(rhs_expr->binary_operator(), BinaryOperator::kLAnd);
+  EXPECT_EQ(rhs_expr->op(), BinaryOperator::kLAnd);
 }
 
 TEST(Parser, ParseEqualityExpression) {

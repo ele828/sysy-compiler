@@ -120,8 +120,7 @@ class AstDumper : public AstRecursiveVisitor<AstDumper>,
 
   void VisitBinaryOperation(BinaryOperation* bin_op) {
     PrefixWriterScope scope(*this);
-    std::string str =
-        std::format("BinaryOperation {}", bin_op->binary_operator());
+    std::string str = std::format("BinaryOperation {}", bin_op->op());
     Write(str);
     Base::VisitBinaryOperation(bin_op);
   }
