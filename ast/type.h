@@ -70,16 +70,36 @@ class ConstantArrayType : public ArrayType {
  public:
   ConstantArrayType(Type* element_type, Expression* size_expression)
       : ArrayType(TypeClass::kConstantArray, element_type),
-        size_expression_(size_expression) {}
+        size_(size_expression) {}
 
   static bool classof(const Type& t) {
     return t.type_class() == TypeClass::kConstantArray;
   }
 
-  Expression* size_expression() const { return size_expression_; }
+  void set_size(size_t size) { size_ = size; }
+
+  bool is_expression() const {
+    return std::holds_alternative<Expression*>(size_);
+  }
+
+  bool is_number() const { return std::holds_alternative<size_t>(size_); }
+
+  size_t size() const {
+    if (!is_number()) {
+      return 0u;
+    }
+    return std::get<size_t>(size_);
+  }
+
+  Expression* expression() const {
+    if (!is_expression()) {
+      return nullptr;
+    }
+    return std::get<Expression*>(size_);
+  }
 
  private:
-  Expression* size_expression_;
+  std::variant<std::monostate, Expression*, size_t> size_;
 };
 
 class IncompleteArrayType : public ArrayType {
