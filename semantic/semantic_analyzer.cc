@@ -1,6 +1,27 @@
 #include "semantic/semantic_analyzer.h"
 
+#include "semantic/expression_evaluator.h"
+
 namespace sysy {
+
+namespace {
+
+void EvaluateArrayTypeAndReplace(Type* type) {
+  if (auto* constant_array_type = DynamicTo<ConstantArrayType>(type)) {
+    if (constant_array_type->is_expression()) {
+      ExpressionEvaluator evaluator;
+      if (auto result = evaluator.Evaluate(constant_array_type->expression())) {
+        constant_array_type->set_size(result.value());
+      }
+    }
+  }
+
+  if (auto* array_type = DynamicTo<ArrayType>(type)) {
+    EvaluateArrayTypeAndReplace(array_type->element_type());
+  }
+}
+
+}  // namespace
 
 class SemanticsAnalyzer::NewScope {
  public:
@@ -44,7 +65,11 @@ void SemanticsAnalyzer::VisitConstantDeclaration(
     return;
   }
 
-  // TODO: evaluate size expression in type
+  Type* type = const_decl->type();
+  if (IsA<ArrayType>(type)) {
+    EvaluateArrayTypeAndReplace(type);
+  }
+
   // TODO: evaluate constant init value
 
   Base::VisitConstantDeclaration(const_decl);
