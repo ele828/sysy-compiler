@@ -4,25 +4,6 @@
 
 namespace sysy {
 
-namespace {
-
-void EvaluateArrayTypeAndReplace(Type* type) {
-  if (auto* constant_array_type = DynamicTo<ConstantArrayType>(type)) {
-    if (constant_array_type->is_expression()) {
-      ExpressionEvaluator evaluator;
-      if (auto result = evaluator.Evaluate(constant_array_type->expression())) {
-        constant_array_type->set_size(result.value());
-      }
-    }
-  }
-
-  if (auto* array_type = DynamicTo<ArrayType>(type)) {
-    EvaluateArrayTypeAndReplace(array_type->element_type());
-  }
-}
-
-}  // namespace
-
 class SemanticsAnalyzer::NewScope {
  public:
   NewScope(Scope::Type type, SemanticsAnalyzer& analyzer)
@@ -67,10 +48,23 @@ void SemanticsAnalyzer::VisitConstantDeclaration(
 
   Type* type = const_decl->type();
   if (IsA<ArrayType>(type)) {
-    EvaluateArrayTypeAndReplace(type);
+    EvaluateArrayTypeAndReplace(const_decl, type);
   }
 
   // TODO: evaluate constant init value
+  if (auto* init_value = const_decl->init_value()) {
+    if (EvaluateConstInitValueAndReplace(const_decl, init_value)) {
+      SemanticError("Can not evaluate constant init value",
+                    const_decl->location());
+      return;
+    }
+  } else {
+    SemanticError("Constant declaration without initial value is not allowed",
+                  const_decl->location());
+    return;
+  }
+
+  // TODO: type check init value
 
   Base::VisitConstantDeclaration(const_decl);
 }
@@ -83,8 +77,15 @@ void SemanticsAnalyzer::VisitVariableDeclaration(
     return;
   }
 
-  // TODO: evaluate size expression in type
+  Type* type = var_decl->type();
+  if (IsA<ArrayType>(type)) {
+    EvaluateArrayTypeAndReplace(var_decl, type);
+  }
+
   // TODO: evaluate constant init value if possible
+  EvaluateConstInitValueAndReplace(var_decl, var_decl->init_value());
+
+  // TODO: type check init value
 
   Base::VisitVariableDeclaration(var_decl);
 }
@@ -248,6 +249,32 @@ void SemanticsAnalyzer::VisitCallExpression(CallExpression* call_expr) {
     SemanticError("Undefined function symbol", call_expr->location());
     return;
   }
+}
+
+void SemanticsAnalyzer::EvaluateArrayTypeAndReplace(const Declaration* decl,
+                                                    Type* type) {
+  if (auto* constant_array_type = DynamicTo<ConstantArrayType>(type)) {
+    if (constant_array_type->is_expression()) {
+      ExpressionEvaluator evaluator;
+      if (auto result = evaluator.Evaluate(constant_array_type->expression())) {
+        constant_array_type->set_size(result.value());
+      } else {
+        SemanticError("Can not evaluate array type", decl->location());
+      }
+    }
+  }
+
+  if (auto* array_type = DynamicTo<ArrayType>(type)) {
+    EvaluateArrayTypeAndReplace(decl, array_type->element_type());
+  }
+}
+
+bool SemanticsAnalyzer::EvaluateConstInitValueAndReplace(Declaration* decl,
+                                                         Expression* expr) {
+  // TODO:
+  // ExpressionEvaluator evaluator;
+  //  auto result = evaluator.Evaluate(expr);
+  return false;
 }
 
 void SemanticsAnalyzer::SemanticError(std::string error_message,
