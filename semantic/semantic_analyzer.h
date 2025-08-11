@@ -75,6 +75,11 @@ class SemanticsAnalyzer : public AstRecursiveVisitor<SemanticsAnalyzer> {
   AstContext* context() const { return &context_; }
   Scope* current_scope() const { return current_scope_; }
 
+  void EvaluateArrayTypeAndReplace(const Declaration* decl, Type* type);
+
+  /// Returns false if evaluation fails
+  bool EvaluateConstInitValueAndReplace(Declaration* decl, Expression* expr);
+
   void SemanticError(std::string error_message, SourceLocation location);
 
   AstContext& context_;
