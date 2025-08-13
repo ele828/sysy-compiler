@@ -8,8 +8,9 @@
 
 namespace sysy {
 
-class SemanticsAnalyzer : public AstRecursiveVisitor<SemanticsAnalyzer> {
-  using Base = AstRecursiveVisitor<SemanticsAnalyzer>;
+/// Performs semantic analysis on AST nodes.
+class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
+  using Base = AstRecursiveVisitor<SemanticAnalyzer>;
 
  public:
   struct Error {
@@ -17,11 +18,13 @@ class SemanticsAnalyzer : public AstRecursiveVisitor<SemanticsAnalyzer> {
     SourceLocation location;
   };
 
-  explicit SemanticsAnalyzer(AstContext& context);
+  explicit SemanticAnalyzer(AstContext& context);
 
-  // Returns true if semantic analysis succeed, otherwise returns false.
+  /// Returns true if semantic analysis succeed, otherwise returns false.
   bool Analyze(AstNode* node);
 
+  /// Utilize AstRecursiveVisitor to traverse AST nodes including
+  /// CompilationUnit All kinds of Declarations / Statements.
   void VisitCompilationUnit(CompilationUnit* node);
 
   void VisitConstantDeclaration(ConstantDeclaration* const_decl);
@@ -48,23 +51,6 @@ class SemanticsAnalyzer : public AstRecursiveVisitor<SemanticsAnalyzer> {
 
   void VisitReturnStatement(ReturnStatement* return_stmt);
 
-  void VisitIntegerLiteral(IntegerLiteral* int_literal);
-
-  void VisitFloatingLiteral(FloatingLiteral* float_literal);
-
-  void VisitUnaryOperation(UnaryOperation* unary_op);
-
-  void VisitBinaryOperation(BinaryOperation* bin_op);
-
-  void VisitVariableReference(VariableReference* var_ref);
-
-  void VisitInitListExpression(InitListExpression* init_expr);
-
-  void VisitArraySubscriptExpression(
-      ArraySubscriptExpression* array_subscript_expr);
-
-  void VisitCallExpression(CallExpression* call_expr);
-
   bool has_errors() const { return !errors_.empty(); }
 
   const std::vector<Error>& errors() const { return errors_; }
@@ -74,6 +60,27 @@ class SemanticsAnalyzer : public AstRecursiveVisitor<SemanticsAnalyzer> {
 
   AstContext* context() const { return &context_; }
   Scope* current_scope() const { return current_scope_; }
+
+  Type* CheckExpression(Expression* expr);
+
+  void CheckIntegerLiteral(IntegerLiteral* int_literal);
+
+  void CheckFloatingLiteral(FloatingLiteral* float_literal);
+
+  Type* CheckUnaryOperation(UnaryOperation* unary_op);
+
+  Type* CheckBinaryOperation(BinaryOperation* binary_operation);
+
+  Type* CheckVariableReference(VariableReference* var_ref);
+
+  void CheckInitListExpression(InitListExpression* init_expr);
+
+  Type* CheckArraySubscriptExpression(
+      ArraySubscriptExpression* array_subscript_expr);
+
+  Type* CheckCallExpression(CallExpression* call_expr);
+
+  void CheckArrayTypeAndReplace(const Declaration* decl, Type* type);
 
   void EvaluateArrayTypeAndReplace(const Declaration* decl, Type* type);
 
