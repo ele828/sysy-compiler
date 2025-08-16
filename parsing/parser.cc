@@ -225,15 +225,13 @@ Expression* Parser::ParseInitValue() {
     Consume();
 
     ZoneVector<Expression*> list(zone());
-    while (!done() && !Match(TokenType::kRightBrace)) {
+    do {
       Expression* init_value = ParseInitValue();
       if (!init_value) {
         break;
       }
       list.push_back(init_value);
-
-      TryConsume(TokenType::kComma);
-    }
+    } while (TryConsume(TokenType::kComma));
     ExpectAndConsume(TokenType::kRightBrace);
     return zone()->New<InitListExpression>(std::move(list),
                                            current_.location());
