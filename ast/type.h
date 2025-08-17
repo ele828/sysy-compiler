@@ -40,6 +40,10 @@ class BuiltinType : public Type {
 
   Kind kind() const { return kind_; }
 
+  bool is_void() const { return kind_ == Kind::kVoid; }
+  bool is_int() const { return kind_ == Kind::kInt; }
+  bool is_float() const { return kind_ == Kind::kFloat; }
+
   std::string_view name() const;
 
   static bool classof(const Type& t) {

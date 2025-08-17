@@ -61,26 +61,33 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
   AstContext* context() const { return &context_; }
   Scope* current_scope() const { return current_scope_; }
 
-  Type* CheckExpression(Expression* expr);
+  /// Returns true when expression checking succeeded, otherwise returns false
+  bool CheckExpression(Expression* expr);
 
-  void CheckIntegerLiteral(IntegerLiteral* int_literal);
+  bool CheckIntegerLiteral(IntegerLiteral* int_literal);
 
-  void CheckFloatingLiteral(FloatingLiteral* float_literal);
+  bool CheckFloatingLiteral(FloatingLiteral* float_literal);
 
-  Type* CheckUnaryOperation(UnaryOperation* unary_op);
+  bool CheckBinaryOperation(BinaryOperation* binary_operation);
 
-  Type* CheckBinaryOperation(BinaryOperation* binary_operation);
+  bool CheckBinaryArithmetic(BinaryOperation* binary_operation);
 
-  Type* CheckVariableReference(VariableReference* var_ref);
+  bool CheckBinaryRelational(BinaryOperation* binary_operation);
 
-  void CheckInitListExpression(InitListExpression* init_expr);
+  bool CheckBinaryLogical(BinaryOperation* binary_operation);
 
-  Type* CheckArraySubscriptExpression(
+  bool CheckBinaryAssign(BinaryOperation* binary_operation);
+
+  bool CheckVariableReference(VariableReference* var_ref);
+
+  bool CheckInitListExpression(InitListExpression* init_expr);
+
+  bool CheckArraySubscriptExpression(
       ArraySubscriptExpression* array_subscript_expr);
 
-  Type* CheckCallExpression(CallExpression* call_expr);
+  bool CheckCallExpression(CallExpression* call_expr);
 
-  void CheckArrayTypeAndReplace(const Declaration* decl, Type* type);
+  bool ImplicitlyConvertArithmetic(Expression* lhs, Expression* rhs);
 
   void EvaluateArrayTypeAndReplace(const Declaration* decl, Type* type);
 

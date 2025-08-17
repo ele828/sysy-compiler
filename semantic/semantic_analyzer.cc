@@ -1,9 +1,12 @@
 #include "semantic/semantic_analyzer.h"
 
+#include "ast/type.h"
 #include "base/logging.h"
 #include "semantic/expression_evaluator.h"
 
 namespace sysy {
+
+namespace {}  // namespace
 
 class SemanticAnalyzer::NewScope {
  public:
@@ -37,6 +40,8 @@ void SemanticAnalyzer::VisitCompilationUnit(CompilationUnit* comp_unit) {
   NewScope scope(Scope::Type::kGlobal, *this);
 
   Base::VisitCompilationUnit(comp_unit);
+
+  // TODO: check main function (int main() { return 0; })
 }
 
 void SemanticAnalyzer::VisitConstantDeclaration(
@@ -185,15 +190,21 @@ void SemanticAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {
   Base::VisitReturnStatement(return_stmt);
 }
 
-Type* SemanticAnalyzer::CheckExpression(Expression* expr) {
+bool SemanticAnalyzer::CheckExpression(Expression* expr) {
   switch (expr->kind()) {
     case AstNode::Kind::kIntegerLiteral:
-      return context()->int_type();
+      expr->set_type(context()->int_type());
+      return true;
     case AstNode::Kind::kFloatingLiteral:
-      return context()->float_type();
+      expr->set_type(context()->float_type());
+      return true;
     case AstNode::Kind::kUnaryOperation: {
       auto* unary_op = To<UnaryOperation>(expr);
-      return CheckUnaryOperation(unary_op);
+      // Unary operation won't change the type of sub-expression,
+      // so we use the type of sub-expression as the type of unary operation.
+      bool success = CheckExpression(unary_op->expression());
+      unary_op->set_type(unary_op->expression()->type());
+      return success;
     }
     case AstNode::Kind::kBinaryOperation:
       return CheckBinaryOperation(To<BinaryOperation>(expr));
@@ -216,31 +227,183 @@ Type* SemanticAnalyzer::CheckExpression(Expression* expr) {
       NOTREACHED();
   }
 
-  return nullptr;
+  return false;
 }
 
-Type* SemanticAnalyzer::CheckUnaryOperation(UnaryOperation* unary_op) {
-  // Unary operation won't change the type of sub-expression,
-  // so we use the type of sub-expression as the type of unary operation.
-  return CheckExpression(unary_op->expression());
+bool SemanticAnalyzer::CheckBinaryOperation(BinaryOperation* binary_operation) {
+  switch (binary_operation->op()) {
+    case BinaryOperator::kInvalid:
+      NOTREACHED();
+      return false;
+    case BinaryOperator::kAdd:
+    case BinaryOperator::kSub:
+    case BinaryOperator::kMul:
+    case BinaryOperator::kDiv:
+    case BinaryOperator::kRem:
+      return CheckBinaryArithmetic(binary_operation);
+    case BinaryOperator::kLt:
+    case BinaryOperator::kGt:
+    case BinaryOperator::kLe:
+    case BinaryOperator::kGe:
+    case BinaryOperator::kEq:
+    case BinaryOperator::kNeq:
+      return CheckBinaryRelational(binary_operation);
+    case BinaryOperator::kLAnd:
+    case BinaryOperator::kLOr:
+      return CheckBinaryLogical(binary_operation);
+    case BinaryOperator::kAssign:
+      return CheckBinaryAssign();
+  }
+  return false;
 }
 
-Type* SemanticAnalyzer::CheckBinaryOperation(
+bool SemanticAnalyzer::CheckBinaryArithmetic(
     BinaryOperation* binary_operation) {
-  return nullptr;
+  auto* lhs = binary_operation->lhs();
+  auto* rhs = binary_operation->rhs();
+  if (!CheckExpression(lhs)) {
+    return false;
+  }
+  if (!CheckExpression(rhs)) {
+    return false;
+  }
+
+  if (!ImplicitlyConvertArithmetic(lhs, rhs)) {
+    return false;
+  }
+
+  // Set type of binary arithmetic expression:
+  // After type conversion, the type of lhs and rhs is the same, we randomly
+  // choose one as the type of binary expression.
+  binary_operation->set_type(lhs->type());
+
+  return true;
 }
 
-Type* SemanticAnalyzer::CheckVariableReference(VariableReference* var_ref) {
+bool SemanticAnalyzer::CheckBinaryRelational(
+    BinaryOperation* binary_operation) {
+  auto* lhs = binary_operation->lhs();
+  auto* rhs = binary_operation->rhs();
+  if (!CheckExpression(lhs)) {
+    return false;
+  }
+  if (!CheckExpression(rhs)) {
+    return false;
+  }
+
+  if (!ImplicitlyConvertArithmetic(lhs, rhs)) {
+    return false;
+  }
+
+  // Set type of binary relational expression:
+  // The type of any relational operator expression is int, and its value (which
+  // is not an lvalue) is 1 when the specified relationship holds true and
+  // 0 when the specified relationship does not hold.
+  // https://en.cppreference.com/w/c/language/operator_comparison.html
+  binary_operation->set_type(context()->int_type());
+
+  return true;
+}
+
+bool SemanticAnalyzer::CheckBinaryLogical(BinaryOperation* binary_operation) {
+  auto* lhs = binary_operation->lhs();
+  auto* rhs = binary_operation->rhs();
+  if (!CheckExpression(lhs)) {
+    return false;
+  }
+  if (!CheckExpression(rhs)) {
+    return false;
+  }
+
+  auto* lhs_type = DynamicTo<BuiltinType>(lhs->type());
+  auto* rhs_type = DynamicTo<BuiltinType>(rhs->type());
+  if (!lhs_type || !rhs_type) {
+    return false;
+  }
+  if (!lhs_type->is_int() || !rhs_type->is_int()) {
+    return false;
+  }
+
+  // Set type of binary logical expression to int.
+  binary_operation->set_type(context()->int_type());
+
+  return true;
+}
+
+bool SemanticAnalyzer::CheckBinaryAssign(BinaryOperation* binary_operation) {
+  auto* lhs = binary_operation->lhs();
+  auto* rhs = binary_operation->rhs();
+  if (!CheckExpression(lhs)) {
+    return false;
+  }
+  if (!CheckExpression(rhs)) {
+    return false;
+  }
+
+  // In the assignment operator, the value of the right-hand operand is
+  // converted to the unqualified type of the left-hand operand.
+  // https://en.cppreference.com/w/c/language/conversion.html#Usual_arithmetic_conversions
+  auto* lhs_type = DynamicTo<BuiltinType>(lhs->type());
+  auto* rhs_type = DynamicTo<BuiltinType>(rhs->type());
+  if (lhs_type->is_void()) {
+    SemanticError("Can not assign to variable of void type", lhs->location());
+    return false;
+  }
+  if (rhs_type->is_void()) {
+    SemanticError("Can not assign void type to variable", lhs->location());
+    return false;
+  }
+
+  if (lhs_type != rhs_type) {
+    // Implicitly convert the type of rhs to the type of lhs.
+    rhs->set_type(lhs->type());
+  }
+
+  // Set type of binary assign expression to the type of lhs.
+  binary_operation->set_type(lhs->type());
+
+  return true;
+}
+
+bool SemanticAnalyzer::ImplicitlyConvertArithmetic(Expression* lhs,
+                                                   Expression* rhs) {
+  auto* lhs_type = DynamicTo<BuiltinType>(lhs->type());
+  auto* rhs_type = DynamicTo<BuiltinType>(rhs->type());
+
+  if (!lhs_type || !rhs_type) {
+    return false;
+  }
+
+  if (lhs_type->is_void() || rhs_type->is_void()) {
+    return false;
+  }
+
+  // Perform implicit type conversion:
+  // If one operand is float, float complex, or float imaginary(since C99), the
+  // other operand is implicitly converted as follows: integer type to float(the
+  // only real type possible is float, which remains as - is)
+  // https://en.cppreference.com/w/c/language/conversion.html#Usual_arithmetic_conversions
+  if (lhs_type->is_float() && rhs_type->is_int()) {
+    rhs->set_type(context()->float_type());
+  } else if (lhs_type->is_int() && rhs_type->is_float()) {
+    lhs->set_type(context()->float_type());
+  }
+
+  return true;
+}
+
+bool SemanticAnalyzer::CheckVariableReference(VariableReference* var_ref) {
   if (auto* decl = current_scope()->ResolveSymbol(var_ref->name())) {
-    return decl->type();
+    var_ref->set_type(decl->type());
+    return true;
   }
 
   std::string error = std::format("Undefined symbol '{}'", var_ref->name());
   SemanticError(std::move(error), var_ref->location());
-  return nullptr;
+  return false;
 }
 
-Type* SemanticAnalyzer::CheckCallExpression(CallExpression* call_expr) {
+bool SemanticAnalyzer::CheckCallExpression(CallExpression* call_expr) {
   auto* decl = current_scope()->ResolveSymbol(call_expr->name());
   if (decl) {
     if (auto* fun_decl = DynamicTo<FunctionDeclaration>(decl)) {
@@ -269,22 +432,29 @@ Type* SemanticAnalyzer::CheckCallExpression(CallExpression* call_expr) {
   }
 }
 
-Type* SemanticAnalyzer::CheckArraySubscriptExpression(
+bool SemanticAnalyzer::CheckArraySubscriptExpression(
     ArraySubscriptExpression* array_subscript) {
   auto* base = array_subscript->base();
   if (auto* var_ref = DynamicTo<VariableReference>(base)) {
-    Type* array_type = CheckExpression(var_ref);
+    bool success = CheckExpression(var_ref);
+    if (!success) {
+      return false;
+    }
+
     // Type check array dimension expression
-    CheckExpression(array_subscript->dimension());
+    success = CheckExpression(array_subscript->dimension());
+    if (!success) {
+      return false;
+    }
 
     // TODO: Should we evaluate array subscript dimension expression?
 
-    return array_type;
+    return success;
   }
 
   SemanticError("Invalid array subscript expression",
                 array_subscript->location());
-  return nullptr;
+  return false;
 }
 
 void SemanticAnalyzer::EvaluateArrayTypeAndReplace(const Declaration* decl,
