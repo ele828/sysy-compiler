@@ -6,8 +6,6 @@
 
 namespace sysy {
 
-namespace {}  // namespace
-
 class SemanticAnalyzer::NewScope {
  public:
   NewScope(Scope::Type type, SemanticAnalyzer& analyzer)
