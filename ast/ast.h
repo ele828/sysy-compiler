@@ -334,6 +334,13 @@ class Expression : public AstNode {
     return n.kind() >= Kind::kIntegerLiteral &&
            n.kind() <= Kind::kCallExpression;
   }
+
+  void set_type(Type* type) { type_ = type; }
+
+  Type* type() const { return type_; }
+
+ private:
+  Type* type_;
 };
 
 class IntegerLiteral : public Expression {
