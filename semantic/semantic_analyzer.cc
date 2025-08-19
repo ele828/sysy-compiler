@@ -250,7 +250,7 @@ bool SemanticAnalyzer::CheckBinaryOperation(BinaryOperation* binary_operation) {
     case BinaryOperator::kLOr:
       return CheckBinaryLogical(binary_operation);
     case BinaryOperator::kAssign:
-      return CheckBinaryAssign();
+      return CheckBinaryAssign(binary_operation);
   }
   return false;
 }
@@ -341,8 +341,20 @@ bool SemanticAnalyzer::CheckBinaryAssign(BinaryOperation* binary_operation) {
   // In the assignment operator, the value of the right-hand operand is
   // converted to the unqualified type of the left-hand operand.
   // https://en.cppreference.com/w/c/language/conversion.html#Usual_arithmetic_conversions
+
+  // If both lhs and rhs are not builtin types, then they should be exactly the
+  // same type.
+  if (!IsA<BuiltinType>(lhs->type()) && !IsA<BuiltinType>(rhs->type())) {
+    if (lhs->type()->Equals(*rhs->type())) {
+      return true;
+    }
+    return false;
+  }
+
+  // Both lhs and rhs are builtin type.
   auto* lhs_type = DynamicTo<BuiltinType>(lhs->type());
   auto* rhs_type = DynamicTo<BuiltinType>(rhs->type());
+
   if (lhs_type->is_void()) {
     SemanticError("Can not assign to variable of void type", lhs->location());
     return false;

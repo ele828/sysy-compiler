@@ -22,11 +22,19 @@ class Type : public ZoneObject {
 
   TypeClass type_class() const { return type_class_; }
 
+  bool Equals(const Type& other) const;
+
   void Dump();
 
  private:
   TypeClass type_class_;
+
+  friend bool operator==(const Type& lhs, const Type& rhs);
 };
+
+inline bool operator==(const Type& lhs, const Type& rhs) {
+  return lhs.Equals(rhs);
+}
 
 class BuiltinType : public Type {
  public:
@@ -45,6 +53,8 @@ class BuiltinType : public Type {
   bool is_float() const { return kind_ == Kind::kFloat; }
 
   std::string_view name() const;
+
+  bool Equals(const BuiltinType& other) const;
 
   static bool classof(const Type& t) {
     return t.type_class() == TypeClass::kBuiltin;
@@ -65,6 +75,8 @@ class ArrayType : public Type {
   }
 
   Type* element_type() const { return element_type_; }
+
+  bool Equals(const ArrayType& other) const;
 
  private:
   Type* element_type_;
@@ -102,6 +114,8 @@ class ConstantArrayType : public ArrayType {
     return std::get<Expression*>(size_);
   }
 
+  bool Equals(const ConstantArrayType& other) const;
+
  private:
   std::variant<std::monostate, Expression*, size_t> size_;
 };
@@ -110,6 +124,8 @@ class IncompleteArrayType : public ArrayType {
  public:
   explicit IncompleteArrayType(Type* element_type)
       : ArrayType(TypeClass::kIncompleteArray, element_type) {}
+
+  bool Equals(const IncompleteArrayType& other) const;
 
   static bool classof(const Type& t) {
     return t.type_class() == TypeClass::kIncompleteArray;
