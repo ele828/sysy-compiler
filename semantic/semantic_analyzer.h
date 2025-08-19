@@ -80,7 +80,7 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
 
   bool CheckVariableReference(VariableReference* var_ref);
 
-  bool CheckInitListExpression(InitListExpression* init_expr);
+  bool CheckInitListExpression(InitListExpression* init_list_expr);
 
   bool CheckArraySubscriptExpression(
       ArraySubscriptExpression* array_subscript_expr);

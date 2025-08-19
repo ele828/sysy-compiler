@@ -88,6 +88,9 @@ class ConstantArrayType : public ArrayType {
       : ArrayType(TypeClass::kConstantArray, element_type),
         size_(size_expression) {}
 
+  ConstantArrayType(Type* element_type, size_t size)
+      : ArrayType(TypeClass::kConstantArray, element_type), size_(size) {}
+
   static bool classof(const Type& t) {
     return t.type_class() == TypeClass::kConstantArray;
   }
