@@ -37,9 +37,28 @@ bool SemanticAnalyzer::Analyze(AstNode* node) {
 void SemanticAnalyzer::VisitCompilationUnit(CompilationUnit* comp_unit) {
   NewScope scope(Scope::Type::kGlobal, *this);
 
-  Base::VisitCompilationUnit(comp_unit);
+  bool has_main_function = false;
+  for (auto& decl : comp_unit->body()) {
+    auto* fun_decl = DynamicTo<FunctionDeclaration>(decl);
+    if (!fun_decl) {
+      continue;
+    }
+    if (fun_decl->name() == "main") {
+      has_main_function = true;
+      if (fun_decl->type() != context()->int_type()) {
+        SemanticError("Main function should return a int",
+                      comp_unit->location());
+        return;
+      }
+    }
+  }
+  if (!has_main_function) {
+    SemanticError("Compilation unit should have a main function declaration",
+                  comp_unit->location());
+    return;
+  }
 
-  // TODO: check main function (int main() { return 0; })
+  Base::VisitCompilationUnit(comp_unit);
 }
 
 void SemanticAnalyzer::VisitConstantDeclaration(
@@ -119,6 +138,8 @@ void SemanticAnalyzer::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
     return;
   }
 
+  current_scope()->set_function_declaration(fun_decl);
+
   Base::VisitFunctionDeclaration(fun_decl);
 }
 
@@ -183,6 +204,28 @@ void SemanticAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {
     SemanticError("return statement should be in function scope",
                   return_stmt->location());
     return;
+  }
+
+  // Type check return type:
+  // Return type should match with its function declaration.
+  if (auto* expr = return_stmt->expression()) {
+    CheckExpression(return_stmt->expression());
+    if (!expr->type()->Equals(
+            *current_scope()->function_declaration()->type())) {
+      SemanticError("Return type does not match with function declaration",
+                    expr->location());
+      return;
+    }
+  } else {
+    // No return type, expect function declaration to have void return type.
+    if (current_scope()->function_declaration()->type() !=
+        context()->void_type()) {
+      SemanticError(
+          "Should return value for function declaration with non-void return "
+          "type",
+          return_stmt->location());
+      return;
+    }
   }
 
   Base::VisitReturnStatement(return_stmt);

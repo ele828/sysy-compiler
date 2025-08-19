@@ -25,6 +25,14 @@ class Scope : public ZoneObject {
 
   Declaration* ResolveSymbol(std::string_view symbol);
 
+  void set_function_declaration(FunctionDeclaration* function_declaration) {
+    function_declaration_ = function_declaration;
+  }
+
+  FunctionDeclaration* function_declaration() const {
+    return function_declaration_;
+  }
+
   bool IsInFunctionScope();
   bool IsInWhileScope();
 
@@ -39,6 +47,7 @@ class Scope : public ZoneObject {
   Type type_;
   Scope* outer_scope_;
   SymbolTable symbols_;
+  FunctionDeclaration* function_declaration_{};
 };
 
 }  // namespace sysy
