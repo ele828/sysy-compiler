@@ -210,9 +210,10 @@ bool SemanticAnalyzer::CheckExpression(Expression* expr) {
       auto* var_ref = To<VariableReference>(expr);
       return CheckVariableReference(var_ref);
     }
-    case AstNode::Kind::kInitList:
-      // TODO:
-      break;
+    case AstNode::Kind::kInitList: {
+      auto* init_list_expr = To<InitListExpression>(expr);
+      return CheckInitListExpression(init_list_expr);
+    }
     case AstNode::Kind::kArraySubscript: {
       auto* array_subscript = To<ArraySubscriptExpression>(expr);
       return CheckArraySubscriptExpression(array_subscript);
@@ -403,13 +404,66 @@ bool SemanticAnalyzer::ImplicitlyConvertArithmetic(Expression* lhs,
 }
 
 bool SemanticAnalyzer::CheckVariableReference(VariableReference* var_ref) {
-  if (auto* decl = current_scope()->ResolveSymbol(var_ref->name())) {
-    var_ref->set_type(decl->type());
-    return true;
+  auto* decl = current_scope()->ResolveSymbol(var_ref->name());
+  if (!decl) {
+    std::string error = std::format("Undefined symbol '{}'", var_ref->name());
+    SemanticError(std::move(error), var_ref->location());
+    return false;
   }
 
-  std::string error = std::format("Undefined symbol '{}'", var_ref->name());
-  SemanticError(std::move(error), var_ref->location());
+  var_ref->set_type(decl->type());
+  return true;
+}
+
+bool SemanticAnalyzer::CheckInitListExpression(
+    InitListExpression* init_list_expr) {
+  Type* element_type{};
+  for (auto& expr : init_list_expr->list()) {
+    if (!CheckExpression(expr)) {
+      return false;
+    }
+
+    // Init list requires all of its elements be the same type.
+    if (!element_type) {
+      element_type = expr->type();
+      continue;
+    }
+
+    if (!expr->type()->Equals(*element_type)) {
+      SemanticError("Elements in init list should be the same type",
+                    expr->location());
+      return false;
+    }
+  }
+
+  Type* init_list_type = context()->zone()->New<ConstantArrayType>(
+      element_type, init_list_expr->list().size());
+  init_list_expr->set_type(init_list_type);
+  return false;
+}
+
+bool SemanticAnalyzer::CheckArraySubscriptExpression(
+    ArraySubscriptExpression* array_subscript) {
+  auto* base = array_subscript->base();
+  if (auto* var_ref = DynamicTo<VariableReference>(base)) {
+    bool success = CheckExpression(var_ref);
+    if (!success) {
+      return false;
+    }
+
+    // Type check array dimension expression
+    success = CheckExpression(array_subscript->dimension());
+    if (!success) {
+      return false;
+    }
+
+    // TODO: Should we evaluate array subscript dimension expression?
+
+    return success;
+  }
+
+  SemanticError("Invalid array subscript expression",
+                array_subscript->location());
   return false;
 }
 
@@ -452,31 +506,6 @@ bool SemanticAnalyzer::CheckCallExpression(CallExpression* call_expr) {
   call_expr->set_type(fun_decl->type());
 
   return true;
-}
-
-bool SemanticAnalyzer::CheckArraySubscriptExpression(
-    ArraySubscriptExpression* array_subscript) {
-  auto* base = array_subscript->base();
-  if (auto* var_ref = DynamicTo<VariableReference>(base)) {
-    bool success = CheckExpression(var_ref);
-    if (!success) {
-      return false;
-    }
-
-    // Type check array dimension expression
-    success = CheckExpression(array_subscript->dimension());
-    if (!success) {
-      return false;
-    }
-
-    // TODO: Should we evaluate array subscript dimension expression?
-
-    return success;
-  }
-
-  SemanticError("Invalid array subscript expression",
-                array_subscript->location());
-  return false;
 }
 
 void SemanticAnalyzer::EvaluateArrayTypeAndReplace(const Declaration* decl,
