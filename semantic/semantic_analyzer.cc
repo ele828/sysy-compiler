@@ -415,31 +415,43 @@ bool SemanticAnalyzer::CheckVariableReference(VariableReference* var_ref) {
 
 bool SemanticAnalyzer::CheckCallExpression(CallExpression* call_expr) {
   auto* decl = current_scope()->ResolveSymbol(call_expr->name());
-  if (decl) {
-    if (auto* fun_decl = DynamicTo<FunctionDeclaration>(decl)) {
-      // Check if argument arity is matched
-      if (fun_decl->parameters().size() != call_expr->arguments().size()) {
-        SemanticError(
-            "Arguments length does not match with function declaration",
-            call_expr->location());
-        return {};
-      }
-
-      // TODO: Type check arguments
-      for (auto* arg_expr : call_expr->arguments()) {
-        Visit(arg_expr);
-      }
-
-      call_expr->set_function_declaration(fun_decl);
-      return fun_decl->type();
-    } else {
-      SemanticError("Call target is not a function", call_expr->location());
-      return {};
-    }
-  } else {
+  if (!decl) {
     SemanticError("Undefined function symbol", call_expr->location());
-    return {};
+    return false;
   }
+
+  auto* fun_decl = DynamicTo<FunctionDeclaration>(decl);
+  if (!fun_decl) {
+    SemanticError("Call target is not a function", call_expr->location());
+    return false;
+  }
+
+  // Check if argument arity is matched
+  if (call_expr->arguments().size() != fun_decl->parameters().size()) {
+    SemanticError("Arguments length does not match with function declaration",
+                  call_expr->location());
+    return false;
+  }
+
+  for (size_t i = 0; i < call_expr->arguments().size(); ++i) {
+    auto& arg_expr = call_expr->arguments()[i];
+    if (!CheckExpression(arg_expr)) {
+      return false;
+    }
+
+    // Argument type should match the parameter of function declaration
+    Type* param_type = fun_decl->parameters()[i]->type();
+    if (!arg_expr->type()->Equals(*param_type)) {
+      SemanticError("Argument type does not match function parameter type",
+                    arg_expr->location());
+      return false;
+    }
+  }
+
+  call_expr->set_function_declaration(fun_decl);
+  call_expr->set_type(fun_decl->type());
+
+  return true;
 }
 
 bool SemanticAnalyzer::CheckArraySubscriptExpression(
