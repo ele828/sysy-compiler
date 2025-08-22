@@ -44,6 +44,12 @@ void SemanticAnalyzer::VisitCompilationUnit(CompilationUnit* comp_unit) {
       continue;
     }
     if (fun_decl->name() == "main") {
+      if (has_main_function) {
+        SemanticError("Can only declare one main function",
+                      comp_unit->location());
+        return;
+      }
+
       has_main_function = true;
       if (fun_decl->type() != context()->int_type()) {
         SemanticError("Main function should return a int",
@@ -71,25 +77,28 @@ void SemanticAnalyzer::VisitConstantDeclaration(
 
   Type* type = const_decl->type();
   if (IsA<ArrayType>(type)) {
-    EvaluateArrayTypeAndReplace(const_decl, type);
-  }
-
-  // TODO: evaluate constant init value
-  if (auto* init_value = const_decl->init_value()) {
-    if (EvaluateConstInitValueAndReplace(const_decl, init_value)) {
-      SemanticError("Can not evaluate constant init value",
-                    const_decl->location());
+    if (!EvaluateArrayTypeAndReplace(const_decl, type)) {
       return;
     }
-  } else {
+  }
+
+  if (!const_decl->init_value()) {
     SemanticError("Constant declaration without initial value is not allowed",
                   const_decl->location());
     return;
   }
 
-  // TODO: type check init value
+  // TODO: require all identifier be a constant.
+  if (!CheckExpression(const_decl->init_value())) {
+    return;
+  }
 
-  Base::VisitConstantDeclaration(const_decl);
+  if (!const_decl->init_value()->type()->Equals(*const_decl->type())) {
+    SemanticError(
+        "The type of initial value should match with the type in declaration",
+        const_decl->init_value()->location());
+    return;
+  }
 }
 
 void SemanticAnalyzer::VisitVariableDeclaration(VariableDeclaration* var_decl) {
@@ -101,15 +110,25 @@ void SemanticAnalyzer::VisitVariableDeclaration(VariableDeclaration* var_decl) {
 
   Type* type = var_decl->type();
   if (IsA<ArrayType>(type)) {
-    EvaluateArrayTypeAndReplace(var_decl, type);
+    if (!EvaluateArrayTypeAndReplace(var_decl, type)) {
+      return;
+    }
   }
 
-  // TODO: evaluate constant init value if possible
-  EvaluateConstInitValueAndReplace(var_decl, var_decl->init_value());
+  if (!var_decl->init_value()) {
+    return;
+  }
 
-  // TODO: type check init value
+  if (!CheckExpression(var_decl->init_value())) {
+    return;
+  }
 
-  Base::VisitVariableDeclaration(var_decl);
+  if (!var_decl->init_value()->type()->Equals(*var_decl->type())) {
+    SemanticError(
+        "The type of initial value should match with the type in declaration",
+        var_decl->init_value()->location());
+    return;
+  }
 }
 
 void SemanticAnalyzer::VisitParameterDeclaration(
@@ -120,7 +139,14 @@ void SemanticAnalyzer::VisitParameterDeclaration(
     return;
   }
 
-  Base::VisitParameterDeclaration(param_decl);
+  Type* type = param_decl->type();
+  if (IsA<ArrayType>(type)) {
+    if (!EvaluateArrayTypeAndReplace(param_decl, type)) {
+      return;
+    }
+
+    // TODO: allow incomplete first dimension in array type in parameter decls.
+  }
 }
 
 void SemanticAnalyzer::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
@@ -152,30 +178,55 @@ void SemanticAnalyzer::VisitCompoundStatement(
 
 void SemanticAnalyzer::VisitDeclarationStatement(
     DeclarationStatement* decl_stmt) {
-  for (auto* decl : decl_stmt->declarations()) {
-    auto success = current_scope()->AddSymbol(decl->name(), decl);
-    if (!success) {
-      SemanticError("Redefinition error", decl->location());
-      return;
-    }
-  }
-
   Base::VisitDeclarationStatement(decl_stmt);
 }
 
 void SemanticAnalyzer::VisitExpressionStatement(
     ExpressionStatement* expr_stmt) {
-  Base::VisitExpressionStatement(expr_stmt);
+  // Ignore empty expression statament.
+  auto* expr = expr_stmt->expression();
+  if (!expr) {
+    return;
+  }
+
+  if (!CheckExpression(expr)) {
+    return;
+  }
 }
 
 void SemanticAnalyzer::VisitIfStatement(IfStatement* if_stmt) {
-  Base::VisitIfStatement(if_stmt);
+  if (!CheckExpression(if_stmt->condition())) {
+    return;
+  }
+
+  // Type check condition
+  if (if_stmt->condition()->type() != context()->int_type()) {
+    SemanticError("If condition should be evaluated to int type (boolean)",
+                  if_stmt->condition()->location());
+    return;
+  }
+
+  Visit(if_stmt->get_then());
+  if (auto* else_stmt = if_stmt->get_else()) {
+    Visit(else_stmt);
+  }
 }
 
 void SemanticAnalyzer::VisitWhileStatement(WhileStatement* while_stmt) {
   NewScope scope(Scope::Type::kWhileBlock, *this);
 
-  Base::VisitWhileStatement(while_stmt);
+  if (!CheckExpression(while_stmt->condition())) {
+    return;
+  }
+
+  // Type check condition
+  if (while_stmt->condition()->type() != context()->int_type()) {
+    SemanticError("While condition should be evaluated to int type (boolean)",
+                  while_stmt->condition()->location());
+    return;
+  }
+
+  Visit(while_stmt->body());
 }
 
 void SemanticAnalyzer::VisitBreakStatement(BreakStatement* break_stmt) {
@@ -184,8 +235,6 @@ void SemanticAnalyzer::VisitBreakStatement(BreakStatement* break_stmt) {
                   break_stmt->location());
     return;
   }
-
-  Base::VisitBreakStatement(break_stmt);
 }
 
 void SemanticAnalyzer::VisitContinueStatement(
@@ -195,8 +244,6 @@ void SemanticAnalyzer::VisitContinueStatement(
                   continue_stmt->location());
     return;
   }
-
-  Base::VisitContinueStatement(continue_stmt);
 }
 
 void SemanticAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {
@@ -500,8 +547,6 @@ bool SemanticAnalyzer::CheckArraySubscriptExpression(
       return false;
     }
 
-    // TODO: Should we evaluate array subscript dimension expression?
-
     return success;
   }
 
@@ -551,30 +596,31 @@ bool SemanticAnalyzer::CheckCallExpression(CallExpression* call_expr) {
   return true;
 }
 
-void SemanticAnalyzer::EvaluateArrayTypeAndReplace(const Declaration* decl,
+bool SemanticAnalyzer::EvaluateArrayTypeAndReplace(const Declaration* decl,
                                                    Type* type) {
   if (auto* constant_array_type = DynamicTo<ConstantArrayType>(type)) {
     if (constant_array_type->is_expression()) {
       ExpressionEvaluator evaluator;
       if (auto result = evaluator.Evaluate(constant_array_type->expression())) {
+        if (result.value() < 0) {
+          SemanticError(
+              "Array dimenstion should be evalauted to non-negative value",
+              decl->location());
+          return false;
+        }
         constant_array_type->set_size(result.value());
       } else {
         SemanticError("Can not evaluate array type", decl->location());
+        return false;
       }
     }
   }
 
   if (auto* array_type = DynamicTo<ArrayType>(type)) {
-    EvaluateArrayTypeAndReplace(decl, array_type->element_type());
+    return EvaluateArrayTypeAndReplace(decl, array_type->element_type());
   }
-}
 
-bool SemanticAnalyzer::EvaluateConstInitValueAndReplace(Declaration* decl,
-                                                        Expression* expr) {
-  // TODO:
-  // ExpressionEvaluator evaluator;
-  //  auto result = evaluator.Evaluate(expr);
-  return false;
+  return true;
 }
 
 void SemanticAnalyzer::SemanticError(std::string error_message,

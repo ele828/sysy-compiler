@@ -89,10 +89,8 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
 
   bool ImplicitlyConvertArithmetic(Expression* lhs, Expression* rhs);
 
-  void EvaluateArrayTypeAndReplace(const Declaration* decl, Type* type);
-
-  /// Returns false if evaluation fails
-  bool EvaluateConstInitValueAndReplace(Declaration* decl, Expression* expr);
+  /// Returns false when evaluation fails
+  bool EvaluateArrayTypeAndReplace(const Declaration* decl, Type* type);
 
   void SemanticError(std::string error_message, SourceLocation location);
 
