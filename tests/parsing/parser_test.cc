@@ -73,7 +73,6 @@ TEST(Parser, ParseConstantDeclarationMultiples) {
 }
 
 TEST(Parser, ParseVariableDeclaration) {
-  return;
   const char* source = "int a = 1;";
 
   AstContext context;
@@ -83,7 +82,6 @@ TEST(Parser, ParseVariableDeclaration) {
 }
 
 TEST(Parser, ParseVariableDeclarationMultiples) {
-  return;
   const char* source = "int a = 1, b[1] = {1}, c[2] = {1, 2}, d;";
 
   AstContext context;
@@ -93,7 +91,6 @@ TEST(Parser, ParseVariableDeclarationMultiples) {
 }
 
 TEST(Parser, ParseFunctionDeclarationSimple) {
-  return;
   const char* source = "void foo() {}";
 
   AstContext context;
