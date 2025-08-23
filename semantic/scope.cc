@@ -15,7 +15,7 @@ bool Scope::AddSymbol(std::string_view symbol, Declaration* declaration) {
   return true;
 }
 
-Declaration* Scope::ResolveSymbol(std::string_view symbol) {
+Declaration* Scope::ResolveSymbol(std::string_view symbol) const {
   auto it = symbols_.find(symbol);
   if (it != symbols_.end()) {
     return it->second;
@@ -26,7 +26,15 @@ Declaration* Scope::ResolveSymbol(std::string_view symbol) {
   return nullptr;
 }
 
-bool Scope::IsInFunctionScope() {
+Scope* Scope::GetEnclosingFunctionScope() {
+  if (is_function_scope()) return this;
+  if (outer_scope_) {
+    return outer_scope_->GetEnclosingFunctionScope();
+  }
+  return nullptr;
+}
+
+bool Scope::IsInFunctionScope() const {
   if (is_function_scope()) return true;
   if (outer_scope_) {
     return outer_scope_->IsInFunctionScope();
@@ -34,7 +42,7 @@ bool Scope::IsInFunctionScope() {
   return false;
 }
 
-bool Scope::IsInWhileScope() {
+bool Scope::IsInWhileScope() const {
   if (is_while_scope()) return true;
   if (outer_scope_) {
     return outer_scope_->IsInWhileScope();

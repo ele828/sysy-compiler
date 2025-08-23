@@ -1,5 +1,7 @@
 #include "semantic/semantic_analyzer.h"
 
+#include <print>
+
 #include "ast/type.h"
 #include "base/logging.h"
 #include "semantic/expression_evaluator.h"
@@ -247,7 +249,8 @@ void SemanticAnalyzer::VisitContinueStatement(
 }
 
 void SemanticAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {
-  if (!current_scope()->IsInFunctionScope()) {
+  auto* enclosing_function_scope = current_scope()->GetEnclosingFunctionScope();
+  if (!enclosing_function_scope) {
     SemanticError("return statement should be in function scope",
                   return_stmt->location());
     return;
@@ -258,14 +261,14 @@ void SemanticAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {
   if (auto* expr = return_stmt->expression()) {
     CheckExpression(return_stmt->expression());
     if (!expr->type()->Equals(
-            *current_scope()->function_declaration()->type())) {
+            *enclosing_function_scope->function_declaration()->type())) {
       SemanticError("Return type does not match with function declaration",
                     expr->location());
       return;
     }
   } else {
     // No return type, expect function declaration to have void return type.
-    if (current_scope()->function_declaration()->type() !=
+    if (enclosing_function_scope->function_declaration()->type() !=
         context()->void_type()) {
       SemanticError(
           "Should return value for function declaration with non-void return "

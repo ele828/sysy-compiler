@@ -23,18 +23,21 @@ class Scope : public ZoneObject {
   // Returns false when symbol exists in current scope
   bool AddSymbol(std::string_view symbol, Declaration* declaration);
 
-  Declaration* ResolveSymbol(std::string_view symbol);
+  Declaration* ResolveSymbol(std::string_view symbol) const;
 
   void set_function_declaration(FunctionDeclaration* function_declaration) {
     function_declaration_ = function_declaration;
   }
 
   FunctionDeclaration* function_declaration() const {
+    DCHECK(is_function_scope());
     return function_declaration_;
   }
 
-  bool IsInFunctionScope();
-  bool IsInWhileScope();
+  Scope* GetEnclosingFunctionScope();
+
+  bool IsInFunctionScope() const;
+  bool IsInWhileScope() const;
 
   bool is_global_scope() const { return type_ == Type::kGlobal; }
   bool is_function_scope() const { return type_ == Type::kFunction; }
