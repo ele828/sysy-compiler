@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "parsing/parser.h"
+#include "semantic/semantic_analyzer.h"
 
 namespace sysy::test {
 
@@ -41,7 +42,7 @@ inline std::vector<Fixture> DiscoverFixtures(std::filesystem::path path) {
   return fixtures;
 }
 
-inline void PrintErrors(const Parser& parser) {
+inline void PrintParseErrors(const Parser& parser) {
   for (auto& error : parser.errors()) {
     std::println(stderr, "{} at line: {} column: {}", error.error_message,
                  error.location.line, error.location.column);
@@ -49,9 +50,17 @@ inline void PrintErrors(const Parser& parser) {
 }
 
 inline void CheckParserStates(const Parser& parser) {
-  PrintErrors(parser);
+  PrintParseErrors(parser);
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(parser.done());
+}
+
+inline void PrintSemanticErrors(const SemanticAnalyzer& analyzer) {
+  for (auto& diag : analyzer.diagnostics()) {
+    std::string_view message = GetDiagnosticMessage(diag.diagnostic);
+    std::println("Semantic Error: {} (at line {}, column {})", message,
+                 diag.location.line, diag.location.column);
+  }
 }
 
 }  // namespace sysy::test

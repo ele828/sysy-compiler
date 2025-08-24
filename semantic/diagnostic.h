@@ -11,8 +11,6 @@ namespace sysy {
   V(kMainReturnType, "main function should return a value with int type")   \
   V(kRedefMain, "main function has been defined")                           \
   V(kDeclRedef, "declaration has been defined")                             \
-  V(kConstDeclInitValue,                                                    \
-    "constant declaration without initial value is not allowed")            \
   V(kInitValueTypeMismatch,                                                 \
     "the type of initial value should match with the type in "              \
     "declaration")                                                          \
