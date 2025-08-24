@@ -134,7 +134,7 @@ std::format_context::iterator formatter<TokenType>::format(
       output = ".";
       break;
     case TokenType::kEqual:
-      output = ".";
+      output = "=";
       break;
     case TokenType::kPlus:
       output = "+";
