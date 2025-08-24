@@ -81,14 +81,29 @@ void SemanticAnalyzer::VisitConstantDeclaration(
     }
   }
 
-  if (!const_decl->init_value()) {
-    Diag(DiagnosticID::kConstDeclInitValue, const_decl->location());
-    return;
-  }
+  // TODO: array type should specify all dimensions.
+
+  // Constant declaration without init value is a syntax error.
+  DCHECK(const_decl->init_value());
 
   // TODO: require all identifier be a constant.
   if (!CheckExpression(const_decl->init_value())) {
     return;
+  }
+
+  // Perform implicit builtin type conversion.
+  auto* const_decl_btype = DynamicTo<BuiltinType>(const_decl->type());
+  auto* init_value_btype =
+      DynamicTo<BuiltinType>(const_decl->init_value()->type());
+  if (const_decl_btype && init_value_btype) {
+    if (!init_value_btype->Equals(*const_decl_btype)) {
+      if (init_value_btype->is_int() && const_decl_btype->is_float()) {
+        const_decl->init_value()->set_type(context()->float_type());
+      }
+      if (init_value_btype->is_float() && const_decl_btype->is_int()) {
+        const_decl->init_value()->set_type(context()->int_type());
+      }
+    }
   }
 
   if (!const_decl->init_value()->type()->Equals(*const_decl->type())) {
