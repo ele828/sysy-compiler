@@ -157,18 +157,24 @@ void SemanticAnalyzer::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
   if (scope.outer_scope()->is_global_scope()) {
     auto success = current_scope()->AddSymbol(fun_decl->name(), fun_decl);
     if (!success) {
-      SemanticError("Redefinition error", fun_decl->location());
+      SemanticError("redefinition error", fun_decl->location());
       return;
     }
   } else {
-    SemanticError("Function can not be defined in current scope",
+    SemanticError("function can not be defined in current scope",
                   fun_decl->location());
     return;
   }
 
   current_scope()->set_function_declaration(fun_decl);
-
   Base::VisitFunctionDeclaration(fun_decl);
+
+  if (fun_decl->type() != context()->void_type() &&
+      !current_scope()->has_return_statement()) {
+    SemanticError("non-void function does not return a value",
+                  fun_decl->location());
+    return;
+  }
 }
 
 void SemanticAnalyzer::VisitCompoundStatement(
@@ -278,7 +284,7 @@ void SemanticAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {
     }
   }
 
-  Base::VisitReturnStatement(return_stmt);
+  enclosing_function_scope->set_has_return_statement();
 }
 
 bool SemanticAnalyzer::CheckExpression(Expression* expr) {

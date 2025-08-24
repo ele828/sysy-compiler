@@ -44,6 +44,15 @@ class Scope : public ZoneObject {
   bool is_block_scope() const { return type_ == Type::kBlock; }
   bool is_while_scope() const { return type_ == Type::kWhileBlock; }
 
+  void set_has_return_statement() {
+    DCHECK(is_function_scope());
+    has_return_statement_ = true;
+  }
+  bool has_return_statement() const {
+    DCHECK(is_function_scope());
+    return has_return_statement_;
+  }
+
  private:
   using SymbolTable = std::unordered_map<std::string_view, Declaration*>;
 
@@ -51,6 +60,7 @@ class Scope : public ZoneObject {
   Scope* outer_scope_;
   SymbolTable symbols_;
   FunctionDeclaration* function_declaration_{};
+  bool has_return_statement_{};
 };
 
 }  // namespace sysy
