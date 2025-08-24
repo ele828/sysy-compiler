@@ -9,6 +9,12 @@ class AstContext final {
  public:
   AstContext();
 
+  AstContext(const AstContext&) = delete;
+  AstContext(AstContext&&) = delete;
+
+  AstContext& operator=(const AstContext&) = delete;
+  AstContext& operator=(AstContext&&) = delete;
+
   Zone* zone() { return &zone_; }
 
   Type* void_type() const { return builtin_types_.void_type; }
