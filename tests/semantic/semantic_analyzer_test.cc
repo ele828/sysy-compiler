@@ -4,8 +4,10 @@
 #include <gtest/gtest.h>
 
 #include <print>
+#include <string_view>
 
 #include "parsing/parser.h"
+#include "semantic/diagnostic.h"
 
 namespace sysy::test {
 
@@ -19,10 +21,10 @@ CompilationUnit* Parse(AstContext& context, std::string_view source) {
 }
 
 void PrintSemanticErrors(const SemanticAnalyzer& analyzer) {
-  for (auto& error : analyzer.errors()) {
-    std::println("Semantic Error: {}. at line {}, column {}",
-                 error.error_message, error.location.line,
-                 error.location.column);
+  for (auto& diag : analyzer.diagnostics()) {
+    std::string_view message = GetDiagnosticMessage(diag.diagnostic);
+    std::println("Semantic Error: {}. at line {}, column {}", message,
+                 diag.location.line, diag.location.column);
   }
 }
 

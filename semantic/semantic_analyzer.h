@@ -4,6 +4,7 @@
 #include "ast/ast_context.h"
 #include "ast/ast_recursive_visitor.h"
 #include "common/source_location.h"
+#include "semantic/diagnostic.h"
 #include "semantic/scope.h"
 
 namespace sysy {
@@ -13,8 +14,8 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
   using Base = AstRecursiveVisitor<SemanticAnalyzer>;
 
  public:
-  struct Error {
-    std::string error_message;
+  struct Diagnostic {
+    DiagnosticID diagnostic;
     SourceLocation location;
   };
 
@@ -51,9 +52,9 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
 
   void VisitReturnStatement(ReturnStatement* return_stmt);
 
-  bool has_errors() const { return !errors_.empty(); }
+  bool has_diagnostics() const { return !diagnostics_.empty(); }
 
-  const std::vector<Error>& errors() const { return errors_; }
+  const std::vector<Diagnostic>& diagnostics() const { return diagnostics_; }
 
  private:
   class NewScope;
@@ -92,12 +93,12 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
   /// Returns false when evaluation fails
   bool EvaluateArrayTypeAndReplace(const Declaration* decl, Type* type);
 
-  void SemanticError(std::string error_message, SourceLocation location);
+  void Diag(DiagnosticID diagnostic, SourceLocation location);
 
   AstContext& context_;
   Scope* current_scope_;
 
-  std::vector<Error> errors_;
+  std::vector<Diagnostic> diagnostics_;
 };
 
 }  // namespace sysy

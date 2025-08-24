@@ -33,7 +33,7 @@ SemanticAnalyzer::SemanticAnalyzer(AstContext& context)
 
 bool SemanticAnalyzer::Analyze(AstNode* node) {
   Visit(node);
-  return !has_errors();
+  return !has_diagnostics();
 }
 
 void SemanticAnalyzer::VisitCompilationUnit(CompilationUnit* comp_unit) {
@@ -47,22 +47,19 @@ void SemanticAnalyzer::VisitCompilationUnit(CompilationUnit* comp_unit) {
     }
     if (fun_decl->name() == "main") {
       if (has_main_function) {
-        SemanticError("Can only declare one main function",
-                      comp_unit->location());
+        Diag(DiagnosticID::kRedefMain, comp_unit->location());
         return;
       }
 
       has_main_function = true;
       if (fun_decl->type() != context()->int_type()) {
-        SemanticError("Main function should return a int",
-                      comp_unit->location());
+        Diag(DiagnosticID::kMainReturnType, comp_unit->location());
         return;
       }
     }
   }
   if (!has_main_function) {
-    SemanticError("Compilation unit should have a main function declaration",
-                  comp_unit->location());
+    Diag(DiagnosticID::kUndefMain, comp_unit->location());
     return;
   }
 
@@ -73,7 +70,7 @@ void SemanticAnalyzer::VisitConstantDeclaration(
     ConstantDeclaration* const_decl) {
   auto success = current_scope()->AddSymbol(const_decl->name(), const_decl);
   if (!success) {
-    SemanticError("Redefinition error", const_decl->location());
+    Diag(DiagnosticID::kDeclRedef, const_decl->location());
     return;
   }
 
@@ -85,8 +82,7 @@ void SemanticAnalyzer::VisitConstantDeclaration(
   }
 
   if (!const_decl->init_value()) {
-    SemanticError("Constant declaration without initial value is not allowed",
-                  const_decl->location());
+    Diag(DiagnosticID::kConstDeclInitValue, const_decl->location());
     return;
   }
 
@@ -96,9 +92,8 @@ void SemanticAnalyzer::VisitConstantDeclaration(
   }
 
   if (!const_decl->init_value()->type()->Equals(*const_decl->type())) {
-    SemanticError(
-        "The type of initial value should match with the type in declaration",
-        const_decl->init_value()->location());
+    Diag(DiagnosticID::kInitValueTypeMismatch,
+         const_decl->init_value()->location());
     return;
   }
 }
@@ -106,7 +101,7 @@ void SemanticAnalyzer::VisitConstantDeclaration(
 void SemanticAnalyzer::VisitVariableDeclaration(VariableDeclaration* var_decl) {
   auto success = current_scope()->AddSymbol(var_decl->name(), var_decl);
   if (!success) {
-    SemanticError("Redefinition error", var_decl->location());
+    Diag(DiagnosticID::kDeclRedef, var_decl->location());
     return;
   }
 
@@ -126,9 +121,8 @@ void SemanticAnalyzer::VisitVariableDeclaration(VariableDeclaration* var_decl) {
   }
 
   if (!var_decl->init_value()->type()->Equals(*var_decl->type())) {
-    SemanticError(
-        "The type of initial value should match with the type in declaration",
-        var_decl->init_value()->location());
+    Diag(DiagnosticID::kInitValueTypeMismatch,
+         var_decl->init_value()->location());
     return;
   }
 }
@@ -137,7 +131,7 @@ void SemanticAnalyzer::VisitParameterDeclaration(
     ParameterDeclaration* param_decl) {
   auto success = current_scope()->AddSymbol(param_decl->name(), param_decl);
   if (!success) {
-    SemanticError("Redefinition error", param_decl->location());
+    Diag(DiagnosticID::kDeclRedef, param_decl->location());
     return;
   }
 
@@ -157,12 +151,11 @@ void SemanticAnalyzer::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
   if (scope.outer_scope()->is_global_scope()) {
     auto success = current_scope()->AddSymbol(fun_decl->name(), fun_decl);
     if (!success) {
-      SemanticError("redefinition error", fun_decl->location());
+      Diag(DiagnosticID::kDeclRedef, fun_decl->location());
       return;
     }
   } else {
-    SemanticError("function can not be defined in current scope",
-                  fun_decl->location());
+    Diag(DiagnosticID::kFuncDefDisallow, fun_decl->location());
     return;
   }
 
@@ -171,8 +164,7 @@ void SemanticAnalyzer::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
 
   if (fun_decl->type() != context()->void_type() &&
       !current_scope()->has_return_statement()) {
-    SemanticError("non-void function does not return a value",
-                  fun_decl->location());
+    Diag(DiagnosticID::kFuncVoidReturn, fun_decl->location());
     return;
   }
 }
@@ -209,8 +201,7 @@ void SemanticAnalyzer::VisitIfStatement(IfStatement* if_stmt) {
 
   // Type check condition
   if (if_stmt->condition()->type() != context()->int_type()) {
-    SemanticError("If condition should be evaluated to int type (boolean)",
-                  if_stmt->condition()->location());
+    Diag(DiagnosticID::kIfCondType, if_stmt->condition()->location());
     return;
   }
 
@@ -229,8 +220,7 @@ void SemanticAnalyzer::VisitWhileStatement(WhileStatement* while_stmt) {
 
   // Type check condition
   if (while_stmt->condition()->type() != context()->int_type()) {
-    SemanticError("While condition should be evaluated to int type (boolean)",
-                  while_stmt->condition()->location());
+    Diag(DiagnosticID::kWhileCondType, while_stmt->condition()->location());
     return;
   }
 
@@ -239,8 +229,7 @@ void SemanticAnalyzer::VisitWhileStatement(WhileStatement* while_stmt) {
 
 void SemanticAnalyzer::VisitBreakStatement(BreakStatement* break_stmt) {
   if (!current_scope()->IsInWhileScope()) {
-    SemanticError("break statement should be in while scope",
-                  break_stmt->location());
+    Diag(DiagnosticID::kBreakScope, break_stmt->location());
     return;
   }
 }
@@ -248,8 +237,7 @@ void SemanticAnalyzer::VisitBreakStatement(BreakStatement* break_stmt) {
 void SemanticAnalyzer::VisitContinueStatement(
     ContinueStatement* continue_stmt) {
   if (!current_scope()->IsInWhileScope()) {
-    SemanticError("continue statement should be in while scope",
-                  continue_stmt->location());
+    Diag(DiagnosticID::kContinueScope, continue_stmt->location());
     return;
   }
 }
@@ -257,8 +245,7 @@ void SemanticAnalyzer::VisitContinueStatement(
 void SemanticAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {
   auto* enclosing_function_scope = current_scope()->GetEnclosingFunctionScope();
   if (!enclosing_function_scope) {
-    SemanticError("return statement should be in function scope",
-                  return_stmt->location());
+    Diag(DiagnosticID::kReturnScope, return_stmt->location());
     return;
   }
 
@@ -268,18 +255,14 @@ void SemanticAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {
     CheckExpression(return_stmt->expression());
     if (!expr->type()->Equals(
             *enclosing_function_scope->function_declaration()->type())) {
-      SemanticError("Return type does not match with function declaration",
-                    expr->location());
+      Diag(DiagnosticID::kReturnTypeMismatch, expr->location());
       return;
     }
   } else {
     // No return type, expect function declaration to have void return type.
     if (enclosing_function_scope->function_declaration()->type() !=
         context()->void_type()) {
-      SemanticError(
-          "Should return value for function declaration with non-void return "
-          "type",
-          return_stmt->location());
+      Diag(DiagnosticID::kReturnTypeMismatch, return_stmt->location());
       return;
     }
   }
@@ -456,11 +439,11 @@ bool SemanticAnalyzer::CheckBinaryAssign(BinaryOperation* binary_operation) {
   auto* rhs_type = DynamicTo<BuiltinType>(rhs->type());
 
   if (lhs_type->is_void()) {
-    SemanticError("Can not assign to variable of void type", lhs->location());
+    Diag(DiagnosticID::kAssignToVoid, lhs->location());
     return false;
   }
   if (rhs_type->is_void()) {
-    SemanticError("Can not assign void type to variable", lhs->location());
+    Diag(DiagnosticID::kAssignToVoid, lhs->location());
     return false;
   }
 
@@ -505,8 +488,7 @@ bool SemanticAnalyzer::ImplicitlyConvertArithmetic(Expression* lhs,
 bool SemanticAnalyzer::CheckVariableReference(VariableReference* var_ref) {
   auto* decl = current_scope()->ResolveSymbol(var_ref->name());
   if (!decl) {
-    std::string error = std::format("Undefined symbol '{}'", var_ref->name());
-    SemanticError(std::move(error), var_ref->location());
+    Diag(DiagnosticID::kUndefSymbol, var_ref->location());
     return false;
   }
 
@@ -529,8 +511,7 @@ bool SemanticAnalyzer::CheckInitListExpression(
     }
 
     if (!expr->type()->Equals(*element_type)) {
-      SemanticError("Elements in init list should be the same type",
-                    expr->location());
+      Diag(DiagnosticID::kInitListTypeMismatch, expr->location());
       return false;
     }
   }
@@ -559,28 +540,26 @@ bool SemanticAnalyzer::CheckArraySubscriptExpression(
     return success;
   }
 
-  SemanticError("Invalid array subscript expression",
-                array_subscript->location());
+  Diag(DiagnosticID::kInvalidArraySubscript, array_subscript->location());
   return false;
 }
 
 bool SemanticAnalyzer::CheckCallExpression(CallExpression* call_expr) {
   auto* decl = current_scope()->ResolveSymbol(call_expr->name());
   if (!decl) {
-    SemanticError("Undefined function symbol", call_expr->location());
+    Diag(DiagnosticID::kUndefSymbol, call_expr->location());
     return false;
   }
 
   auto* fun_decl = DynamicTo<FunctionDeclaration>(decl);
   if (!fun_decl) {
-    SemanticError("Call target is not a function", call_expr->location());
+    Diag(DiagnosticID::kCallTarget, call_expr->location());
     return false;
   }
 
   // Check if argument arity is matched
   if (call_expr->arguments().size() != fun_decl->parameters().size()) {
-    SemanticError("Arguments length does not match with function declaration",
-                  call_expr->location());
+    Diag(DiagnosticID::kCallArgArity, call_expr->location());
     return false;
   }
 
@@ -593,8 +572,7 @@ bool SemanticAnalyzer::CheckCallExpression(CallExpression* call_expr) {
     // Argument type should match the parameter of function declaration
     Type* param_type = fun_decl->parameters()[i]->type();
     if (!arg_expr->type()->Equals(*param_type)) {
-      SemanticError("Argument type does not match function parameter type",
-                    arg_expr->location());
+      Diag(DiagnosticID::kCallArgType, arg_expr->location());
       return false;
     }
   }
@@ -612,14 +590,12 @@ bool SemanticAnalyzer::EvaluateArrayTypeAndReplace(const Declaration* decl,
       ExpressionEvaluator evaluator;
       if (auto result = evaluator.Evaluate(constant_array_type->expression())) {
         if (result.value() < 0) {
-          SemanticError(
-              "Array dimenstion should be evalauted to non-negative value",
-              decl->location());
+          Diag(DiagnosticID::kArrayNegDimension, decl->location());
           return false;
         }
         constant_array_type->set_size(result.value());
       } else {
-        SemanticError("Can not evaluate array type", decl->location());
+        Diag(DiagnosticID::kArrayTypeEval, decl->location());
         return false;
       }
     }
@@ -632,13 +608,12 @@ bool SemanticAnalyzer::EvaluateArrayTypeAndReplace(const Declaration* decl,
   return true;
 }
 
-void SemanticAnalyzer::SemanticError(std::string error_message,
-                                     SourceLocation location) {
-  Error error{
-      .error_message = std::move(error_message),
+void SemanticAnalyzer::Diag(DiagnosticID diagnostic, SourceLocation location) {
+  Diagnostic diag{
+      .diagnostic = diagnostic,
       .location = location,
   };
-  errors_.push_back(std::move(error));
+  diagnostics_.push_back(diag);
 }
 
 }  // namespace sysy
