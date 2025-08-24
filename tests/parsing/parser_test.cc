@@ -63,6 +63,16 @@ TEST(Parser, ParseConstantaDeclaration) {
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
 }
 
+TEST(Parser, ParseConstantaDeclarationWithoutInitValue) {
+  const char* source = "const int a;";
+
+  AstContext context;
+  Parser parser(context, source);
+  auto* compilation_unit = parser.ParseCompilationUnit();
+  EXPECT_TRUE(parser.has_errors());
+  EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
+}
+
 TEST(Parser, ParseConstantDeclarationMultiples) {
   const char* source = "const int a = 1, b[1] = {1}, c[2] = {1,2};";
 
