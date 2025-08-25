@@ -88,7 +88,10 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
 
   bool CheckCallExpression(CallExpression* call_expr);
 
-  bool ImplicitlyConvertArithmetic(Expression* lhs, Expression* rhs);
+  bool ImplicitlyConvertArithmetic(BinaryOperation* binary_operation);
+
+  /// Add an ImplicitCastExpression AstNode above the original expression node.
+  ImplicitCastExpression* ImplicitCast(Type* type, Expression* expression);
 
   /// Returns false when evaluation fails
   bool EvaluateArrayTypeAndReplace(const Declaration* decl, Type* type);
