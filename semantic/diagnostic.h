@@ -15,7 +15,7 @@ namespace sysy {
     "the type of initial value should match with the type in "              \
     "declaration")                                                          \
   V(kFuncDefDisallow, "function definition is not allowed here")            \
-  V(kFuncVoidReturn, "non-void function does not return a value")           \
+  V(kFuncNonVoidReturn, "non-void function does not return a value")        \
   V(kIfCondType, "if condition should be evaluated to int type (boolean)")  \
   V(kWhileCondType,                                                         \
     "While condition should be evaluated to int type "                      \
