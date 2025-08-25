@@ -59,6 +59,9 @@ class AstRecursiveVisitor {
             To<ArraySubscriptExpression>(node));
       case AstNode::Kind::kCallExpression:
         return derived()->VisitCallExpression(To<CallExpression>(node));
+      case AstNode::Kind::kImplicitCast:
+        return derived()->VisitImplicitCastExpression(
+            To<ImplicitCastExpression>(node));
     }
   }
 
@@ -161,6 +164,10 @@ class AstRecursiveVisitor {
     for (auto& argument : call_expr->arguments()) {
       Visit(argument);
     }
+  }
+
+  void VisitImplicitCastExpression(ImplicitCastExpression* implicit_cast_expr) {
+    Visit(implicit_cast_expr->sub_expression());
   }
 
  private:

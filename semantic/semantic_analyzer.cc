@@ -98,10 +98,14 @@ void SemanticAnalyzer::VisitConstantDeclaration(
   if (const_decl_btype && init_value_btype) {
     if (!init_value_btype->Equals(*const_decl_btype)) {
       if (init_value_btype->is_int() && const_decl_btype->is_float()) {
-        const_decl->init_value()->set_type(context()->float_type());
+        auto* casted_init_value =
+            ImplicitCast(context()->float_type(), const_decl->init_value());
+        const_decl->set_init_value(casted_init_value);
       }
       if (init_value_btype->is_float() && const_decl_btype->is_int()) {
-        const_decl->init_value()->set_type(context()->int_type());
+        auto* casted_init_value =
+            ImplicitCast(context()->int_type(), const_decl->init_value());
+        const_decl->set_init_value(casted_init_value);
       }
     }
   }
@@ -319,6 +323,12 @@ bool SemanticAnalyzer::CheckExpression(Expression* expr) {
       auto* call_expr = To<CallExpression>(expr);
       return CheckCallExpression(call_expr);
     }
+    case AstNode::Kind::kImplicitCast: {
+      // ImplicitCastExpression is manually added in semantic analysis phase,
+      // we should not reach here when performing tree traversal.
+      NOTREACHED();
+      return true;
+    }
     default:
       NOTREACHED();
   }
@@ -364,7 +374,7 @@ bool SemanticAnalyzer::CheckBinaryArithmetic(
     return false;
   }
 
-  if (!ImplicitlyConvertArithmetic(lhs, rhs)) {
+  if (!ImplicitlyConvertArithmetic(binary_operation)) {
     return false;
   }
 
@@ -387,7 +397,7 @@ bool SemanticAnalyzer::CheckBinaryRelational(
     return false;
   }
 
-  if (!ImplicitlyConvertArithmetic(lhs, rhs)) {
+  if (!ImplicitlyConvertArithmetic(binary_operation)) {
     return false;
   }
 
@@ -464,38 +474,12 @@ bool SemanticAnalyzer::CheckBinaryAssign(BinaryOperation* binary_operation) {
 
   if (lhs_type != rhs_type) {
     // Implicitly convert the type of rhs to the type of lhs.
-    rhs->set_type(lhs->type());
+    auto* casted_rhs = ImplicitCast(lhs->type(), rhs);
+    binary_operation->set_rhs(casted_rhs);
   }
 
   // Set type of binary assign expression to the type of lhs.
   binary_operation->set_type(lhs->type());
-
-  return true;
-}
-
-bool SemanticAnalyzer::ImplicitlyConvertArithmetic(Expression* lhs,
-                                                   Expression* rhs) {
-  auto* lhs_type = DynamicTo<BuiltinType>(lhs->type());
-  auto* rhs_type = DynamicTo<BuiltinType>(rhs->type());
-
-  if (!lhs_type || !rhs_type) {
-    return false;
-  }
-
-  if (lhs_type->is_void() || rhs_type->is_void()) {
-    return false;
-  }
-
-  // Perform implicit type conversion:
-  // If one operand is float, float complex, or float imaginary(since C99), the
-  // other operand is implicitly converted as follows: integer type to float(the
-  // only real type possible is float, which remains as - is)
-  // https://en.cppreference.com/w/c/language/conversion.html#Usual_arithmetic_conversions
-  if (lhs_type->is_float() && rhs_type->is_int()) {
-    rhs->set_type(context()->float_type());
-  } else if (lhs_type->is_int() && rhs_type->is_float()) {
-    lhs->set_type(context()->float_type());
-  }
 
   return true;
 }
@@ -596,6 +580,43 @@ bool SemanticAnalyzer::CheckCallExpression(CallExpression* call_expr) {
   call_expr->set_type(fun_decl->type());
 
   return true;
+}
+
+bool SemanticAnalyzer::ImplicitlyConvertArithmetic(
+    BinaryOperation* binary_operation) {
+  auto* lhs = binary_operation->lhs();
+  auto* rhs = binary_operation->rhs();
+  auto* lhs_type = DynamicTo<BuiltinType>(lhs->type());
+  auto* rhs_type = DynamicTo<BuiltinType>(rhs->type());
+
+  if (!lhs_type || !rhs_type) {
+    return false;
+  }
+
+  if (lhs_type->is_void() || rhs_type->is_void()) {
+    return false;
+  }
+
+  // Perform implicit type conversion:
+  // If one operand is float, float complex, or float imaginary(since C99), the
+  // other operand is implicitly converted as follows: integer type to float(the
+  // only real type possible is float, which remains as - is)
+  // https://en.cppreference.com/w/c/language/conversion.html#Usual_arithmetic_conversions
+  if (lhs_type->is_float() && rhs_type->is_int()) {
+    auto* casted_rhs = ImplicitCast(context()->float_type(), rhs);
+    binary_operation->set_rhs(casted_rhs);
+  } else if (lhs_type->is_int() && rhs_type->is_float()) {
+    auto* casted_lhs = ImplicitCast(context()->float_type(), lhs);
+    binary_operation->set_lhs(casted_lhs);
+  }
+
+  return true;
+}
+
+ImplicitCastExpression* SemanticAnalyzer::ImplicitCast(Type* type,
+                                                       Expression* expression) {
+  return context()->zone()->New<ImplicitCastExpression>(type, expression,
+                                                        expression->location());
 }
 
 bool SemanticAnalyzer::EvaluateArrayTypeAndReplace(const Declaration* decl,

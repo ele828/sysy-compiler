@@ -71,6 +71,7 @@ class AstNode : public ZoneObject {
     kInitList,
     kArraySubscript,
     kCallExpression,
+    kImplicitCast,
     // Expression end
   };
 
@@ -131,6 +132,8 @@ class ConstantDeclaration : public Declaration {
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kConstantDeclaration;
   }
+
+  void set_init_value(Expression* init_value) { init_value_ = init_value; }
 
   Expression* init_value() const { return init_value_; }
 
@@ -330,9 +333,11 @@ class Expression : public AstNode {
  public:
   Expression(Kind kind, SourceLocation location) : AstNode(kind, location) {}
 
+  Expression(Kind kind, Type* type, SourceLocation location)
+      : AstNode(kind, location), type_(type) {}
+
   static bool classof(const AstNode& n) {
-    return n.kind() >= Kind::kIntegerLiteral &&
-           n.kind() <= Kind::kCallExpression;
+    return n.kind() >= Kind::kIntegerLiteral && n.kind() <= Kind::kImplicitCast;
   }
 
   void set_type(Type* type) { type_ = type; }
@@ -405,6 +410,10 @@ class BinaryOperation : public Expression {
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kBinaryOperation;
   }
+
+  void set_lhs(Expression* lhs) { lhs_ = lhs; }
+
+  void set_rhs(Expression* rhs) { rhs_ = rhs; }
 
   BinaryOperator op() const { return operator_; }
   Expression* lhs() const { return lhs_; }
@@ -494,6 +503,27 @@ class CallExpression : public Expression {
   std::string_view name_;
   ZoneVector<Expression*> arguments_;
   FunctionDeclaration* function_declaration_;
+};
+
+// If we support more cast mechanisms, introduce a CastExpression as a base
+// class would be a better approach.
+class ImplicitCastExpression : public Expression {
+ public:
+  ImplicitCastExpression(Type* type, Expression* sub_expression,
+                         SourceLocation location)
+      : Expression(Kind::kImplicitCast, type, location),
+        sub_expression_(sub_expression) {
+    DCHECK(sub_expression);
+  }
+
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kImplicitCast;
+  }
+
+  Expression* sub_expression() const { return sub_expression_; }
+
+ private:
+  Expression* sub_expression_;
 };
 
 }  // namespace sysy
