@@ -179,7 +179,7 @@ void SemanticAnalyzer::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
 
   if (fun_decl->type() != context()->void_type() &&
       !current_scope()->has_return_statement()) {
-    Diag(DiagnosticID::kFuncVoidReturn, fun_decl->location());
+    Diag(DiagnosticID::kFuncNonVoidReturn, fun_decl->location());
     return;
   }
 }

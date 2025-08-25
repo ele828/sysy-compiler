@@ -79,7 +79,7 @@ TEST(SemanticAnalyzer, MainFunctionWithoutReturn) {
   const char* source = R"(
     int main() {}
   )";
-  TestSingleDiagnostic(source, DiagnosticID::kFuncVoidReturn, false);
+  TestSingleDiagnostic(source, DiagnosticID::kFuncNonVoidReturn, false);
 }
 
 TEST(SemanticAnalyzer, ConstDeclRedef) {
