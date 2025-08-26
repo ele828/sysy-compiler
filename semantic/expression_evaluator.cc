@@ -15,6 +15,7 @@ std::optional<int> ExpressionEvaluator::Evaluate(Expression* expression) {
     case AstNode::Kind::kUnaryOperation:
       return EvaluateUnaryOperation(To<UnaryOperation>(expression));
     case AstNode::Kind::kBinaryOperation:
+      return EvaluateBinaryOperation(To<BinaryOperation>(expression));
     default:
       return std::nullopt;
   }
