@@ -41,6 +41,7 @@ add_executable(
   tests/parsing/lexer_test.cc
   tests/parsing/parser_test.cc
   tests/parsing/token_test.cc
+  tests/semantic/expression_evaluator_test.cc
   tests/semantic/semantic_analyzer_test.cc)
 target_link_libraries(
   sysy_test
