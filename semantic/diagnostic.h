@@ -37,6 +37,7 @@ namespace sysy {
   V(kCallArgType, "argument type does not match function parameter type")   \
   V(kArrayNegDimension,                                                     \
     "array dimenstion should be evalauted to non-negative value")           \
+  V(kArrayIntDimension, "array dimenstion should be evalauted to a int")    \
   V(kArrayTypeEval, "can not evaluate array type")
 
 enum class DiagnosticID {

@@ -623,13 +623,18 @@ bool SemanticAnalyzer::EvaluateArrayTypeAndReplace(const Declaration* decl,
                                                    Type* type) {
   if (auto* constant_array_type = DynamicTo<ConstantArrayType>(type)) {
     if (constant_array_type->is_expression()) {
-      ExpressionEvaluator evaluator;
+      ExpressionEvaluator evaluator(current_scope());
       if (auto result = evaluator.Evaluate(constant_array_type->expression())) {
-        if (result.value() < 0) {
-          Diag(DiagnosticID::kArrayNegDimension, decl->location());
+        if (result.is_int()) {
+          if (result.get_as_int() < 0) {
+            Diag(DiagnosticID::kArrayNegDimension, decl->location());
+            return false;
+          }
+        } else {
+          Diag(DiagnosticID::kArrayIntDimension, decl->location());
           return false;
         }
-        constant_array_type->set_size(result.value());
+        constant_array_type->set_size(result.get_as_int());
       } else {
         Diag(DiagnosticID::kArrayTypeEval, decl->location());
         return false;
