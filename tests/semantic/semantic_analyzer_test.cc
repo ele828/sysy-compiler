@@ -104,4 +104,11 @@ TEST(SemanticAnalyzer, ConstDeclTypeImplicitConversion) {
   TestSingleDiagnostic(source);
 }
 
+TEST(SemanticAnalyzer, ConstDeclArrayType) {
+  const char* source = R"(
+    const int arr[1] = {1};
+  )";
+  TestSingleDiagnostic(source);
+}
+
 }  // namespace sysy::test

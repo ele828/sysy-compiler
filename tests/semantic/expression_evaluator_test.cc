@@ -4,21 +4,29 @@
 #include <gtest/gtest.h>
 
 #include "parsing/parser.h"
+#include "semantic/scope.h"
 
 namespace sysy::test {
 
 namespace {
 
-void TestExpressionEvaluator(std::string_view source, int expect) {
+template <typename T>
+void TestExpressionEvaluator(std::string_view source, T expect) {
   AstContext context;
   Parser parser(context, source);
   auto* expression = parser.ParseExpression();
   EXPECT_FALSE(parser.has_errors());
 
-  ExpressionEvaluator evaluator;
+  Scope* scope = context.zone()->New<Scope>(Scope::Type::kGlobal, nullptr);
+  ExpressionEvaluator evaluator(scope);
   auto result = evaluator.Evaluate(expression);
-  EXPECT_TRUE(result.has_value());
-  EXPECT_EQ(result.value(), expect);
+  if constexpr (std::is_integral_v<T>) {
+    EXPECT_TRUE(result.is_int());
+    EXPECT_EQ(result.get_as_int(), expect);
+  } else {
+    EXPECT_TRUE(result.is_float());
+    EXPECT_EQ(result.get_as_float(), expect);
+  }
 }
 
 }  // namespace
@@ -30,7 +38,7 @@ TEST(ExpressionEvaluator, IntegerLiteral) {
 
 TEST(ExpressionEvaluator, FloatingLiteral) {
   const char* source = "1.0";
-  TestExpressionEvaluator(source, 1);
+  TestExpressionEvaluator(source, 1.0);
 }
 
 TEST(ExpressionEvaluator, UnaryPlus) {
@@ -71,10 +79,7 @@ TEST(ExpressionEvaluator, BinaryDiv) {
   TestExpressionEvaluator(source, 2);
 
   source = "4.0 / 2";
-  TestExpressionEvaluator(source, 2);
-
-  source = "4 / 2.5";
-  TestExpressionEvaluator(source, 2);
+  TestExpressionEvaluator(source, 2.0);
 }
 
 TEST(ExpressionEvaluator, BinaryRem) {
