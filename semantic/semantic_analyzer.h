@@ -62,31 +62,46 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
   AstContext* context() const { return &context_; }
   Scope* current_scope() const { return current_scope_; }
 
+  struct CheckingContext {
+    bool static_reference_only = false;
+  };
+
   /// Returns true when expression checking succeeded, otherwise returns false
-  bool CheckExpression(Expression* expr);
+  bool CheckExpression(const CheckingContext& ctx, Expression* expr);
 
-  bool CheckIntegerLiteral(IntegerLiteral* int_literal);
+  bool CheckIntegerLiteral(const CheckingContext& ctx,
+                           IntegerLiteral* int_literal);
 
-  bool CheckFloatingLiteral(FloatingLiteral* float_literal);
+  bool CheckFloatingLiteral(const CheckingContext& ctx,
+                            FloatingLiteral* float_literal);
 
-  bool CheckBinaryOperation(BinaryOperation* binary_operation);
+  bool CheckBinaryOperation(const CheckingContext& ctx,
+                            BinaryOperation* binary_operation);
 
-  bool CheckBinaryArithmetic(BinaryOperation* binary_operation);
+  bool CheckBinaryArithmetic(const CheckingContext& ctx,
+                             BinaryOperation* binary_operation);
 
-  bool CheckBinaryRelational(BinaryOperation* binary_operation);
+  bool CheckBinaryRelational(const CheckingContext& ctx,
+                             BinaryOperation* binary_operation);
 
-  bool CheckBinaryLogical(BinaryOperation* binary_operation);
+  bool CheckBinaryLogical(const CheckingContext& ctx,
+                          BinaryOperation* binary_operation);
 
-  bool CheckBinaryAssign(BinaryOperation* binary_operation);
+  bool CheckBinaryAssign(const CheckingContext& ctx,
+                         BinaryOperation* binary_operation);
 
-  bool CheckVariableReference(VariableReference* var_ref);
+  bool CheckVariableReference(const CheckingContext& ctx,
+                              VariableReference* var_ref);
 
-  bool CheckInitListExpression(InitListExpression* init_list_expr);
+  bool CheckInitListExpression(const CheckingContext& ctx,
+                               InitListExpression* init_list_expr);
 
   bool CheckArraySubscriptExpression(
+      const CheckingContext& ctx,
       ArraySubscriptExpression* array_subscript_expr);
 
-  bool CheckCallExpression(CallExpression* call_expr);
+  bool CheckCallExpression(const CheckingContext& ctx,
+                           CallExpression* call_expr);
 
   bool ImplicitlyConvertArithmetic(BinaryOperation* binary_operation);
 
@@ -94,7 +109,8 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
   ImplicitCastExpression* ImplicitCast(Type* type, Expression* expression);
 
   /// Returns false when evaluation fails
-  bool EvaluateArrayTypeAndReplace(const Declaration* decl, Type* type);
+  bool EvaluateArrayTypeAndReplace(const Declaration* decl, Type* type,
+                                   bool allow_incomplete_array_type);
 
   void Diag(DiagnosticID diagnostic, SourceLocation location);
 

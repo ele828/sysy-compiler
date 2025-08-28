@@ -54,10 +54,7 @@ class Value final {
   Value operator||(const Value& other) const;
 
  private:
-  using ValueType = std::variant<std::monostate,  //
-                                 int,             //
-                                 float>;
-  ValueType value_;
+  std::variant<std::monostate, int, float> value_;
 };
 
 /// A simple compile-time constant expression evaluator

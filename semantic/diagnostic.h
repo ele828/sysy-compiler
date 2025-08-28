@@ -28,6 +28,8 @@ namespace sysy {
     "declaration")                                                          \
   V(kAssignToVoid, "can not assign to a variable of void type")             \
   V(kUndefSymbol, "undefined symbol")                                       \
+  V(kNonConstantRef,                                                        \
+    "can only reference to constant declaration in this expression")        \
   V(kInitListTypeMismatch, "elements in init list should be the same type") \
   V(kInvalidArraySubscript, "invalid array subscript expression")           \
   V(kCallTarget, "call target is not a function")                           \
@@ -38,7 +40,8 @@ namespace sysy {
   V(kArrayNegDimension,                                                     \
     "array dimenstion should be evalauted to non-negative value")           \
   V(kArrayIntDimension, "array dimenstion should be evalauted to a int")    \
-  V(kArrayTypeEval, "can not evaluate array type")
+  V(kArrayTypeEval, "can not evaluate array type")                          \
+  V(kArrayTypeIncomplete, "incomplete array dimensions is not allowed")
 
 enum class DiagnosticID {
 #define V(name, message) name,
