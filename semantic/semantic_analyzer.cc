@@ -4,6 +4,7 @@
 
 #include "ast/type.h"
 #include "base/logging.h"
+#include "semantic/diagnostic.h"
 #include "semantic/expression_evaluator.h"
 
 namespace sysy {
@@ -75,19 +76,20 @@ void SemanticAnalyzer::VisitConstantDeclaration(
   }
 
   Type* type = const_decl->type();
-  if (IsA<ArrayType>(type)) {
-    if (!EvaluateArrayTypeAndReplace(const_decl, type)) {
+  if (auto* array_type = DynamicTo<ArrayType>(type)) {
+    if (!EvaluateArrayTypeAndReplace(const_decl, array_type,
+                                     /*allow_incomplete_array_type=*/false)) {
       return;
     }
   }
 
-  // TODO: array type should specify all dimensions.
-
   // Constant declaration without init value is a syntax error.
   DCHECK(const_decl->init_value());
 
-  // TODO: require all identifier be a constant.
-  if (!CheckExpression(const_decl->init_value())) {
+  CheckingContext ctx{
+      .static_reference_only = true,
+  };
+  if (!CheckExpression(ctx, const_decl->init_value())) {
     return;
   }
 
@@ -126,7 +128,7 @@ void SemanticAnalyzer::VisitVariableDeclaration(VariableDeclaration* var_decl) {
 
   Type* type = var_decl->type();
   if (IsA<ArrayType>(type)) {
-    if (!EvaluateArrayTypeAndReplace(var_decl, type)) {
+    if (!EvaluateArrayTypeAndReplace(var_decl, type, false)) {
       return;
     }
   }
@@ -135,7 +137,8 @@ void SemanticAnalyzer::VisitVariableDeclaration(VariableDeclaration* var_decl) {
     return;
   }
 
-  if (!CheckExpression(var_decl->init_value())) {
+  CheckingContext ctx;
+  if (!CheckExpression(ctx, var_decl->init_value())) {
     return;
   }
 
@@ -156,7 +159,7 @@ void SemanticAnalyzer::VisitParameterDeclaration(
 
   Type* type = param_decl->type();
   if (IsA<ArrayType>(type)) {
-    if (!EvaluateArrayTypeAndReplace(param_decl, type)) {
+    if (!EvaluateArrayTypeAndReplace(param_decl, type, true)) {
       return;
     }
 
@@ -208,13 +211,15 @@ void SemanticAnalyzer::VisitExpressionStatement(
     return;
   }
 
-  if (!CheckExpression(expr)) {
+  CheckingContext ctx;
+  if (!CheckExpression(ctx, expr)) {
     return;
   }
 }
 
 void SemanticAnalyzer::VisitIfStatement(IfStatement* if_stmt) {
-  if (!CheckExpression(if_stmt->condition())) {
+  CheckingContext ctx;
+  if (!CheckExpression(ctx, if_stmt->condition())) {
     return;
   }
 
@@ -233,7 +238,8 @@ void SemanticAnalyzer::VisitIfStatement(IfStatement* if_stmt) {
 void SemanticAnalyzer::VisitWhileStatement(WhileStatement* while_stmt) {
   NewScope scope(Scope::Type::kWhileBlock, *this);
 
-  if (!CheckExpression(while_stmt->condition())) {
+  CheckingContext ctx;
+  if (!CheckExpression(ctx, while_stmt->condition())) {
     return;
   }
 
@@ -271,7 +277,8 @@ void SemanticAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {
   // Type check return type:
   // Return type should match with its function declaration.
   if (auto* expr = return_stmt->expression()) {
-    CheckExpression(return_stmt->expression());
+    CheckingContext ctx;
+    CheckExpression(ctx, return_stmt->expression());
     if (!expr->type()->Equals(
             *enclosing_function_scope->function_declaration()->type())) {
       Diag(DiagnosticID::kReturnTypeMismatch, expr->location());
@@ -289,7 +296,8 @@ void SemanticAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {
   enclosing_function_scope->set_has_return_statement();
 }
 
-bool SemanticAnalyzer::CheckExpression(Expression* expr) {
+bool SemanticAnalyzer::CheckExpression(const CheckingContext& ctx,
+                                       Expression* expr) {
   switch (expr->kind()) {
     case AstNode::Kind::kIntegerLiteral:
       expr->set_type(context()->int_type());
@@ -301,27 +309,27 @@ bool SemanticAnalyzer::CheckExpression(Expression* expr) {
       auto* unary_op = To<UnaryOperation>(expr);
       // Unary operation won't change the type of sub-expression,
       // so we use the type of sub-expression as the type of unary operation.
-      bool success = CheckExpression(unary_op->expression());
+      bool success = CheckExpression(ctx, unary_op->expression());
       unary_op->set_type(unary_op->expression()->type());
       return success;
     }
     case AstNode::Kind::kBinaryOperation:
-      return CheckBinaryOperation(To<BinaryOperation>(expr));
+      return CheckBinaryOperation(ctx, To<BinaryOperation>(expr));
     case AstNode::Kind::kVariableReference: {
       auto* var_ref = To<VariableReference>(expr);
-      return CheckVariableReference(var_ref);
+      return CheckVariableReference(ctx, var_ref);
     }
     case AstNode::Kind::kInitList: {
       auto* init_list_expr = To<InitListExpression>(expr);
-      return CheckInitListExpression(init_list_expr);
+      return CheckInitListExpression(ctx, init_list_expr);
     }
     case AstNode::Kind::kArraySubscript: {
       auto* array_subscript = To<ArraySubscriptExpression>(expr);
-      return CheckArraySubscriptExpression(array_subscript);
+      return CheckArraySubscriptExpression(ctx, array_subscript);
     }
     case AstNode::Kind::kCallExpression: {
       auto* call_expr = To<CallExpression>(expr);
-      return CheckCallExpression(call_expr);
+      return CheckCallExpression(ctx, call_expr);
     }
     case AstNode::Kind::kImplicitCast: {
       // ImplicitCastExpression is manually added in semantic analysis phase,
@@ -336,7 +344,8 @@ bool SemanticAnalyzer::CheckExpression(Expression* expr) {
   return false;
 }
 
-bool SemanticAnalyzer::CheckBinaryOperation(BinaryOperation* binary_operation) {
+bool SemanticAnalyzer::CheckBinaryOperation(const CheckingContext& ctx,
+                                            BinaryOperation* binary_operation) {
   switch (binary_operation->op()) {
     case BinaryOperator::kInvalid:
       NOTREACHED();
@@ -346,31 +355,31 @@ bool SemanticAnalyzer::CheckBinaryOperation(BinaryOperation* binary_operation) {
     case BinaryOperator::kMul:
     case BinaryOperator::kDiv:
     case BinaryOperator::kRem:
-      return CheckBinaryArithmetic(binary_operation);
+      return CheckBinaryArithmetic(ctx, binary_operation);
     case BinaryOperator::kLt:
     case BinaryOperator::kGt:
     case BinaryOperator::kLe:
     case BinaryOperator::kGe:
     case BinaryOperator::kEq:
     case BinaryOperator::kNeq:
-      return CheckBinaryRelational(binary_operation);
+      return CheckBinaryRelational(ctx, binary_operation);
     case BinaryOperator::kLAnd:
     case BinaryOperator::kLOr:
-      return CheckBinaryLogical(binary_operation);
+      return CheckBinaryLogical(ctx, binary_operation);
     case BinaryOperator::kAssign:
-      return CheckBinaryAssign(binary_operation);
+      return CheckBinaryAssign(ctx, binary_operation);
   }
   return false;
 }
 
 bool SemanticAnalyzer::CheckBinaryArithmetic(
-    BinaryOperation* binary_operation) {
+    const CheckingContext& ctx, BinaryOperation* binary_operation) {
   auto* lhs = binary_operation->lhs();
   auto* rhs = binary_operation->rhs();
-  if (!CheckExpression(lhs)) {
+  if (!CheckExpression(ctx, lhs)) {
     return false;
   }
-  if (!CheckExpression(rhs)) {
+  if (!CheckExpression(ctx, rhs)) {
     return false;
   }
 
@@ -387,13 +396,13 @@ bool SemanticAnalyzer::CheckBinaryArithmetic(
 }
 
 bool SemanticAnalyzer::CheckBinaryRelational(
-    BinaryOperation* binary_operation) {
+    const CheckingContext& ctx, BinaryOperation* binary_operation) {
   auto* lhs = binary_operation->lhs();
   auto* rhs = binary_operation->rhs();
-  if (!CheckExpression(lhs)) {
+  if (!CheckExpression(ctx, lhs)) {
     return false;
   }
-  if (!CheckExpression(rhs)) {
+  if (!CheckExpression(ctx, rhs)) {
     return false;
   }
 
@@ -411,13 +420,14 @@ bool SemanticAnalyzer::CheckBinaryRelational(
   return true;
 }
 
-bool SemanticAnalyzer::CheckBinaryLogical(BinaryOperation* binary_operation) {
+bool SemanticAnalyzer::CheckBinaryLogical(const CheckingContext& ctx,
+                                          BinaryOperation* binary_operation) {
   auto* lhs = binary_operation->lhs();
   auto* rhs = binary_operation->rhs();
-  if (!CheckExpression(lhs)) {
+  if (!CheckExpression(ctx, lhs)) {
     return false;
   }
-  if (!CheckExpression(rhs)) {
+  if (!CheckExpression(ctx, rhs)) {
     return false;
   }
 
@@ -436,13 +446,14 @@ bool SemanticAnalyzer::CheckBinaryLogical(BinaryOperation* binary_operation) {
   return true;
 }
 
-bool SemanticAnalyzer::CheckBinaryAssign(BinaryOperation* binary_operation) {
+bool SemanticAnalyzer::CheckBinaryAssign(const CheckingContext& ctx,
+                                         BinaryOperation* binary_operation) {
   auto* lhs = binary_operation->lhs();
   auto* rhs = binary_operation->rhs();
-  if (!CheckExpression(lhs)) {
+  if (!CheckExpression(ctx, lhs)) {
     return false;
   }
-  if (!CheckExpression(rhs)) {
+  if (!CheckExpression(ctx, rhs)) {
     return false;
   }
 
@@ -484,10 +495,16 @@ bool SemanticAnalyzer::CheckBinaryAssign(BinaryOperation* binary_operation) {
   return true;
 }
 
-bool SemanticAnalyzer::CheckVariableReference(VariableReference* var_ref) {
+bool SemanticAnalyzer::CheckVariableReference(const CheckingContext& ctx,
+                                              VariableReference* var_ref) {
   auto* decl = current_scope()->ResolveSymbol(var_ref->name());
   if (!decl) {
     Diag(DiagnosticID::kUndefSymbol, var_ref->location());
+    return false;
+  }
+
+  if (ctx.static_reference_only && !IsA<ConstantDeclaration>(decl)) {
+    Diag(DiagnosticID::kNonConstantRef, var_ref->location());
     return false;
   }
 
@@ -496,10 +513,10 @@ bool SemanticAnalyzer::CheckVariableReference(VariableReference* var_ref) {
 }
 
 bool SemanticAnalyzer::CheckInitListExpression(
-    InitListExpression* init_list_expr) {
+    const CheckingContext& ctx, InitListExpression* init_list_expr) {
   Type* element_type{};
   for (auto& expr : init_list_expr->list()) {
-    if (!CheckExpression(expr)) {
+    if (!CheckExpression(ctx, expr)) {
       return false;
     }
 
@@ -522,16 +539,16 @@ bool SemanticAnalyzer::CheckInitListExpression(
 }
 
 bool SemanticAnalyzer::CheckArraySubscriptExpression(
-    ArraySubscriptExpression* array_subscript) {
+    const CheckingContext& ctx, ArraySubscriptExpression* array_subscript) {
   auto* base = array_subscript->base();
   if (auto* var_ref = DynamicTo<VariableReference>(base)) {
-    bool success = CheckExpression(var_ref);
+    bool success = CheckExpression(ctx, var_ref);
     if (!success) {
       return false;
     }
 
     // Type check array dimension expression
-    success = CheckExpression(array_subscript->dimension());
+    success = CheckExpression(ctx, array_subscript->dimension());
     if (!success) {
       return false;
     }
@@ -543,7 +560,8 @@ bool SemanticAnalyzer::CheckArraySubscriptExpression(
   return false;
 }
 
-bool SemanticAnalyzer::CheckCallExpression(CallExpression* call_expr) {
+bool SemanticAnalyzer::CheckCallExpression(const CheckingContext& ctx,
+                                           CallExpression* call_expr) {
   auto* decl = current_scope()->ResolveSymbol(call_expr->name());
   if (!decl) {
     Diag(DiagnosticID::kUndefSymbol, call_expr->location());
@@ -564,7 +582,7 @@ bool SemanticAnalyzer::CheckCallExpression(CallExpression* call_expr) {
 
   for (size_t i = 0; i < call_expr->arguments().size(); ++i) {
     auto& arg_expr = call_expr->arguments()[i];
-    if (!CheckExpression(arg_expr)) {
+    if (!CheckExpression(ctx, arg_expr)) {
       return false;
     }
 
@@ -619,8 +637,15 @@ ImplicitCastExpression* SemanticAnalyzer::ImplicitCast(Type* type,
                                                         expression->location());
 }
 
-bool SemanticAnalyzer::EvaluateArrayTypeAndReplace(const Declaration* decl,
-                                                   Type* type) {
+bool SemanticAnalyzer::EvaluateArrayTypeAndReplace(
+    const Declaration* decl, Type* type, bool allow_incomplete_array_type) {
+  if (!allow_incomplete_array_type) {
+    if (IsA<IncompleteArrayType>(type)) {
+      Diag(DiagnosticID::kArrayTypeIncomplete, decl->location());
+      return false;
+    }
+  }
+
   if (auto* constant_array_type = DynamicTo<ConstantArrayType>(type)) {
     if (constant_array_type->is_expression()) {
       ExpressionEvaluator evaluator(current_scope());
@@ -643,7 +668,8 @@ bool SemanticAnalyzer::EvaluateArrayTypeAndReplace(const Declaration* decl,
   }
 
   if (auto* array_type = DynamicTo<ArrayType>(type)) {
-    return EvaluateArrayTypeAndReplace(decl, array_type->element_type());
+    return EvaluateArrayTypeAndReplace(decl, array_type->element_type(),
+                                       allow_incomplete_array_type);
   }
 
   return true;

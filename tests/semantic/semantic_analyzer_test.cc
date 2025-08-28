@@ -92,9 +92,9 @@ TEST(SemanticAnalyzer, ConstDeclRedef) {
 
 TEST(SemanticAnalyzer, ConstDeclTypeMismatch) {
   const char* source = R"(
-    const int arr[] = 1;
+    const int arr[] = {};
   )";
-  TestSingleDiagnostic(source, DiagnosticID::kInitValueTypeMismatch);
+  TestSingleDiagnostic(source, DiagnosticID::kArrayTypeIncomplete);
 }
 
 TEST(SemanticAnalyzer, ConstDeclTypeImplicitConversion) {
@@ -109,6 +109,14 @@ TEST(SemanticAnalyzer, ConstDeclArrayType) {
     const int arr[1] = {1};
   )";
   TestSingleDiagnostic(source);
+}
+
+TEST(SemanticAnalyzer, ConstDeclArrayTypeWithConstantRef) {
+  const char* source = R"(
+    int value = 1;
+    const int arr[1+1] = {value};
+  )";
+  TestSingleDiagnostic(source, DiagnosticID::kNonConstantRef);
 }
 
 }  // namespace sysy::test
