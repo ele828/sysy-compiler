@@ -12,7 +12,9 @@ class TreeDumper {
   class PrefixWriterScope {
    public:
     explicit PrefixWriterScope(TreeDumper& dumper) : dumper_(dumper) {
-      dumper_.Write('\n');
+      if (!dumper_.result_.empty()) {
+        dumper_.Write('\n');
+      }
 
       dumper_.Write(dumper_.prefix_);
       dumper_.Write('|');
