@@ -63,7 +63,7 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
   Scope* current_scope() const { return current_scope_; }
 
   struct CheckingContext {
-    bool static_reference_only = false;
+    bool constant_reference_only = false;
   };
 
   /// Returns true when expression checking succeeded, otherwise returns false
