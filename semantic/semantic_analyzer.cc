@@ -87,7 +87,7 @@ void SemanticAnalyzer::VisitConstantDeclaration(
   DCHECK(const_decl->init_value());
 
   CheckingContext ctx{
-      .static_reference_only = true,
+      .constant_reference_only = true,
   };
   if (!CheckExpression(ctx, const_decl->init_value())) {
     return;
@@ -503,7 +503,7 @@ bool SemanticAnalyzer::CheckVariableReference(const CheckingContext& ctx,
     return false;
   }
 
-  if (ctx.static_reference_only && !IsA<ConstantDeclaration>(decl)) {
+  if (ctx.constant_reference_only && !IsA<ConstantDeclaration>(decl)) {
     Diag(DiagnosticID::kNonConstantRef, var_ref->location());
     return false;
   }
