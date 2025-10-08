@@ -39,7 +39,12 @@ void Type::Dump() {
 
     void VisitConstantArrayType(const ConstantArrayType* type) {
       PrefixWriterScope scope(*this);
-      std::string str = std::format("ConstantArrayType size: *");
+      std::string str;
+      if (type->is_number()) {
+        str = std::format("ConstantArrayType size: {}", type->size());
+      } else {
+        str = std::format("ConstantArrayType size: *");
+      }
       Write(str);
       Base::VisitConstantArrayType(type);
     }
