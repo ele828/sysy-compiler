@@ -119,4 +119,40 @@ TEST(SemanticAnalyzer, ConstDeclArrayTypeWithConstantRef) {
   TestSingleDiagnostic(source, DiagnosticID::kNonConstantRef);
 }
 
+TEST(SemanticAnalyzer, ConstDeclArrayInitValue) {
+  const char* source = R"(
+    const int arr[3][2] = {{1, 2}, {3, 4}, {5, 6}};
+  )";
+  TestSingleDiagnostic(source);
+}
+
+TEST(SemanticAnalyzer, ConstDeclArrayInitValue2) {
+  const char* source = R"(
+    const int arr[3][2] = {1, 2, 3, 4, 5, 6};
+  )";
+  TestSingleDiagnostic(source);
+}
+
+TEST(SemanticAnalyzer, ConstDeclArrayInitValue3) {
+  const char* source = R"(
+    const int arr[3][2] = {
+      1, 2,
+      {3, 4},
+      5, 6
+    };
+  )";
+  TestSingleDiagnostic(source);
+}
+
+TEST(SemanticAnalyzer, ConstDeclArrayInitValue4) {
+  const char* source = R"(
+    const int arr[3][2][2] = {
+      {{1, 2},  {3, 4}},
+      {{5, 6},  {7, 8}},
+      {{5, 6},  {7, 8}},
+    };
+  )";
+  TestSingleDiagnostic(source);
+}
+
 }  // namespace sysy::test
