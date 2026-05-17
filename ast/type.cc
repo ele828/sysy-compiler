@@ -24,7 +24,7 @@ bool Type::Equals(const Type& other) const {
   }
 }
 
-void Type::Dump() {
+void Type::Dump() const {
   class TypeDumper final : public TypeVisitor<TypeDumper>,
                            public base::TreeDumper {
     using Base = TypeVisitor<TypeDumper>;
@@ -75,6 +75,21 @@ std::string_view BuiltinType::name() const {
 
 bool BuiltinType::Equals(const BuiltinType& other) const {
   return kind() == other.kind();
+}
+
+const ArrayType* ArrayType::GetInnermostArrayType() const {
+  const ArrayType* inner_type = const_cast<ArrayType*>(this);
+
+  while (true) {
+    Type* type = inner_type->element_type();
+    auto* inner_array_type = DynamicTo<ArrayType>(type);
+    if (!inner_array_type) {
+      break;
+    }
+    inner_type = inner_array_type;
+  }
+
+  return inner_type;
 }
 
 bool ArrayType::Equals(const ArrayType& other) const {

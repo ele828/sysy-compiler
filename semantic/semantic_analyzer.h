@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "ast/ast.h"
 #include "ast/ast_context.h"
 #include "ast/ast_recursive_visitor.h"
@@ -8,6 +10,8 @@
 #include "semantic/scope.h"
 
 namespace sysy {
+
+using MaybeExpressionList = std::optional<ZoneVector<Expression*>>;
 
 /// Performs semantic analysis on AST nodes.
 class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
@@ -60,10 +64,12 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
   class NewScope;
 
   AstContext* context() const { return &context_; }
+  Zone* zone() const { return context_.zone(); }
   Scope* current_scope() const { return current_scope_; }
 
   struct CheckingContext {
     bool constant_reference_only = false;
+    ArrayType* decl_array_type = nullptr;
   };
 
   /// Returns true when expression checking succeeded, otherwise returns false
@@ -102,6 +108,14 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
 
   bool CheckCallExpression(const CheckingContext& ctx,
                            CallExpression* call_expr);
+
+  bool CheckInitListExpressionElements(const CheckingContext& ctx,
+                                       const ArrayType* array_type,
+                                       const ZoneVector<Expression*>& init_list,
+                                       SourceLocation loc);
+
+  MaybeExpressionList NormalizeArrayInitList(
+      const CheckingContext& ctx, InitListExpression* init_list_expr);
 
   bool ImplicitlyConvertArithmetic(BinaryOperation* binary_operation);
 

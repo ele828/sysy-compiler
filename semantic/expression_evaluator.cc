@@ -1,5 +1,7 @@
 #include "semantic/expression_evaluator.h"
 
+#include <bit>
+
 #include "base/logging.h"
 #include "base/type_casts.h"
 

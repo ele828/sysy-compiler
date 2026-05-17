@@ -4,6 +4,7 @@
 #include <variant>
 
 #include "base/logging.h"
+#include "base/type_casts.h"
 #include "base/zone.h"
 
 namespace sysy {
@@ -24,7 +25,7 @@ class Type : public ZoneObject {
 
   bool Equals(const Type& other) const;
 
-  void Dump();
+  void Dump() const;
 
  private:
   TypeClass type_class_;
@@ -75,6 +76,10 @@ class ArrayType : public Type {
   }
 
   Type* element_type() const { return element_type_; }
+
+  bool is_multi_dimensional() const { return IsA<ArrayType>(element_type()); }
+
+  const ArrayType* GetInnermostArrayType() const;
 
   bool Equals(const ArrayType& other) const;
 
