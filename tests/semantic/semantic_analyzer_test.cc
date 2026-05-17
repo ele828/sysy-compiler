@@ -111,17 +111,24 @@ TEST(SemanticAnalyzer, ConstDeclArrayType) {
   TestSingleDiagnostic(source);
 }
 
+TEST(SemanticAnalyzer, ConstDeclArrayTypeRequiresPadding) {
+  const char* source = R"(
+    const int arr[2] = {1};
+  )";
+  TestSingleDiagnostic(source);
+}
+
 TEST(SemanticAnalyzer, ConstDeclArrayTypeWithConstantRef) {
   const char* source = R"(
     int value = 1;
-    const int arr[1+1] = {value};
+    const int arr[1] = {value};
   )";
   TestSingleDiagnostic(source, DiagnosticID::kNonConstantRef);
 }
 
 TEST(SemanticAnalyzer, ConstDeclArrayInitValue) {
   const char* source = R"(
-    const int arr[3][2] = {{1, 2}, {3, 4}, {5, 6}};
+    const int arr[3][2] = {1, 2, {3, 4}, {5, 6}};
   )";
   TestSingleDiagnostic(source);
 }

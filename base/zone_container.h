@@ -17,6 +17,13 @@ class ZoneAllocator {
   // we don't deallocate memory in zone
   void deallocate([[maybe_unused]] T* p, [[maybe_unused]] std::size_t n) {}
 
+  bool operator==(ZoneAllocator const& other) const {
+    return zone_ == other.zone_;
+  }
+  bool operator!=(ZoneAllocator const& other) const {
+    return zone_ != other.zone_;
+  }
+
  private:
   Zone* zone_;
 };

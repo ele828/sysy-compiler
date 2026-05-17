@@ -1,5 +1,6 @@
 #include "semantic/semantic_analyzer.h"
 
+#include <array>
 #include <print>
 
 #include "ast/type.h"
@@ -75,20 +76,25 @@ void SemanticAnalyzer::VisitConstantDeclaration(
     return;
   }
 
+  CheckingContext ctx{
+      .constant_reference_only = true,
+  };
+
   Type* type = const_decl->type();
   if (auto* array_type = DynamicTo<ArrayType>(type)) {
     if (!EvaluateArrayTypeAndReplace(const_decl, array_type,
                                      /*allow_incomplete_array_type=*/false)) {
       return;
     }
+
+    // Pass down array type in const declaration, so that we can check and
+    // organize array list in init value expression.
+    ctx.decl_array_type = array_type;
   }
 
   // Constant declaration without init value is a syntax error.
   DCHECK(const_decl->init_value());
 
-  CheckingContext ctx{
-      .constant_reference_only = true,
-  };
   if (!CheckExpression(ctx, const_decl->init_value())) {
     return;
   }
@@ -512,29 +518,137 @@ bool SemanticAnalyzer::CheckVariableReference(const CheckingContext& ctx,
   return true;
 }
 
-bool SemanticAnalyzer::CheckInitListExpression(
-    const CheckingContext& ctx, InitListExpression* init_list_expr) {
-  Type* element_type{};
-  for (auto& expr : init_list_expr->list()) {
-    if (!CheckExpression(ctx, expr)) {
-      return false;
-    }
+bool SemanticAnalyzer::CheckInitListExpressionElements(
+    const CheckingContext& ctx, const ArrayType* array_type,
+    const ZoneVector<Expression*>& init_list, SourceLocation loc) {
+  const ConstantArrayType* type = DynamicTo<ConstantArrayType>(array_type);
+  DCHECK(type);
 
-    // Init list requires all of its elements be the same type.
-    if (!element_type) {
-      element_type = expr->type();
-      continue;
-    }
+  if (init_list.size() != type->size()) {
+    Diag(DiagnosticID::kInitListTypeMismatch, loc);
+    return false;
+  }
 
-    if (!expr->type()->Equals(*element_type)) {
+  for (auto& expr : init_list) {
+    if (!IsA<InitListExpression>(expr)) {
+      if (!CheckExpression(ctx, expr)) {
+        return false;
+      }
+    }
+    if (!type->element_type()->Equals(*expr->type())) {
       Diag(DiagnosticID::kInitListTypeMismatch, expr->location());
       return false;
     }
   }
 
-  Type* init_list_type = context()->zone()->New<ConstantArrayType>(
-      element_type, init_list_expr->list().size());
-  init_list_expr->set_type(init_list_type);
+  return true;
+}
+
+MaybeExpressionList SemanticAnalyzer::NormalizeArrayInitList(
+    const CheckingContext& ctx, InitListExpression* init_list_expr) {
+  ArrayType* array_type = ctx.decl_array_type;
+  const ArrayType* inner_most_array_type = array_type->GetInnermostArrayType();
+  size_t inner_most_dim = To<ConstantArrayType>(inner_most_array_type)->size();
+  ArrayType* inner_array_type =
+      DynamicTo<ArrayType>(array_type->element_type());
+
+  auto& list = init_list_expr->list();
+  ZoneVector<Expression*> new_init_list(zone());
+  for (size_t i = 0; i < list.size();) {
+    if (auto* sub_init_list_expr = DynamicTo<InitListExpression>(list[i])) {
+      // Recursively process inner array.
+      DCHECK(inner_array_type);
+      if (inner_array_type->is_multi_dimensional()) {
+        CheckingContext ctx{.decl_array_type = inner_array_type};
+        auto may_sub_init_list_expr =
+            NormalizeArrayInitList(ctx, sub_init_list_expr);
+        if (!may_sub_init_list_expr.has_value()) {
+          return {};
+        }
+        auto* new_sub_init_list_expr = zone()->New<InitListExpression>(
+            *may_sub_init_list_expr, sub_init_list_expr->location());
+        new_sub_init_list_expr->set_type(array_type->element_type());
+        new_init_list.push_back(new_sub_init_list_expr);
+      } else {
+        sub_init_list_expr->set_type(array_type->element_type());
+        new_init_list.push_back(sub_init_list_expr);
+      }
+      ++i;
+      continue;
+    }
+
+    size_t start = i;
+    ZoneVector<Expression*> new_sub_init_list(zone());
+    while (i < list.size() && new_sub_init_list.size() < inner_most_dim) {
+      if (IsA<InitListExpression>(list[i])) {
+        break;
+      }
+
+      if (!CheckExpression(ctx, list[i])) {
+        return {};
+      }
+
+      new_sub_init_list.push_back(list[i]);
+      ++i;
+    }
+
+    // Pads zero value for the remaining.
+    for (size_t j = new_sub_init_list.size(); j < inner_most_dim; ++j) {
+      Expression* padding_value{};
+
+      Type* element_type = inner_most_array_type->element_type();
+      SourceLocation loc = new_sub_init_list.back()->location();
+      if (element_type == context_.int_type()) {
+        padding_value = zone()->New<IntegerLiteral>(0, loc);
+      } else if (element_type == context_.float_type()) {
+        padding_value = zone()->New<FloatingLiteral>(0, loc);
+      }
+
+      if (!CheckExpression(ctx, padding_value)) {
+        return {};
+      }
+      new_sub_init_list.push_back(padding_value);
+    }
+
+    auto* new_sub_init_list_expr = zone()->New<InitListExpression>(
+        new_sub_init_list, list[start]->location());
+    new_sub_init_list_expr->set_type(array_type->element_type());
+    new_init_list.push_back(new_sub_init_list_expr);
+  }
+
+  // Type check array type
+  if (!CheckInitListExpressionElements(ctx, array_type, new_init_list,
+                                       init_list_expr->location())) {
+    return {};
+  }
+
+  return new_init_list;
+}
+
+bool SemanticAnalyzer::CheckInitListExpression(
+    const CheckingContext& ctx, InitListExpression* init_list_expr) {
+  DCHECK(ctx.decl_array_type);
+
+  if (ctx.decl_array_type->is_multi_dimensional()) {
+    auto maybe_init_list_expr = NormalizeArrayInitList(ctx, init_list_expr);
+    if (!maybe_init_list_expr) {
+      return false;
+    }
+
+    init_list_expr->set_list(std::move(*maybe_init_list_expr));
+    init_list_expr->set_type(ctx.decl_array_type);
+    return true;
+  }
+
+  // TODO: Padding. Maybe merge to NormalizeArrayInitList
+
+  if (!CheckInitListExpressionElements(ctx, ctx.decl_array_type,
+                                       init_list_expr->list(),
+                                       init_list_expr->location())) {
+    return false;
+  }
+
+  init_list_expr->set_type(ctx.decl_array_type);
   return false;
 }
 

@@ -451,6 +451,8 @@ class InitListExpression : public Expression {
 
   static bool classof(const AstNode& n) { return n.kind() == Kind::kInitList; }
 
+  void set_list(ZoneVector<Expression*> list) { list_ = std::move(list); }
+
   const ZoneVector<Expression*>& list() const { return list_; }
 
  private:
