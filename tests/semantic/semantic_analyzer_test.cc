@@ -113,7 +113,7 @@ TEST(SemanticAnalyzer, ConstDeclArrayType) {
 
 TEST(SemanticAnalyzer, ConstDeclArrayTypeRequiresPadding) {
   const char* source = R"(
-    const int arr[2] = {1};
+    const int arr[5] = {1};
   )";
   TestSingleDiagnostic(source);
 }
