@@ -544,7 +544,30 @@ bool SemanticAnalyzer::CheckInitListExpressionElements(
   return true;
 }
 
-MaybeExpressionList SemanticAnalyzer::NormalizeArrayInitList(
+void SemanticAnalyzer::AddPaddingsToArrayInitList(
+    const CheckingContext& ctx, ZoneVector<Expression*>* init_list, size_t size,
+    Type* element_type, SourceLocation location) {
+  for (size_t j = init_list->size(); j < size; ++j) {
+    Expression* padding_value{};
+
+    if (element_type == context_.int_type()) {
+      padding_value = zone()->New<IntegerLiteral>(0, location);
+    } else if (element_type == context_.float_type()) {
+      padding_value = zone()->New<FloatingLiteral>(0, location);
+    }
+
+    if (!CheckExpression(ctx, padding_value)) {
+      // Check expression only set type for the newly created padding_value, so
+      // it won't never fail.
+      DCHECK(false);
+      return;
+    }
+
+    init_list->push_back(padding_value);
+  }
+}
+
+MaybeExpressionList SemanticAnalyzer::CheckMultiDimensionalArrayInitList(
     const CheckingContext& ctx, InitListExpression* init_list_expr) {
   ArrayType* array_type = ctx.decl_array_type;
   const ArrayType* inner_most_array_type = array_type->GetInnermostArrayType();
@@ -561,7 +584,7 @@ MaybeExpressionList SemanticAnalyzer::NormalizeArrayInitList(
       if (inner_array_type->is_multi_dimensional()) {
         CheckingContext ctx{.decl_array_type = inner_array_type};
         auto may_sub_init_list_expr =
-            NormalizeArrayInitList(ctx, sub_init_list_expr);
+            CheckMultiDimensionalArrayInitList(ctx, sub_init_list_expr);
         if (!may_sub_init_list_expr.has_value()) {
           return {};
         }
@@ -593,22 +616,10 @@ MaybeExpressionList SemanticAnalyzer::NormalizeArrayInitList(
     }
 
     // Pads zero value for the remaining.
-    for (size_t j = new_sub_init_list.size(); j < inner_most_dim; ++j) {
-      Expression* padding_value{};
-
-      Type* element_type = inner_most_array_type->element_type();
-      SourceLocation loc = new_sub_init_list.back()->location();
-      if (element_type == context_.int_type()) {
-        padding_value = zone()->New<IntegerLiteral>(0, loc);
-      } else if (element_type == context_.float_type()) {
-        padding_value = zone()->New<FloatingLiteral>(0, loc);
-      }
-
-      if (!CheckExpression(ctx, padding_value)) {
-        return {};
-      }
-      new_sub_init_list.push_back(padding_value);
-    }
+    DCHECK(!new_sub_init_list.empty());
+    AddPaddingsToArrayInitList(ctx, &new_sub_init_list, inner_most_dim,
+                               inner_most_array_type->element_type(),
+                               init_list_expr->location());
 
     auto* new_sub_init_list_expr = zone()->New<InitListExpression>(
         new_sub_init_list, list[start]->location());
@@ -630,7 +641,8 @@ bool SemanticAnalyzer::CheckInitListExpression(
   DCHECK(ctx.decl_array_type);
 
   if (ctx.decl_array_type->is_multi_dimensional()) {
-    auto maybe_init_list_expr = NormalizeArrayInitList(ctx, init_list_expr);
+    auto maybe_init_list_expr =
+        CheckMultiDimensionalArrayInitList(ctx, init_list_expr);
     if (!maybe_init_list_expr) {
       return false;
     }
@@ -640,7 +652,13 @@ bool SemanticAnalyzer::CheckInitListExpression(
     return true;
   }
 
-  // TODO: Padding. Maybe merge to NormalizeArrayInitList
+  ConstantArrayType* type = DynamicTo<ConstantArrayType>(ctx.decl_array_type);
+  if (!type) {
+    return false;
+  }
+
+  AddPaddingsToArrayInitList(ctx, &init_list_expr->mutable_list(), type->size(),
+                             type->element_type(), init_list_expr->location());
 
   if (!CheckInitListExpressionElements(ctx, ctx.decl_array_type,
                                        init_list_expr->list(),

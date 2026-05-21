@@ -453,6 +453,8 @@ class InitListExpression : public Expression {
 
   void set_list(ZoneVector<Expression*> list) { list_ = std::move(list); }
 
+  ZoneVector<Expression*>& mutable_list() { return list_; }
+
   const ZoneVector<Expression*>& list() const { return list_; }
 
  private:

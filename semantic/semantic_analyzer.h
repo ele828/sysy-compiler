@@ -114,8 +114,13 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
                                        const ZoneVector<Expression*>& init_list,
                                        SourceLocation loc);
 
-  MaybeExpressionList NormalizeArrayInitList(
+  MaybeExpressionList CheckMultiDimensionalArrayInitList(
       const CheckingContext& ctx, InitListExpression* init_list_expr);
+
+  void AddPaddingsToArrayInitList(const CheckingContext& ctx,
+                                  ZoneVector<Expression*>* init_list,
+                                  size_t size, Type* element_type,
+                                  SourceLocation location);
 
   bool ImplicitlyConvertArithmetic(BinaryOperation* binary_operation);
 
