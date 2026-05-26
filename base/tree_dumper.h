@@ -19,7 +19,6 @@ class TreeDumper {
       dumper_.Write(dumper_.prefix_);
       dumper_.Write('|');
       dumper_.Write('-');
-      dumper_.Write(' ');
 
       dumper_.prefix_.push_back('|');
       dumper_.prefix_.push_back(' ');

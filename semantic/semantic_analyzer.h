@@ -13,6 +13,11 @@ namespace sysy {
 
 using MaybeExpressionList = std::optional<ZoneVector<Expression*>>;
 
+struct BuildArrayInitListResult {
+  size_t steps;
+  InitListExpression* init_list_expr;
+};
+
 /// Performs semantic analysis on AST nodes.
 class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
   using Base = AstRecursiveVisitor<SemanticAnalyzer>;
@@ -114,13 +119,22 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
                                        const ZoneVector<Expression*>& init_list,
                                        SourceLocation loc);
 
-  MaybeExpressionList CheckMultiDimensionalArrayInitList(
+  MaybeExpressionList CheckMultiDimArrayInitList(
       const CheckingContext& ctx, InitListExpression* init_list_expr);
 
-  void AddPaddingsToArrayInitList(const CheckingContext& ctx,
+  BuildArrayInitListResult BuildMultiDimArrayInitList(
+      const CheckingContext& ctx, InitListExpression* init_list_expr, size_t i,
+      ConstantArrayType* type);
+
+  void FillPaddingInArrayInitList(const CheckingContext& ctx,
                                   ZoneVector<Expression*>* init_list,
                                   size_t size, Type* element_type,
                                   SourceLocation location);
+
+  void FillPaddingInMultiDimArrayInitList(const CheckingContext& ctx,
+                                          ZoneVector<Expression*>* init_list,
+                                          ConstantArrayType* type,
+                                          SourceLocation location);
 
   bool ImplicitlyConvertArithmetic(BinaryOperation* binary_operation);
 
