@@ -151,11 +151,54 @@ TEST(SemanticAnalyzer, ConstDeclArrayInitValue3) {
   TestSingleDiagnostic(source);
 }
 
+TEST(SemanticAnalyzer, MultiArrayInitValueWithPadding) {
+  const char* source = R"(
+    const int arr[3][2] = {
+      1, 2,
+      {3, 4},
+    };
+  )";
+  TestSingleDiagnostic(source);
+}
+
 TEST(SemanticAnalyzer, ConstDeclArrayInitValue4) {
   const char* source = R"(
     const int arr[3][2][2] = {
       {{1, 2},  {3, 4}},
       {{5, 6},  {7, 8}},
+      {{9, 10},  {11, 12}},
+    };
+  )";
+  TestSingleDiagnostic(source);
+}
+
+TEST(SemanticAnalyzer, ConstDeclArrayInitValue5) {
+  const char* source = R"(
+    const int arr[3][2][2] = {
+      1, 2,  3, 4,
+      {{5, 6},  {7, 8}},
+      {{9, 10},  {11, 12}},
+    };
+  )";
+  TestSingleDiagnostic(source);
+}
+
+TEST(SemanticAnalyzer, ConstDeclArrayInitValue6) {
+  const char* source = R"(
+    const int arr[3][2][2] = {
+      1, 2,  {3, 4},
+      {{5, 6},  {7, 8}},
+      {{9, 10},  {11, 12}},
+    };
+  )";
+  TestSingleDiagnostic(source);
+}
+
+TEST(SemanticAnalyzer, ConstDeclArrayInitValue7) {
+  const char* source = R"(
+    const int arr[3][2][2] = {
+      {{1, 2},  {3, 4}},
+      {},
       {{5, 6},  {7, 8}},
     };
   )";
