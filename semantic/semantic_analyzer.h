@@ -11,12 +11,12 @@
 
 namespace sysy {
 
-using MaybeExpressionList = std::optional<ZoneVector<Expression*>>;
-
-struct BuildArrayInitListResult {
-  size_t steps;
+struct InitListResult {
+  size_t offset_delta;
   InitListExpression* init_list_expr;
 };
+
+using MaybeExpressionList = std::optional<ZoneVector<Expression*>>;
 
 /// Performs semantic analysis on AST nodes.
 class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
@@ -114,17 +114,12 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
   bool CheckCallExpression(const CheckingContext& ctx,
                            CallExpression* call_expr);
 
-  bool CheckInitListExpressionElements(const CheckingContext& ctx,
-                                       const ArrayType* array_type,
-                                       const ZoneVector<Expression*>& init_list,
-                                       SourceLocation loc);
+  bool CheckInitList(const CheckingContext& ctx, const ArrayType* array_type,
+                     InitListExpression* init_list_expr);
 
-  MaybeExpressionList CheckMultiDimArrayInitList(
-      const CheckingContext& ctx, InitListExpression* init_list_expr);
-
-  BuildArrayInitListResult BuildMultiDimArrayInitList(
-      const CheckingContext& ctx, InitListExpression* init_list_expr, size_t i,
-      ConstantArrayType* type);
+  InitListResult NormalizeInitList(const CheckingContext& ctx,
+                                   InitListExpression* init_list_expr, size_t i,
+                                   ConstantArrayType* type);
 
   void FillPaddingInArrayInitList(const CheckingContext& ctx,
                                   ZoneVector<Expression*>* init_list,

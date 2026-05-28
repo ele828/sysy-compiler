@@ -205,4 +205,11 @@ TEST(SemanticAnalyzer, ConstDeclArrayInitValue7) {
   TestSingleDiagnostic(source);
 }
 
+TEST(SemanticAnalyzer, ConstDeclArrayInitExcessSize) {
+  const char* source = R"(
+    const int arr[1] = { 0, 1 };
+  )";
+  TestSingleDiagnostic(source);
+}
+
 }  // namespace sysy::test

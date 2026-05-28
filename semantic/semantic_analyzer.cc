@@ -5,6 +5,7 @@
 
 #include "ast/type.h"
 #include "base/logging.h"
+#include "common/source_location.h"
 #include "semantic/diagnostic.h"
 #include "semantic/expression_evaluator.h"
 
@@ -520,32 +521,6 @@ bool SemanticAnalyzer::CheckVariableReference(const CheckingContext& ctx,
   return true;
 }
 
-bool SemanticAnalyzer::CheckInitListExpressionElements(
-    const CheckingContext& ctx, const ArrayType* array_type,
-    const ZoneVector<Expression*>& init_list, SourceLocation loc) {
-  const ConstantArrayType* type = DynamicTo<ConstantArrayType>(array_type);
-  DCHECK(type);
-
-  if (init_list.size() != type->size()) {
-    Diag(DiagnosticID::kInitListTypeMismatch, loc);
-    return false;
-  }
-
-  for (auto& expr : init_list) {
-    if (!IsA<InitListExpression>(expr)) {
-      if (!CheckExpression(ctx, expr)) {
-        return false;
-      }
-    }
-    if (!type->element_type()->Equals(*expr->type())) {
-      Diag(DiagnosticID::kInitListTypeMismatch, expr->location());
-      return false;
-    }
-  }
-
-  return true;
-}
-
 void SemanticAnalyzer::FillPaddingInArrayInitList(
     const CheckingContext& ctx, ZoneVector<Expression*>* init_list, size_t size,
     Type* element_type, SourceLocation location) {
@@ -589,13 +564,13 @@ void SemanticAnalyzer::FillPaddingInMultiDimArrayInitList(
   }
 }
 
-BuildArrayInitListResult SemanticAnalyzer::BuildMultiDimArrayInitList(
+InitListResult SemanticAnalyzer::NormalizeInitList(
     const CheckingContext& ctx, InitListExpression* init_list_expr, size_t i,
     ConstantArrayType* type) {
   auto& list = init_list_expr->list();
   ZoneVector<Expression*> new_init_list(zone());
 
-  size_t start = i;
+  size_t start_index = i;
   while (i < list.size() && new_init_list.size() < type->size()) {
     if (IsA<InitListExpression>(list[i])) {
       break;
@@ -603,24 +578,32 @@ BuildArrayInitListResult SemanticAnalyzer::BuildMultiDimArrayInitList(
 
     if (type->is_multi_dimensional()) {
       auto* element_type = To<ConstantArrayType>(type->element_type());
-      auto result =
-          BuildMultiDimArrayInitList(ctx, init_list_expr, i, element_type);
+      auto result = NormalizeInitList(ctx, init_list_expr, i, element_type);
       auto* init_list_expr = result.init_list_expr;
       init_list_expr->set_type(element_type);
       new_init_list.push_back(init_list_expr);
-      i += result.steps;
+      i += result.offset_delta;
     } else {
-      if (!CheckExpression(ctx, list[i])) {
-        return {};
-      }
       new_init_list.push_back(list[i]);
       ++i;
     }
   }
 
   while (i < list.size() && new_init_list.size() < type->size()) {
-    if (type->is_multi_dimensional() && !IsA<InitListExpression>(list[i])) {
-      break;
+    if (type->is_multi_dimensional()) {
+      if (!IsA<InitListExpression>(list[i])) {
+        break;
+      }
+
+      auto* child_init_list_expr = To<InitListExpression>(list[i]);
+      auto* element_type = To<ConstantArrayType>(type->element_type());
+      auto result =
+          NormalizeInitList(ctx, child_init_list_expr, 0, element_type);
+      auto* init_list_expr = result.init_list_expr;
+      init_list_expr->set_type(element_type);
+      new_init_list.push_back(init_list_expr);
+      ++i;
+      continue;
     }
     new_init_list.push_back(list[i]);
     ++i;
@@ -633,16 +616,12 @@ BuildArrayInitListResult SemanticAnalyzer::BuildMultiDimArrayInitList(
 
     if (type->is_multi_dimensional()) {
       auto* element_type = To<ConstantArrayType>(type->element_type());
-      auto result =
-          BuildMultiDimArrayInitList(ctx, init_list_expr, i, element_type);
+      auto result = NormalizeInitList(ctx, init_list_expr, i, element_type);
       auto* init_list_expr = result.init_list_expr;
       init_list_expr->set_type(element_type);
       new_init_list.push_back(init_list_expr);
-      i += result.steps;
+      i += result.offset_delta;
     } else {
-      if (!CheckExpression(ctx, list[i])) {
-        return {};
-      }
       new_init_list.push_back(list[i]);
       ++i;
     }
@@ -658,92 +637,61 @@ BuildArrayInitListResult SemanticAnalyzer::BuildMultiDimArrayInitList(
                                        init_list_expr->location());
   }
 
-  auto* new_sub_init_list_expr = zone()->New<InitListExpression>(
+  auto* new_init_list_expr = zone()->New<InitListExpression>(
       std::move(new_init_list), init_list_expr->location());
-  new_sub_init_list_expr->set_type(type->element_type());
-  return BuildArrayInitListResult{.steps = i - start,
-                                  .init_list_expr = new_sub_init_list_expr};
+  new_init_list_expr->set_type(type->element_type());
+  return InitListResult{.offset_delta = i - start_index,
+                        .init_list_expr = new_init_list_expr};
 }
 
-MaybeExpressionList SemanticAnalyzer::CheckMultiDimArrayInitList(
-    const CheckingContext& ctx, InitListExpression* init_list_expr) {
-  ConstantArrayType* array_type = To<ConstantArrayType>(ctx.decl_array_type);
-  ConstantArrayType* inner_array_type =
-      DynamicTo<ConstantArrayType>(array_type->element_type());
-  DCHECK(inner_array_type);
+bool SemanticAnalyzer::CheckInitList(const CheckingContext& ctx,
+                                     const ArrayType* array_type,
+                                     InitListExpression* init_list_expr) {
+  const ConstantArrayType* type = DynamicTo<ConstantArrayType>(array_type);
+  DCHECK(type);
 
-  auto& list = init_list_expr->list();
-  ZoneVector<Expression*> new_init_list(zone());
-  for (size_t i = 0; i < list.size();) {
-    if (auto* sub_init_list_expr = DynamicTo<InitListExpression>(list[i])) {
-      // Recursively process inner array.
-      DCHECK(inner_array_type);
-      if (inner_array_type->is_multi_dimensional()) {
-        CheckingContext ctx{.decl_array_type = inner_array_type};
-        auto may_sub_init_list_expr =
-            CheckMultiDimArrayInitList(ctx, sub_init_list_expr);
-        if (!may_sub_init_list_expr.has_value()) {
-          return {};
-        }
-        auto* new_sub_init_list_expr = zone()->New<InitListExpression>(
-            *may_sub_init_list_expr, sub_init_list_expr->location());
-        new_sub_init_list_expr->set_type(array_type->element_type());
-        new_init_list.push_back(new_sub_init_list_expr);
-      } else {
-        sub_init_list_expr->set_type(array_type->element_type());
-        new_init_list.push_back(sub_init_list_expr);
+  auto& init_list = init_list_expr->list();
+  SourceLocation loc = init_list_expr->location();
+  if (init_list.size() > type->size()) {
+    Diag(DiagnosticID::kExcessInitListSize, loc);
+    return false;
+  }
+
+  for (auto& expr : init_list) {
+    if (!IsA<InitListExpression>(expr)) {
+      if (!CheckExpression(ctx, expr)) {
+        return false;
       }
-      ++i;
+      if (!type->element_type()->Equals(*expr->type())) {
+        Diag(DiagnosticID::kInitListTypeMismatch, expr->location());
+        return false;
+      }
       continue;
     }
 
-    // auto* new_sub_init_list_expr =
-    // BuildMultiDimArrayInitList(ctx, init_list_expr, i, inner_array_type);
-    // new_init_list.push_back(new_sub_init_list_expr);
-    ++i;
+    ArrayType* element_type = DynamicTo<ArrayType>(array_type->element_type());
+    if (!element_type) {
+      Diag(DiagnosticID::kInitListTypeMismatch, expr->location());
+      return false;
+    }
+    auto* sub_init_list = To<InitListExpression>(expr);
+    if (!CheckInitList(ctx, element_type, sub_init_list)) {
+      return false;
+    }
   }
 
-  // Padding
-  // if (new_init_list.size() < array_type->size()) {
-  //}
-
-  // Type check array type
-  if (!CheckInitListExpressionElements(ctx, array_type, new_init_list,
-                                       init_list_expr->location())) {
-    return {};
-  }
-
-  return new_init_list;
+  return true;
 }
 
 bool SemanticAnalyzer::CheckInitListExpression(
     const CheckingContext& ctx, InitListExpression* init_list_expr) {
   DCHECK(ctx.decl_array_type);
 
-  if (ctx.decl_array_type->is_multi_dimensional()) {
-    auto* array_type = To<ConstantArrayType>(ctx.decl_array_type);
-    auto result =
-        BuildMultiDimArrayInitList(ctx, init_list_expr, 0, array_type);
-    // auto maybe_init_list_expr = CheckMultiDimArrayInitList(ctx,
-    // init_list_expr); if (!maybe_init_list_expr) { return false;
-    //}
+  auto* array_type = To<ConstantArrayType>(ctx.decl_array_type);
+  auto result = NormalizeInitList(ctx, init_list_expr, 0, array_type);
+  init_list_expr->set_list(result.init_list_expr->list());
 
-    init_list_expr->set_list(result.init_list_expr->list());
-    init_list_expr->set_type(ctx.decl_array_type);
-    return true;
-  }
-
-  ConstantArrayType* type = DynamicTo<ConstantArrayType>(ctx.decl_array_type);
-  if (!type) {
-    return false;
-  }
-
-  FillPaddingInArrayInitList(ctx, &init_list_expr->mutable_list(), type->size(),
-                             type->element_type(), init_list_expr->location());
-
-  if (!CheckInitListExpressionElements(ctx, ctx.decl_array_type,
-                                       init_list_expr->list(),
-                                       init_list_expr->location())) {
+  if (!CheckInitList(ctx, ctx.decl_array_type, init_list_expr)) {
     return false;
   }
 

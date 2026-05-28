@@ -574,7 +574,7 @@ Token Parser::ExpectAndConsume(TokenType type, const char* error_message) {
     SyntaxError(error_message, current_.location());
   } else {
     SyntaxError(
-        std::format("Expected token {}, but got {}", type, current_.type()),
+        std::format("Expected token {} but got {}", type, current_.type()),
         current_.location());
   }
 
