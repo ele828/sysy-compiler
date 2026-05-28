@@ -30,7 +30,9 @@ namespace sysy {
   V(kUndefSymbol, "undefined symbol")                                       \
   V(kNonConstantRef,                                                        \
     "can only reference to constant declaration in this expression")        \
-  V(kInitListTypeMismatch, "elements in init list should be the same type") \
+  V(kInitListTypeMismatch,                                                  \
+    "the type of initializer element does not match declaration")           \
+  V(kExcessInitListSize, "excess elements in array initializers")           \
   V(kInvalidArraySubscript, "invalid array subscript expression")           \
   V(kCallTarget, "call target is not a function")                           \
   V(kCallArgArity,                                                          \
