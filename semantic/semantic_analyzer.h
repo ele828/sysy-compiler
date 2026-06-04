@@ -17,6 +17,7 @@ struct InitListResult {
 };
 
 using MaybeExpressionList = std::optional<ZoneVector<Expression*>>;
+using MaybeInitListResult = std::optional<InitListResult>;
 
 /// Performs semantic analysis on AST nodes.
 class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
@@ -114,12 +115,9 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
   bool CheckCallExpression(const CheckingContext& ctx,
                            CallExpression* call_expr);
 
-  bool CheckInitList(const CheckingContext& ctx, const ArrayType* array_type,
-                     InitListExpression* init_list_expr);
-
-  InitListResult NormalizeInitList(const CheckingContext& ctx,
-                                   InitListExpression* init_list_expr, size_t i,
-                                   ConstantArrayType* type);
+  MaybeInitListResult NormalizeInitList(const CheckingContext& ctx,
+                                        InitListExpression* init_list_expr,
+                                        size_t i, ConstantArrayType* type);
 
   void FillPaddingInArrayInitList(const CheckingContext& ctx,
                                   ZoneVector<Expression*>* init_list,

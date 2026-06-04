@@ -36,7 +36,10 @@ void TestSingleDiagnostic(std::string_view source, DiagnosticID diagnostic,
   bool success = semantic_analyzer.Analyze(compilation_unit);
   PrintSemanticErrors(semantic_analyzer);
   EXPECT_FALSE(success);
-  EXPECT_EQ(semantic_analyzer.diagnostics()[0].diagnostic, diagnostic);
+  EXPECT_GT(semantic_analyzer.diagnostics().size(), 0u);
+  if (!semantic_analyzer.diagnostics().empty()) {
+    EXPECT_EQ(semantic_analyzer.diagnostics()[0].diagnostic, diagnostic);
+  }
 }
 
 void TestSingleDiagnostic(std::string_view source) {
@@ -209,7 +212,7 @@ TEST(SemanticAnalyzer, ConstDeclArrayInitExcessSize) {
   const char* source = R"(
     const int arr[1] = { 0, 1 };
   )";
-  TestSingleDiagnostic(source);
+  TestSingleDiagnostic(source, DiagnosticID::kExcessInitListSize);
 }
 
 }  // namespace sysy::test

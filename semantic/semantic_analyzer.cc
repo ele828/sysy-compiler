@@ -1,6 +1,7 @@
 #include "semantic/semantic_analyzer.h"
 
 #include <array>
+#include <optional>
 #include <print>
 
 #include "ast/type.h"
@@ -564,7 +565,7 @@ void SemanticAnalyzer::FillPaddingInMultiDimArrayInitList(
   }
 }
 
-InitListResult SemanticAnalyzer::NormalizeInitList(
+MaybeInitListResult SemanticAnalyzer::NormalizeInitList(
     const CheckingContext& ctx, InitListExpression* init_list_expr, size_t i,
     ConstantArrayType* type) {
   auto& list = init_list_expr->list();
@@ -578,12 +579,22 @@ InitListResult SemanticAnalyzer::NormalizeInitList(
 
     if (type->is_multi_dimensional()) {
       auto* element_type = To<ConstantArrayType>(type->element_type());
-      auto result = NormalizeInitList(ctx, init_list_expr, i, element_type);
-      auto* init_list_expr = result.init_list_expr;
-      init_list_expr->set_type(element_type);
-      new_init_list.push_back(init_list_expr);
-      i += result.offset_delta;
+      if (auto result =
+              NormalizeInitList(ctx, init_list_expr, i, element_type)) {
+        auto* init_list_expr = result->init_list_expr;
+        init_list_expr->set_type(element_type);
+        new_init_list.push_back(init_list_expr);
+        i += result->offset_delta;
+      } else {
+        return std::nullopt;
+      }
     } else {
+      if (!CheckExpression(ctx, list[i])) {
+        return std::nullopt;
+      }
+      if (!list[i]->type()->Equals(*type->element_type())) {
+        return std::nullopt;
+      }
       new_init_list.push_back(list[i]);
       ++i;
     }
@@ -597,13 +608,23 @@ InitListResult SemanticAnalyzer::NormalizeInitList(
 
       auto* child_init_list_expr = To<InitListExpression>(list[i]);
       auto* element_type = To<ConstantArrayType>(type->element_type());
-      auto result =
-          NormalizeInitList(ctx, child_init_list_expr, 0, element_type);
-      auto* init_list_expr = result.init_list_expr;
-      init_list_expr->set_type(element_type);
-      new_init_list.push_back(init_list_expr);
-      ++i;
-      continue;
+      if (auto result =
+              NormalizeInitList(ctx, child_init_list_expr, 0, element_type)) {
+        auto* init_list_expr = result->init_list_expr;
+        init_list_expr->set_type(element_type);
+        new_init_list.push_back(init_list_expr);
+        ++i;
+        continue;
+      } else {
+        return std::nullopt;
+      }
+    }
+
+    if (!CheckExpression(ctx, list[i])) {
+      return std::nullopt;
+    }
+    if (!list[i]->type()->Equals(*type->element_type())) {
+      return std::nullopt;
     }
     new_init_list.push_back(list[i]);
     ++i;
@@ -616,12 +637,22 @@ InitListResult SemanticAnalyzer::NormalizeInitList(
 
     if (type->is_multi_dimensional()) {
       auto* element_type = To<ConstantArrayType>(type->element_type());
-      auto result = NormalizeInitList(ctx, init_list_expr, i, element_type);
-      auto* init_list_expr = result.init_list_expr;
-      init_list_expr->set_type(element_type);
-      new_init_list.push_back(init_list_expr);
-      i += result.offset_delta;
+      if (auto result =
+              NormalizeInitList(ctx, init_list_expr, i, element_type)) {
+        auto* init_list_expr = result->init_list_expr;
+        init_list_expr->set_type(element_type);
+        new_init_list.push_back(init_list_expr);
+        i += result->offset_delta;
+      } else {
+        return std::nullopt;
+      }
     } else {
+      if (!CheckExpression(ctx, list[i])) {
+        return std::nullopt;
+      }
+      if (!list[i]->type()->Equals(*type->element_type())) {
+        return std::nullopt;
+      }
       new_init_list.push_back(list[i]);
       ++i;
     }
@@ -644,58 +675,16 @@ InitListResult SemanticAnalyzer::NormalizeInitList(
                         .init_list_expr = new_init_list_expr};
 }
 
-bool SemanticAnalyzer::CheckInitList(const CheckingContext& ctx,
-                                     const ArrayType* array_type,
-                                     InitListExpression* init_list_expr) {
-  const ConstantArrayType* type = DynamicTo<ConstantArrayType>(array_type);
-  DCHECK(type);
-
-  auto& init_list = init_list_expr->list();
-  SourceLocation loc = init_list_expr->location();
-  if (init_list.size() > type->size()) {
-    Diag(DiagnosticID::kExcessInitListSize, loc);
-    return false;
-  }
-
-  for (auto& expr : init_list) {
-    if (!IsA<InitListExpression>(expr)) {
-      if (!CheckExpression(ctx, expr)) {
-        return false;
-      }
-      if (!type->element_type()->Equals(*expr->type())) {
-        Diag(DiagnosticID::kInitListTypeMismatch, expr->location());
-        return false;
-      }
-      continue;
-    }
-
-    ArrayType* element_type = DynamicTo<ArrayType>(array_type->element_type());
-    if (!element_type) {
-      Diag(DiagnosticID::kInitListTypeMismatch, expr->location());
-      return false;
-    }
-    auto* sub_init_list = To<InitListExpression>(expr);
-    if (!CheckInitList(ctx, element_type, sub_init_list)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 bool SemanticAnalyzer::CheckInitListExpression(
     const CheckingContext& ctx, InitListExpression* init_list_expr) {
   DCHECK(ctx.decl_array_type);
 
   auto* array_type = To<ConstantArrayType>(ctx.decl_array_type);
-  auto result = NormalizeInitList(ctx, init_list_expr, 0, array_type);
-  init_list_expr->set_list(result.init_list_expr->list());
-
-  if (!CheckInitList(ctx, ctx.decl_array_type, init_list_expr)) {
-    return false;
+  if (auto result = NormalizeInitList(ctx, init_list_expr, 0, array_type)) {
+    init_list_expr->set_list(result->init_list_expr->list());
+    init_list_expr->set_type(ctx.decl_array_type);
+    return true;
   }
-
-  init_list_expr->set_type(ctx.decl_array_type);
   return false;
 }
 
