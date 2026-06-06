@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
 #include "base/type_casts.h"
-#include "parsing/lexer.h"
-#include "parsing/parser.h"
-#include "parsing/token.h"
+#include "parse/lexer.h"
+#include "parse/parser.h"
+#include "parse/token.h"
 #include "tests/utils.h"
 
 namespace sysy::test {

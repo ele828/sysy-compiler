@@ -1,4 +1,4 @@
-#include "semantic/expression_evaluator.h"
+#include "sema/evaluator.h"
 
 #include <bit>
 
@@ -67,10 +67,9 @@ Value Value::operator%(const Value& other) const {
   return {};
 }
 
-ExpressionEvaluator::ExpressionEvaluator(Scope* current_scope)
-    : current_scope_(current_scope) {}
+Evaluator::Evaluator(Scope* current_scope) : current_scope_(current_scope) {}
 
-Value ExpressionEvaluator::Evaluate(Expression* expression) {
+Value Evaluator::Evaluate(Expression* expression) {
   switch (expression->kind()) {
     case AstNode::Kind::kIntegerLiteral:
       return To<IntegerLiteral>(expression)->value();
@@ -89,8 +88,7 @@ Value ExpressionEvaluator::Evaluate(Expression* expression) {
   }
 }
 
-Value ExpressionEvaluator::EvaluateUnaryOperation(
-    UnaryOperation* unary_operation) {
+Value Evaluator::EvaluateUnaryOperation(UnaryOperation* unary_operation) {
   auto result = Evaluate(unary_operation->expression());
   if (!result.has_value()) {
     return {};
@@ -108,8 +106,7 @@ Value ExpressionEvaluator::EvaluateUnaryOperation(
   }
 }
 
-Value ExpressionEvaluator::EvaluateBinaryOperation(
-    BinaryOperation* binary_operation) {
+Value Evaluator::EvaluateBinaryOperation(BinaryOperation* binary_operation) {
   auto lhs = Evaluate(binary_operation->lhs());
   auto rhs = Evaluate(binary_operation->rhs());
   if (!lhs.has_value() || !rhs.has_value()) {
@@ -150,8 +147,7 @@ Value ExpressionEvaluator::EvaluateBinaryOperation(
   }
 }
 
-Value ExpressionEvaluator::EvaluateVariableReference(
-    VariableReference* var_reference) {
+Value Evaluator::EvaluateVariableReference(VariableReference* var_reference) {
   Declaration* decl = current_scope_->ResolveSymbol(var_reference->name());
   if (auto* const_decl = DynamicTo<ConstantDeclaration>(decl)) {
     if (auto* btype = DynamicTo<BuiltinType>(const_decl->type())) {
@@ -167,8 +163,7 @@ Value ExpressionEvaluator::EvaluateVariableReference(
   return {};
 }
 
-Value ExpressionEvaluator::EvaluateImplicitCast(
-    ImplicitCastExpression* implicit_cast) {
+Value Evaluator::EvaluateImplicitCast(ImplicitCastExpression* implicit_cast) {
   return Evaluate(implicit_cast->sub_expression());
 }
 

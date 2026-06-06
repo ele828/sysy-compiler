@@ -6,8 +6,8 @@
 #include "ast/ast_context.h"
 #include "ast/ast_recursive_visitor.h"
 #include "common/source_location.h"
-#include "semantic/diagnostic.h"
-#include "semantic/scope.h"
+#include "sema/diagnostic.h"
+#include "sema/scope.h"
 
 namespace sysy {
 
@@ -20,8 +20,8 @@ using MaybeExpressionList = std::optional<ZoneVector<Expression*>>;
 using MaybeInitListResult = std::optional<InitListResult>;
 
 /// Performs semantic analysis on AST nodes.
-class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
-  using Base = AstRecursiveVisitor<SemanticAnalyzer>;
+class Sema : public AstRecursiveVisitor<Sema> {
+  using Base = AstRecursiveVisitor<Sema>;
 
  public:
   struct Diagnostic {
@@ -29,7 +29,7 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
     SourceLocation location;
   };
 
-  explicit SemanticAnalyzer(AstContext& context);
+  explicit Sema(AstContext& context);
 
   /// Returns true if semantic analysis succeed, otherwise returns false.
   bool Analyze(AstNode* node);

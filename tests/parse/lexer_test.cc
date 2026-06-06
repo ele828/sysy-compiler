@@ -1,8 +1,8 @@
-#include "parsing/lexer.h"
+#include "parse/lexer.h"
 
 #include <gtest/gtest.h>
 
-#include "parsing/token.h"
+#include "parse/token.h"
 
 namespace sysy::test {
 

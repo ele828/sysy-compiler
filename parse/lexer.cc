@@ -1,8 +1,8 @@
-#include "parsing/lexer.h"
+#include "parse/lexer.h"
 
 #include "base/bounds.h"
 #include "base/logging.h"
-#include "parsing/token.h"
+#include "parse/token.h"
 
 namespace sysy {
 

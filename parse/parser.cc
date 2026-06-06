@@ -1,11 +1,11 @@
-#include "parsing/parser.h"
+#include "parse/parser.h"
 
 #include <format>
 #include <print>
 
 #include "ast/ast.h"
 #include "ast/type.h"
-#include "parsing/token.h"
+#include "parse/token.h"
 
 namespace sysy {
 

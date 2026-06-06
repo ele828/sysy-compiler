@@ -8,8 +8,8 @@
 #include <print>
 #include <vector>
 
-#include "parsing/parser.h"
-#include "semantic/semantic_analyzer.h"
+#include "parse/parser.h"
+#include "sema/sema.h"
 
 namespace sysy::test {
 
@@ -55,7 +55,7 @@ inline void CheckParserStates(const Parser& parser) {
   EXPECT_TRUE(parser.done());
 }
 
-inline void PrintSemanticErrors(const SemanticAnalyzer& analyzer) {
+inline void PrintSemanticErrors(const Sema& analyzer) {
   for (auto& diag : analyzer.diagnostics()) {
     std::string_view message = GetDiagnosticMessage(diag.diagnostic);
     std::println("Semantic Error: {} (at line {}, column {})", message,

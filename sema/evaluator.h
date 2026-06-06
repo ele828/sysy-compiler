@@ -3,7 +3,7 @@
 #include <variant>
 
 #include "ast/ast.h"
-#include "semantic/scope.h"
+#include "sema/scope.h"
 
 namespace sysy {
 
@@ -58,9 +58,9 @@ class Value final {
 };
 
 /// A simple compile-time constant expression evaluator
-class ExpressionEvaluator final {
+class Evaluator final {
  public:
-  explicit ExpressionEvaluator(Scope* current_scope);
+  explicit Evaluator(Scope* current_scope);
 
   Value Evaluate(Expression* expression);
 
