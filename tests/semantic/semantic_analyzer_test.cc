@@ -215,4 +215,32 @@ TEST(SemanticAnalyzer, ConstDeclArrayInitExcessSize) {
   TestSingleDiagnostic(source, DiagnosticID::kExcessInitListSize);
 }
 
+TEST(SemanticAnalyzer, ConstDeclArrayInitExcessSize2) {
+  const char* source = R"(
+    const int arr[1][1] = { {0}, {1} };
+  )";
+  TestSingleDiagnostic(source, DiagnosticID::kExcessInitListSize);
+}
+
+TEST(SemanticAnalyzer, ConstDeclArrayInitExcessSize3) {
+  const char* source = R"(
+    const int arr[1][2] = { {0, 1, 2} };
+  )";
+  TestSingleDiagnostic(source, DiagnosticID::kExcessInitListSize);
+}
+
+TEST(SemanticAnalyzer, ConstDeclArrayInitTypeCheck) {
+  const char* source = R"(
+    const int arr[1] = { 0.0 };
+  )";
+  TestSingleDiagnostic(source, DiagnosticID::kInitListTypeMismatch);
+}
+
+TEST(SemanticAnalyzer, ConstDeclArrayInitTypeCheck2) {
+  const char* source = R"(
+    const int arr[1][1] = { {0.0} };
+  )";
+  TestSingleDiagnostic(source, DiagnosticID::kInitListTypeMismatch);
+}
+
 }  // namespace sysy::test
