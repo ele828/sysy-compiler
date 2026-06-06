@@ -620,6 +620,13 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
       return std::nullopt;
     }
     if (!list[i]->type()->Equals(*type->element_type())) {
+      // The spec says it allows implicitly cast int to float in init list
+      if (Type::IsFloat(type->element_type()) && Type::IsInt(list[i]->type())) {
+        auto* cast = ImplicitCast(context()->float_type(), list[i]);
+        new_init_list.push_back(cast);
+        ++i;
+        continue;
+      }
       Diag(DiagnosticID::kInitListTypeMismatch, list[i]->location());
       return std::nullopt;
     }

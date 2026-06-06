@@ -365,6 +365,30 @@ TEST(Sema, ConstDeclArrayInitValue7) {
   });
 }
 
+TEST(Sema, ConstDeclArrayInitValue8) {
+  const char* source = R"(
+    const int arr[3][2] = {};
+  )";
+  TestSema(source, [](CompilationUnit* unit) {
+    auto& init_list =
+        To<InitListExpression>(
+            To<ConstantDeclaration>(unit->body()[1])->init_value())
+            ->list();
+    EXPECT_EQ(init_list.size(), 3u);
+
+    auto& i0 = To<InitListExpression>(init_list[0])->list();
+    auto& i1 = To<InitListExpression>(init_list[1])->list();
+    auto& i2 = To<InitListExpression>(init_list[2])->list();
+    EXPECT_EQ(i0.size(), 2u);
+    EXPECT_EQ(i1.size(), 2u);
+    EXPECT_EQ(i2.size(), 2u);
+
+    MatchInitList(i0, {0, 0});
+    MatchInitList(i1, {0, 0});
+    MatchInitList(i2, {0, 0});
+  });
+}
+
 TEST(Sema, ConstDeclArrayInitExcessSize) {
   const char* source = R"(
     const int arr[1] = { 0, 1 };
@@ -398,6 +422,13 @@ TEST(Sema, ConstDeclArrayInitTypeCheck2) {
     const int arr[1][1] = { {0.0} };
   )";
   TestSema(source, DiagnosticID::kInitListTypeMismatch);
+}
+
+TEST(Sema, ConstDeclArrayInitTypeCast) {
+  const char* source = R"(
+    const float arr[1] = { 1 };
+  )";
+  TestSema(source);
 }
 
 TEST(Sema, ConstDeclArrayInitTypeEval) {
