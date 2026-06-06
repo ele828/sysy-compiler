@@ -115,9 +115,9 @@ class SemanticAnalyzer : public AstRecursiveVisitor<SemanticAnalyzer> {
   bool CheckCallExpression(const CheckingContext& ctx,
                            CallExpression* call_expr);
 
-  MaybeInitListResult NormalizeInitList(const CheckingContext& ctx,
-                                        InitListExpression* init_list_expr,
-                                        size_t i, ConstantArrayType* type);
+  MaybeInitListResult CheckInitList(const CheckingContext& ctx,
+                                    InitListExpression* init_list_expr,
+                                    size_t i, ConstantArrayType* type);
 
   void FillPaddingInArrayInitList(const CheckingContext& ctx,
                                   ZoneVector<Expression*>* init_list,

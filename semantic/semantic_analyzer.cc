@@ -565,38 +565,37 @@ void SemanticAnalyzer::FillPaddingInMultiDimArrayInitList(
   }
 }
 
-MaybeInitListResult SemanticAnalyzer::NormalizeInitList(
+MaybeInitListResult SemanticAnalyzer::CheckInitList(
     const CheckingContext& ctx, InitListExpression* init_list_expr, size_t i,
     ConstantArrayType* type) {
   auto& list = init_list_expr->list();
   ZoneVector<Expression*> new_init_list(zone());
 
   size_t start_index = i;
-  while (i < list.size() && new_init_list.size() < type->size()) {
-    if (IsA<InitListExpression>(list[i])) {
-      break;
-    }
 
-    if (type->is_multi_dimensional()) {
+  auto collect_elements_into_init_list = [&] {
+    while (i < list.size() && new_init_list.size() < type->size()) {
+      if (IsA<InitListExpression>(list[i])) {
+        break;
+      }
+
       auto* element_type = To<ConstantArrayType>(type->element_type());
-      if (auto result =
-              NormalizeInitList(ctx, init_list_expr, i, element_type)) {
+      if (auto result = CheckInitList(ctx, init_list_expr, i, element_type)) {
         auto* init_list_expr = result->init_list_expr;
         init_list_expr->set_type(element_type);
         new_init_list.push_back(init_list_expr);
         i += result->offset_delta;
       } else {
-        return std::nullopt;
+        return false;
       }
-    } else {
-      if (!CheckExpression(ctx, list[i])) {
-        return std::nullopt;
-      }
-      if (!list[i]->type()->Equals(*type->element_type())) {
-        return std::nullopt;
-      }
-      new_init_list.push_back(list[i]);
-      ++i;
+    }
+    return true;
+  };
+
+  if (type->is_multi_dimensional()) {
+    bool success = collect_elements_into_init_list();
+    if (!success) {
+      return std::nullopt;
     }
   }
 
@@ -609,10 +608,16 @@ MaybeInitListResult SemanticAnalyzer::NormalizeInitList(
       auto* child_init_list_expr = To<InitListExpression>(list[i]);
       auto* element_type = To<ConstantArrayType>(type->element_type());
       if (auto result =
-              NormalizeInitList(ctx, child_init_list_expr, 0, element_type)) {
+              CheckInitList(ctx, child_init_list_expr, 0, element_type)) {
         auto* init_list_expr = result->init_list_expr;
         init_list_expr->set_type(element_type);
         new_init_list.push_back(init_list_expr);
+        if (init_list_expr->list().size() <
+            child_init_list_expr->list().size()) {
+          Diag(DiagnosticID::kExcessInitListSize, init_list_expr->location());
+          return std::nullopt;
+        }
+
         ++i;
         continue;
       } else {
@@ -624,37 +629,17 @@ MaybeInitListResult SemanticAnalyzer::NormalizeInitList(
       return std::nullopt;
     }
     if (!list[i]->type()->Equals(*type->element_type())) {
+      Diag(DiagnosticID::kInitListTypeMismatch, list[i]->location());
       return std::nullopt;
     }
     new_init_list.push_back(list[i]);
     ++i;
   }
 
-  while (i < list.size() && new_init_list.size() < type->size()) {
-    if (IsA<InitListExpression>(list[i])) {
-      break;
-    }
-
-    if (type->is_multi_dimensional()) {
-      auto* element_type = To<ConstantArrayType>(type->element_type());
-      if (auto result =
-              NormalizeInitList(ctx, init_list_expr, i, element_type)) {
-        auto* init_list_expr = result->init_list_expr;
-        init_list_expr->set_type(element_type);
-        new_init_list.push_back(init_list_expr);
-        i += result->offset_delta;
-      } else {
-        return std::nullopt;
-      }
-    } else {
-      if (!CheckExpression(ctx, list[i])) {
-        return std::nullopt;
-      }
-      if (!list[i]->type()->Equals(*type->element_type())) {
-        return std::nullopt;
-      }
-      new_init_list.push_back(list[i]);
-      ++i;
+  if (type->is_multi_dimensional()) {
+    bool success = collect_elements_into_init_list();
+    if (!success) {
+      return std::nullopt;
     }
   }
 
@@ -680,7 +665,11 @@ bool SemanticAnalyzer::CheckInitListExpression(
   DCHECK(ctx.decl_array_type);
 
   auto* array_type = To<ConstantArrayType>(ctx.decl_array_type);
-  if (auto result = NormalizeInitList(ctx, init_list_expr, 0, array_type)) {
+  if (auto result = CheckInitList(ctx, init_list_expr, 0, array_type)) {
+    if (result->offset_delta < init_list_expr->list().size()) {
+      Diag(DiagnosticID::kExcessInitListSize, init_list_expr->location());
+      return false;
+    }
     init_list_expr->set_list(result->init_list_expr->list());
     init_list_expr->set_type(ctx.decl_array_type);
     return true;
