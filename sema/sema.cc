@@ -82,8 +82,8 @@ void Sema::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
 
   Type* type = const_decl->type();
   if (auto* array_type = DynamicTo<ArrayType>(type)) {
-    if (!EvaluateArrayTypeAndReplace(const_decl, array_type,
-                                     /*allow_incomplete_array_type=*/false)) {
+    if (!EvaluateArrayType(const_decl, array_type,
+                           /*allow_incomplete_array_type=*/false)) {
       return;
     }
 
@@ -134,7 +134,7 @@ void Sema::VisitVariableDeclaration(VariableDeclaration* var_decl) {
 
   Type* type = var_decl->type();
   if (IsA<ArrayType>(type)) {
-    if (!EvaluateArrayTypeAndReplace(var_decl, type, false)) {
+    if (!EvaluateArrayType(var_decl, type, false)) {
       return;
     }
   }
@@ -164,7 +164,7 @@ void Sema::VisitParameterDeclaration(ParameterDeclaration* param_decl) {
 
   Type* type = param_decl->type();
   if (IsA<ArrayType>(type)) {
-    if (!EvaluateArrayTypeAndReplace(param_decl, type, true)) {
+    if (!EvaluateArrayType(param_decl, type, true)) {
       return;
     }
 
@@ -765,8 +765,8 @@ ImplicitCastExpression* Sema::ImplicitCast(Type* type, Expression* expression) {
                                                         expression->location());
 }
 
-bool Sema::EvaluateArrayTypeAndReplace(const Declaration* decl, Type* type,
-                                       bool allow_incomplete_array_type) {
+bool Sema::EvaluateArrayType(const Declaration* decl, Type* type,
+                             bool allow_incomplete_array_type) {
   if (!allow_incomplete_array_type) {
     if (IsA<IncompleteArrayType>(type)) {
       Diag(DiagnosticID::kArrayTypeIncomplete, decl->location());
@@ -774,30 +774,30 @@ bool Sema::EvaluateArrayTypeAndReplace(const Declaration* decl, Type* type,
     }
   }
 
-  if (auto* constant_array_type = DynamicTo<ConstantArrayType>(type)) {
-    if (constant_array_type->is_expression()) {
-      Evaluator evaluator(current_scope());
-      if (auto result = evaluator.Evaluate(constant_array_type->expression())) {
-        if (result.is_int()) {
-          if (result.get_as_int() < 0) {
-            Diag(DiagnosticID::kArrayNegDimension, decl->location());
-            return false;
-          }
-        } else {
-          Diag(DiagnosticID::kArrayIntDimension, decl->location());
-          return false;
-        }
-        constant_array_type->set_size(result.get_as_int());
-      } else {
-        Diag(DiagnosticID::kArrayTypeEval, decl->location());
+  if (auto* constant_array_type = DynamicTo<ConstantArrayType>(type);
+      constant_array_type && constant_array_type->is_expression()) {
+    Evaluator evaluator(current_scope());
+    Value result = evaluator.Evaluate(constant_array_type->expression());
+    if (!result.has_value()) {
+      Diag(DiagnosticID::kArrayTypeEval, decl->location());
+      return false;
+    }
+
+    if (result.is_int()) {
+      if (result.get_as_int() < 0) {
+        Diag(DiagnosticID::kArrayNegDimension, decl->location());
         return false;
       }
+    } else {
+      Diag(DiagnosticID::kArrayIntDimension, decl->location());
+      return false;
     }
+    constant_array_type->set_size(result.get_as_int());
   }
 
   if (auto* array_type = DynamicTo<ArrayType>(type)) {
-    return EvaluateArrayTypeAndReplace(decl, array_type->element_type(),
-                                       allow_incomplete_array_type);
+    return EvaluateArrayType(decl, array_type->element_type(),
+                             allow_incomplete_array_type);
   }
 
   return true;

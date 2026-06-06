@@ -24,8 +24,8 @@ CompilationUnit* Parse(AstContext& context, std::string_view source) {
   return compilation_unit;
 }
 
-void TestSingleDiagnostic(std::string_view source, DiagnosticID diagnostic,
-                          bool append_main_function = true) {
+void TestSema(std::string_view source, DiagnosticID diagnostic,
+              bool append_main_function = true) {
   std::string final_source;
   if (append_main_function) {
     final_source.append("int main() { return 0; }");
@@ -44,8 +44,8 @@ void TestSingleDiagnostic(std::string_view source, DiagnosticID diagnostic,
   }
 }
 
-void TestSingleDiagnostic(std::string_view source,
-                          std::function<void(CompilationUnit*)> callback = {}) {
+void TestSema(std::string_view source,
+              std::function<void(CompilationUnit*)> callback = {}) {
   std::string final_source;
   final_source.append("int main() { return 0; }");
   final_source.append(source);
@@ -103,14 +103,14 @@ TEST(Sema, MainFunctionReturnInt) {
   const char* source = R"(
     void main() {}
   )";
-  TestSingleDiagnostic(source, DiagnosticID::kMainReturnType, false);
+  TestSema(source, DiagnosticID::kMainReturnType, false);
 }
 
 TEST(Sema, MainFunctionWithoutReturn) {
   const char* source = R"(
     int main() {}
   )";
-  TestSingleDiagnostic(source, DiagnosticID::kFuncNonVoidReturn, false);
+  TestSema(source, DiagnosticID::kFuncNonVoidReturn, false);
 }
 
 TEST(Sema, ConstDeclRedef) {
@@ -118,28 +118,28 @@ TEST(Sema, ConstDeclRedef) {
     const int a = 10;
     const int a = 20;
   )";
-  TestSingleDiagnostic(source, DiagnosticID::kDeclRedef);
+  TestSema(source, DiagnosticID::kDeclRedef);
 }
 
 TEST(Sema, ConstDeclTypeMismatch) {
   const char* source = R"(
     const int arr[] = {};
   )";
-  TestSingleDiagnostic(source, DiagnosticID::kArrayTypeIncomplete);
+  TestSema(source, DiagnosticID::kArrayTypeIncomplete);
 }
 
 TEST(Sema, ConstDeclTypeImplicitConversion) {
   const char* source = R"(
     const int a = 1.0;
   )";
-  TestSingleDiagnostic(source);
+  TestSema(source);
 }
 
 TEST(Sema, ConstDeclArrayType) {
   const char* source = R"(
     const int arr[1] = {1};
   )";
-  TestSingleDiagnostic(source);
+  TestSema(source);
 }
 
 TEST(Sema, ConstDeclArrayTypeRequiresPadding) {
@@ -147,7 +147,7 @@ TEST(Sema, ConstDeclArrayTypeRequiresPadding) {
     const int arr[5] = {1};
   )";
 
-  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+  TestSema(source, [](CompilationUnit* unit) {
     auto& init_list =
         To<InitListExpression>(
             To<ConstantDeclaration>(unit->body()[1])->init_value())
@@ -166,7 +166,7 @@ TEST(Sema, ConstDeclArrayTypeWithoutConstantRef) {
     int value = 1;
     const int arr[1] = {value};
   )";
-  TestSingleDiagnostic(source, DiagnosticID::kNonConstantRef);
+  TestSema(source, DiagnosticID::kNonConstantRef);
 }
 
 TEST(Sema, ConstDeclArrayTypeWithConstantRef) {
@@ -175,14 +175,14 @@ TEST(Sema, ConstDeclArrayTypeWithConstantRef) {
     const int arr[1] = {value};
   )";
 
-  TestSingleDiagnostic(source);
+  TestSema(source);
 }
 
 TEST(Sema, ConstDeclArrayInitValue) {
   const char* source = R"(
     const int arr[3][2] = {1, 2, {3, 4}, {5, 6}};
   )";
-  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+  TestSema(source, [](CompilationUnit* unit) {
     auto& init_list =
         To<InitListExpression>(
             To<ConstantDeclaration>(unit->body()[1])->init_value())
@@ -199,7 +199,7 @@ TEST(Sema, ConstDeclArrayInitValue2) {
   const char* source = R"(
     const int arr[3][2] = {1, 2, 3, 4, 5, 6};
   )";
-  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+  TestSema(source, [](CompilationUnit* unit) {
     auto& init_list =
         To<InitListExpression>(
             To<ConstantDeclaration>(unit->body()[1])->init_value())
@@ -220,7 +220,7 @@ TEST(Sema, ConstDeclArrayInitValue3) {
       5, 6
     };
   )";
-  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+  TestSema(source, [](CompilationUnit* unit) {
     auto& init_list =
         To<InitListExpression>(
             To<ConstantDeclaration>(unit->body()[1])->init_value())
@@ -240,7 +240,7 @@ TEST(Sema, MultiArrayInitValueWithPadding) {
       {3, 4},
     };
   )";
-  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+  TestSema(source, [](CompilationUnit* unit) {
     auto& init_list =
         To<InitListExpression>(
             To<ConstantDeclaration>(unit->body()[1])->init_value())
@@ -261,7 +261,7 @@ TEST(Sema, ConstDeclArrayInitValue4) {
       {{9, 10},  {11, 12}},
     };
   )";
-  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+  TestSema(source, [](CompilationUnit* unit) {
     auto& init_list =
         To<InitListExpression>(
             To<ConstantDeclaration>(unit->body()[1])->init_value())
@@ -289,7 +289,7 @@ TEST(Sema, ConstDeclArrayInitValue5) {
       {{9, 10},  {11, 12}},
     };
   )";
-  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+  TestSema(source, [](CompilationUnit* unit) {
     auto& init_list =
         To<InitListExpression>(
             To<ConstantDeclaration>(unit->body()[1])->init_value())
@@ -317,7 +317,7 @@ TEST(Sema, ConstDeclArrayInitValue6) {
       {{9, 10},  {11, 12}},
     };
   )";
-  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+  TestSema(source, [](CompilationUnit* unit) {
     auto& init_list =
         To<InitListExpression>(
             To<ConstantDeclaration>(unit->body()[1])->init_value())
@@ -345,7 +345,7 @@ TEST(Sema, ConstDeclArrayInitValue7) {
       {{5, 6},  {7, 8}},
     };
   )";
-  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+  TestSema(source, [](CompilationUnit* unit) {
     auto& init_list =
         To<InitListExpression>(
             To<ConstantDeclaration>(unit->body()[1])->init_value())
@@ -369,35 +369,49 @@ TEST(Sema, ConstDeclArrayInitExcessSize) {
   const char* source = R"(
     const int arr[1] = { 0, 1 };
   )";
-  TestSingleDiagnostic(source, DiagnosticID::kExcessInitListSize);
+  TestSema(source, DiagnosticID::kExcessInitListSize);
 }
 
 TEST(Sema, ConstDeclArrayInitExcessSize2) {
   const char* source = R"(
     const int arr[1][1] = { {0}, {1} };
   )";
-  TestSingleDiagnostic(source, DiagnosticID::kExcessInitListSize);
+  TestSema(source, DiagnosticID::kExcessInitListSize);
 }
 
 TEST(Sema, ConstDeclArrayInitExcessSize3) {
   const char* source = R"(
     const int arr[1][2] = { {0, 1, 2} };
   )";
-  TestSingleDiagnostic(source, DiagnosticID::kExcessInitListSize);
+  TestSema(source, DiagnosticID::kExcessInitListSize);
 }
 
 TEST(Sema, ConstDeclArrayInitTypeCheck) {
   const char* source = R"(
     const int arr[1] = { 0.0 };
   )";
-  TestSingleDiagnostic(source, DiagnosticID::kInitListTypeMismatch);
+  TestSema(source, DiagnosticID::kInitListTypeMismatch);
 }
 
 TEST(Sema, ConstDeclArrayInitTypeCheck2) {
   const char* source = R"(
     const int arr[1][1] = { {0.0} };
   )";
-  TestSingleDiagnostic(source, DiagnosticID::kInitListTypeMismatch);
+  TestSema(source, DiagnosticID::kInitListTypeMismatch);
+}
+
+TEST(Sema, ConstDeclArrayInitTypeEval) {
+  const char* source = R"(
+    const int arr[0+1][1*1] = { {0} };
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, ConstDeclArrayInitIncompleteType) {
+  const char* source = R"(
+    const int arr[] = { 0 };
+  )";
+  TestSema(source, DiagnosticID::kArrayTypeIncomplete);
 }
 
 }  // namespace sysy::test

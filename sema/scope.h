@@ -48,6 +48,7 @@ class Scope : public ZoneObject {
     DCHECK(is_function_scope());
     has_return_statement_ = true;
   }
+
   bool has_return_statement() const {
     DCHECK(is_function_scope());
     return has_return_statement_;
