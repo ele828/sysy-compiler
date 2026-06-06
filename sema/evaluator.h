@@ -35,8 +35,6 @@ class Value final {
     return std::get<float>(value_);
   }
 
-  explicit operator bool() const { return has_value(); }
-
   Value operator-() const;
   Value operator!() const;
   Value operator+(const Value& other) const;

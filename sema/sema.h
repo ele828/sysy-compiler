@@ -135,8 +135,8 @@ class Sema : public AstRecursiveVisitor<Sema> {
   ImplicitCastExpression* ImplicitCast(Type* type, Expression* expression);
 
   /// Returns false when evaluation fails
-  bool EvaluateArrayTypeAndReplace(const Declaration* decl, Type* type,
-                                   bool allow_incomplete_array_type);
+  bool EvaluateArrayType(const Declaration* decl, Type* type,
+                         bool allow_incomplete_array_type);
 
   void Diag(DiagnosticID diagnostic, SourceLocation location);
 
