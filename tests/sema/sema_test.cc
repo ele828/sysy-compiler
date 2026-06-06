@@ -3,9 +3,11 @@
 
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <print>
 #include <string_view>
 
+#include "ast/ast.h"
 #include "parse/parser.h"
 #include "sema/diagnostic.h"
 #include "tests/utils.h"
@@ -42,7 +44,8 @@ void TestSingleDiagnostic(std::string_view source, DiagnosticID diagnostic,
   }
 }
 
-void TestSingleDiagnostic(std::string_view source) {
+void TestSingleDiagnostic(std::string_view source,
+                          std::function<void(CompilationUnit*)> callback = {}) {
   std::string final_source;
   final_source.append("int main() { return 0; }");
   final_source.append(source);
@@ -53,6 +56,31 @@ void TestSingleDiagnostic(std::string_view source) {
   bool success = sema.Analyze(compilation_unit);
   PrintSemanticErrors(sema);
   EXPECT_TRUE(success);
+
+  if (callback) {
+    callback(compilation_unit);
+  }
+}
+
+void MatchInitList(ZoneVector<Expression*> list,
+                   std::initializer_list<int> expected) {
+  EXPECT_EQ(list.size(), expected.size());
+  int i = 0;
+  for (auto value : expected) {
+    EXPECT_EQ(To<IntegerLiteral>(list[i])->value(), value);
+    ++i;
+  }
+}
+
+void MatchInitList(const ZoneVector<Expression*>& list,
+                   std::initializer_list<std::initializer_list<int>> expected) {
+  size_t i = 0;
+  for (auto& value : expected) {
+    auto& ii = To<InitListExpression>(list[i])->list();
+    EXPECT_EQ(ii.size(), value.size());
+    MatchInitList(ii, value);
+    ++i;
+  }
 }
 
 }  // namespace
@@ -118,10 +146,22 @@ TEST(Sema, ConstDeclArrayTypeRequiresPadding) {
   const char* source = R"(
     const int arr[5] = {1};
   )";
-  TestSingleDiagnostic(source);
+
+  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+    auto& init_list =
+        To<InitListExpression>(
+            To<ConstantDeclaration>(unit->body()[1])->init_value())
+            ->list();
+    EXPECT_EQ(init_list.size(), 5u);
+    EXPECT_EQ(To<IntegerLiteral>(init_list[0])->value(), 1);
+    EXPECT_EQ(To<IntegerLiteral>(init_list[1])->value(), 0);
+    EXPECT_EQ(To<IntegerLiteral>(init_list[2])->value(), 0);
+    EXPECT_EQ(To<IntegerLiteral>(init_list[3])->value(), 0);
+    EXPECT_EQ(To<IntegerLiteral>(init_list[4])->value(), 0);
+  });
 }
 
-TEST(Sema, ConstDeclArrayTypeWithConstantRef) {
+TEST(Sema, ConstDeclArrayTypeWithoutConstantRef) {
   const char* source = R"(
     int value = 1;
     const int arr[1] = {value};
@@ -129,18 +169,47 @@ TEST(Sema, ConstDeclArrayTypeWithConstantRef) {
   TestSingleDiagnostic(source, DiagnosticID::kNonConstantRef);
 }
 
+TEST(Sema, ConstDeclArrayTypeWithConstantRef) {
+  const char* source = R"(
+    const int value = 1;
+    const int arr[1] = {value};
+  )";
+
+  TestSingleDiagnostic(source);
+}
+
 TEST(Sema, ConstDeclArrayInitValue) {
   const char* source = R"(
     const int arr[3][2] = {1, 2, {3, 4}, {5, 6}};
   )";
-  TestSingleDiagnostic(source);
+  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+    auto& init_list =
+        To<InitListExpression>(
+            To<ConstantDeclaration>(unit->body()[1])->init_value())
+            ->list();
+    EXPECT_EQ(init_list.size(), 3u);
+
+    MatchInitList(To<InitListExpression>(init_list[0])->list(), {1, 2});
+    MatchInitList(To<InitListExpression>(init_list[1])->list(), {3, 4});
+    MatchInitList(To<InitListExpression>(init_list[2])->list(), {5, 6});
+  });
 }
 
 TEST(Sema, ConstDeclArrayInitValue2) {
   const char* source = R"(
     const int arr[3][2] = {1, 2, 3, 4, 5, 6};
   )";
-  TestSingleDiagnostic(source);
+  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+    auto& init_list =
+        To<InitListExpression>(
+            To<ConstantDeclaration>(unit->body()[1])->init_value())
+            ->list();
+    EXPECT_EQ(init_list.size(), 3u);
+
+    MatchInitList(To<InitListExpression>(init_list[0])->list(), {1, 2});
+    MatchInitList(To<InitListExpression>(init_list[1])->list(), {3, 4});
+    MatchInitList(To<InitListExpression>(init_list[2])->list(), {5, 6});
+  });
 }
 
 TEST(Sema, ConstDeclArrayInitValue3) {
@@ -151,7 +220,17 @@ TEST(Sema, ConstDeclArrayInitValue3) {
       5, 6
     };
   )";
-  TestSingleDiagnostic(source);
+  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+    auto& init_list =
+        To<InitListExpression>(
+            To<ConstantDeclaration>(unit->body()[1])->init_value())
+            ->list();
+    EXPECT_EQ(init_list.size(), 3u);
+
+    MatchInitList(To<InitListExpression>(init_list[0])->list(), {1, 2});
+    MatchInitList(To<InitListExpression>(init_list[1])->list(), {3, 4});
+    MatchInitList(To<InitListExpression>(init_list[2])->list(), {5, 6});
+  });
 }
 
 TEST(Sema, MultiArrayInitValueWithPadding) {
@@ -161,7 +240,17 @@ TEST(Sema, MultiArrayInitValueWithPadding) {
       {3, 4},
     };
   )";
-  TestSingleDiagnostic(source);
+  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+    auto& init_list =
+        To<InitListExpression>(
+            To<ConstantDeclaration>(unit->body()[1])->init_value())
+            ->list();
+    EXPECT_EQ(init_list.size(), 3u);
+
+    MatchInitList(To<InitListExpression>(init_list[0])->list(), {1, 2});
+    MatchInitList(To<InitListExpression>(init_list[1])->list(), {3, 4});
+    MatchInitList(To<InitListExpression>(init_list[2])->list(), {0, 0});
+  });
 }
 
 TEST(Sema, ConstDeclArrayInitValue4) {
@@ -172,7 +261,24 @@ TEST(Sema, ConstDeclArrayInitValue4) {
       {{9, 10},  {11, 12}},
     };
   )";
-  TestSingleDiagnostic(source);
+  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+    auto& init_list =
+        To<InitListExpression>(
+            To<ConstantDeclaration>(unit->body()[1])->init_value())
+            ->list();
+    EXPECT_EQ(init_list.size(), 3u);
+
+    auto& i0 = To<InitListExpression>(init_list[0])->list();
+    auto& i1 = To<InitListExpression>(init_list[1])->list();
+    auto& i2 = To<InitListExpression>(init_list[2])->list();
+    EXPECT_EQ(i0.size(), 2u);
+    EXPECT_EQ(i1.size(), 2u);
+    EXPECT_EQ(i2.size(), 2u);
+
+    MatchInitList(i0, {{1, 2}, {3, 4}});
+    MatchInitList(i1, {{5, 6}, {7, 8}});
+    MatchInitList(i2, {{9, 10}, {11, 12}});
+  });
 }
 
 TEST(Sema, ConstDeclArrayInitValue5) {
@@ -183,7 +289,24 @@ TEST(Sema, ConstDeclArrayInitValue5) {
       {{9, 10},  {11, 12}},
     };
   )";
-  TestSingleDiagnostic(source);
+  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+    auto& init_list =
+        To<InitListExpression>(
+            To<ConstantDeclaration>(unit->body()[1])->init_value())
+            ->list();
+    EXPECT_EQ(init_list.size(), 3u);
+
+    auto& i0 = To<InitListExpression>(init_list[0])->list();
+    auto& i1 = To<InitListExpression>(init_list[1])->list();
+    auto& i2 = To<InitListExpression>(init_list[2])->list();
+    EXPECT_EQ(i0.size(), 2u);
+    EXPECT_EQ(i1.size(), 2u);
+    EXPECT_EQ(i2.size(), 2u);
+
+    MatchInitList(i0, {{1, 2}, {3, 4}});
+    MatchInitList(i1, {{5, 6}, {7, 8}});
+    MatchInitList(i2, {{9, 10}, {11, 12}});
+  });
 }
 
 TEST(Sema, ConstDeclArrayInitValue6) {
@@ -194,7 +317,24 @@ TEST(Sema, ConstDeclArrayInitValue6) {
       {{9, 10},  {11, 12}},
     };
   )";
-  TestSingleDiagnostic(source);
+  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+    auto& init_list =
+        To<InitListExpression>(
+            To<ConstantDeclaration>(unit->body()[1])->init_value())
+            ->list();
+    EXPECT_EQ(init_list.size(), 3u);
+
+    auto& i0 = To<InitListExpression>(init_list[0])->list();
+    auto& i1 = To<InitListExpression>(init_list[1])->list();
+    auto& i2 = To<InitListExpression>(init_list[2])->list();
+    EXPECT_EQ(i0.size(), 2u);
+    EXPECT_EQ(i1.size(), 2u);
+    EXPECT_EQ(i2.size(), 2u);
+
+    MatchInitList(i0, {{1, 2}, {3, 4}});
+    MatchInitList(i1, {{5, 6}, {7, 8}});
+    MatchInitList(i2, {{9, 10}, {11, 12}});
+  });
 }
 
 TEST(Sema, ConstDeclArrayInitValue7) {
@@ -205,7 +345,24 @@ TEST(Sema, ConstDeclArrayInitValue7) {
       {{5, 6},  {7, 8}},
     };
   )";
-  TestSingleDiagnostic(source);
+  TestSingleDiagnostic(source, [](CompilationUnit* unit) {
+    auto& init_list =
+        To<InitListExpression>(
+            To<ConstantDeclaration>(unit->body()[1])->init_value())
+            ->list();
+    EXPECT_EQ(init_list.size(), 3u);
+
+    auto& i0 = To<InitListExpression>(init_list[0])->list();
+    auto& i1 = To<InitListExpression>(init_list[1])->list();
+    auto& i2 = To<InitListExpression>(init_list[2])->list();
+    EXPECT_EQ(i0.size(), 2u);
+    EXPECT_EQ(i1.size(), 2u);
+    EXPECT_EQ(i2.size(), 2u);
+
+    MatchInitList(i0, {{1, 2}, {3, 4}});
+    MatchInitList(i1, {{0, 0}, {0, 0}});
+    MatchInitList(i2, {{5, 6}, {7, 8}});
+  });
 }
 
 TEST(Sema, ConstDeclArrayInitExcessSize) {

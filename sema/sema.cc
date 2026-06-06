@@ -35,9 +35,7 @@ class Sema::NewScope {
 Sema::Sema(AstContext& context) : context_(context), current_scope_(nullptr) {}
 
 bool Sema::Analyze(AstNode* node) {
-  node->Dump();
   Visit(node);
-  node->Dump();
   return !has_diagnostics();
 }
 
