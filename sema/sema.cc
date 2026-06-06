@@ -1,4 +1,4 @@
-#include "semantic/semantic_analyzer.h"
+#include "sema/sema.h"
 
 #include <array>
 #include <optional>
@@ -7,14 +7,14 @@
 #include "ast/type.h"
 #include "base/logging.h"
 #include "common/source_location.h"
-#include "semantic/diagnostic.h"
-#include "semantic/expression_evaluator.h"
+#include "sema/diagnostic.h"
+#include "sema/evaluator.h"
 
 namespace sysy {
 
-class SemanticAnalyzer::NewScope {
+class Sema::NewScope {
  public:
-  NewScope(Scope::Type type, SemanticAnalyzer& analyzer)
+  NewScope(Scope::Type type, Sema& analyzer)
       : analyzer_(analyzer), outer_scope_(analyzer.current_scope()) {
     analyzer_.current_scope_ =
         analyzer_.context()->zone()->New<Scope>(type, outer_scope_);
@@ -28,21 +28,20 @@ class SemanticAnalyzer::NewScope {
   Scope* outer_scope() const { return outer_scope_; }
 
  private:
-  SemanticAnalyzer& analyzer_;
+  Sema& analyzer_;
   Scope* outer_scope_;
 };
 
-SemanticAnalyzer::SemanticAnalyzer(AstContext& context)
-    : context_(context), current_scope_(nullptr) {}
+Sema::Sema(AstContext& context) : context_(context), current_scope_(nullptr) {}
 
-bool SemanticAnalyzer::Analyze(AstNode* node) {
+bool Sema::Analyze(AstNode* node) {
   node->Dump();
   Visit(node);
   node->Dump();
   return !has_diagnostics();
 }
 
-void SemanticAnalyzer::VisitCompilationUnit(CompilationUnit* comp_unit) {
+void Sema::VisitCompilationUnit(CompilationUnit* comp_unit) {
   NewScope scope(Scope::Type::kGlobal, *this);
 
   bool has_main_function = false;
@@ -72,8 +71,7 @@ void SemanticAnalyzer::VisitCompilationUnit(CompilationUnit* comp_unit) {
   Base::VisitCompilationUnit(comp_unit);
 }
 
-void SemanticAnalyzer::VisitConstantDeclaration(
-    ConstantDeclaration* const_decl) {
+void Sema::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
   auto success = current_scope()->AddSymbol(const_decl->name(), const_decl);
   if (!success) {
     Diag(DiagnosticID::kDeclRedef, const_decl->location());
@@ -129,7 +127,7 @@ void SemanticAnalyzer::VisitConstantDeclaration(
   }
 }
 
-void SemanticAnalyzer::VisitVariableDeclaration(VariableDeclaration* var_decl) {
+void Sema::VisitVariableDeclaration(VariableDeclaration* var_decl) {
   auto success = current_scope()->AddSymbol(var_decl->name(), var_decl);
   if (!success) {
     Diag(DiagnosticID::kDeclRedef, var_decl->location());
@@ -159,8 +157,7 @@ void SemanticAnalyzer::VisitVariableDeclaration(VariableDeclaration* var_decl) {
   }
 }
 
-void SemanticAnalyzer::VisitParameterDeclaration(
-    ParameterDeclaration* param_decl) {
+void Sema::VisitParameterDeclaration(ParameterDeclaration* param_decl) {
   auto success = current_scope()->AddSymbol(param_decl->name(), param_decl);
   if (!success) {
     Diag(DiagnosticID::kDeclRedef, param_decl->location());
@@ -177,7 +174,7 @@ void SemanticAnalyzer::VisitParameterDeclaration(
   }
 }
 
-void SemanticAnalyzer::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
+void Sema::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
   NewScope scope(Scope::Type::kFunction, *this);
 
   if (scope.outer_scope()->is_global_scope()) {
@@ -201,20 +198,17 @@ void SemanticAnalyzer::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
   }
 }
 
-void SemanticAnalyzer::VisitCompoundStatement(
-    CompoundStatement* compound_stmt) {
+void Sema::VisitCompoundStatement(CompoundStatement* compound_stmt) {
   NewScope scope(Scope::Type::kBlock, *this);
 
   Base::VisitCompoundStatement(compound_stmt);
 }
 
-void SemanticAnalyzer::VisitDeclarationStatement(
-    DeclarationStatement* decl_stmt) {
+void Sema::VisitDeclarationStatement(DeclarationStatement* decl_stmt) {
   Base::VisitDeclarationStatement(decl_stmt);
 }
 
-void SemanticAnalyzer::VisitExpressionStatement(
-    ExpressionStatement* expr_stmt) {
+void Sema::VisitExpressionStatement(ExpressionStatement* expr_stmt) {
   // Ignore empty expression statament.
   auto* expr = expr_stmt->expression();
   if (!expr) {
@@ -227,7 +221,7 @@ void SemanticAnalyzer::VisitExpressionStatement(
   }
 }
 
-void SemanticAnalyzer::VisitIfStatement(IfStatement* if_stmt) {
+void Sema::VisitIfStatement(IfStatement* if_stmt) {
   CheckingContext ctx;
   if (!CheckExpression(ctx, if_stmt->condition())) {
     return;
@@ -245,7 +239,7 @@ void SemanticAnalyzer::VisitIfStatement(IfStatement* if_stmt) {
   }
 }
 
-void SemanticAnalyzer::VisitWhileStatement(WhileStatement* while_stmt) {
+void Sema::VisitWhileStatement(WhileStatement* while_stmt) {
   NewScope scope(Scope::Type::kWhileBlock, *this);
 
   CheckingContext ctx;
@@ -262,22 +256,21 @@ void SemanticAnalyzer::VisitWhileStatement(WhileStatement* while_stmt) {
   Visit(while_stmt->body());
 }
 
-void SemanticAnalyzer::VisitBreakStatement(BreakStatement* break_stmt) {
+void Sema::VisitBreakStatement(BreakStatement* break_stmt) {
   if (!current_scope()->IsInWhileScope()) {
     Diag(DiagnosticID::kBreakScope, break_stmt->location());
     return;
   }
 }
 
-void SemanticAnalyzer::VisitContinueStatement(
-    ContinueStatement* continue_stmt) {
+void Sema::VisitContinueStatement(ContinueStatement* continue_stmt) {
   if (!current_scope()->IsInWhileScope()) {
     Diag(DiagnosticID::kContinueScope, continue_stmt->location());
     return;
   }
 }
 
-void SemanticAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {
+void Sema::VisitReturnStatement(ReturnStatement* return_stmt) {
   auto* enclosing_function_scope = current_scope()->GetEnclosingFunctionScope();
   if (!enclosing_function_scope) {
     Diag(DiagnosticID::kReturnScope, return_stmt->location());
@@ -306,8 +299,7 @@ void SemanticAnalyzer::VisitReturnStatement(ReturnStatement* return_stmt) {
   enclosing_function_scope->set_has_return_statement();
 }
 
-bool SemanticAnalyzer::CheckExpression(const CheckingContext& ctx,
-                                       Expression* expr) {
+bool Sema::CheckExpression(const CheckingContext& ctx, Expression* expr) {
   switch (expr->kind()) {
     case AstNode::Kind::kIntegerLiteral:
       expr->set_type(context()->int_type());
@@ -354,8 +346,8 @@ bool SemanticAnalyzer::CheckExpression(const CheckingContext& ctx,
   return false;
 }
 
-bool SemanticAnalyzer::CheckBinaryOperation(const CheckingContext& ctx,
-                                            BinaryOperation* binary_operation) {
+bool Sema::CheckBinaryOperation(const CheckingContext& ctx,
+                                BinaryOperation* binary_operation) {
   switch (binary_operation->op()) {
     case BinaryOperator::kInvalid:
       NOTREACHED();
@@ -382,8 +374,8 @@ bool SemanticAnalyzer::CheckBinaryOperation(const CheckingContext& ctx,
   return false;
 }
 
-bool SemanticAnalyzer::CheckBinaryArithmetic(
-    const CheckingContext& ctx, BinaryOperation* binary_operation) {
+bool Sema::CheckBinaryArithmetic(const CheckingContext& ctx,
+                                 BinaryOperation* binary_operation) {
   auto* lhs = binary_operation->lhs();
   auto* rhs = binary_operation->rhs();
   if (!CheckExpression(ctx, lhs)) {
@@ -405,8 +397,8 @@ bool SemanticAnalyzer::CheckBinaryArithmetic(
   return true;
 }
 
-bool SemanticAnalyzer::CheckBinaryRelational(
-    const CheckingContext& ctx, BinaryOperation* binary_operation) {
+bool Sema::CheckBinaryRelational(const CheckingContext& ctx,
+                                 BinaryOperation* binary_operation) {
   auto* lhs = binary_operation->lhs();
   auto* rhs = binary_operation->rhs();
   if (!CheckExpression(ctx, lhs)) {
@@ -430,8 +422,8 @@ bool SemanticAnalyzer::CheckBinaryRelational(
   return true;
 }
 
-bool SemanticAnalyzer::CheckBinaryLogical(const CheckingContext& ctx,
-                                          BinaryOperation* binary_operation) {
+bool Sema::CheckBinaryLogical(const CheckingContext& ctx,
+                              BinaryOperation* binary_operation) {
   auto* lhs = binary_operation->lhs();
   auto* rhs = binary_operation->rhs();
   if (!CheckExpression(ctx, lhs)) {
@@ -456,8 +448,8 @@ bool SemanticAnalyzer::CheckBinaryLogical(const CheckingContext& ctx,
   return true;
 }
 
-bool SemanticAnalyzer::CheckBinaryAssign(const CheckingContext& ctx,
-                                         BinaryOperation* binary_operation) {
+bool Sema::CheckBinaryAssign(const CheckingContext& ctx,
+                             BinaryOperation* binary_operation) {
   auto* lhs = binary_operation->lhs();
   auto* rhs = binary_operation->rhs();
   if (!CheckExpression(ctx, lhs)) {
@@ -505,8 +497,8 @@ bool SemanticAnalyzer::CheckBinaryAssign(const CheckingContext& ctx,
   return true;
 }
 
-bool SemanticAnalyzer::CheckVariableReference(const CheckingContext& ctx,
-                                              VariableReference* var_ref) {
+bool Sema::CheckVariableReference(const CheckingContext& ctx,
+                                  VariableReference* var_ref) {
   auto* decl = current_scope()->ResolveSymbol(var_ref->name());
   if (!decl) {
     Diag(DiagnosticID::kUndefSymbol, var_ref->location());
@@ -522,9 +514,10 @@ bool SemanticAnalyzer::CheckVariableReference(const CheckingContext& ctx,
   return true;
 }
 
-void SemanticAnalyzer::FillPaddingInArrayInitList(
-    const CheckingContext& ctx, ZoneVector<Expression*>* init_list, size_t size,
-    Type* element_type, SourceLocation location) {
+void Sema::FillPaddingInArrayInitList(const CheckingContext& ctx,
+                                      ZoneVector<Expression*>* init_list,
+                                      size_t size, Type* element_type,
+                                      SourceLocation location) {
   for (size_t i = init_list->size(); i < size; ++i) {
     Expression* padding_value{};
 
@@ -545,7 +538,7 @@ void SemanticAnalyzer::FillPaddingInArrayInitList(
   }
 }
 
-void SemanticAnalyzer::FillPaddingInMultiDimArrayInitList(
+void Sema::FillPaddingInMultiDimArrayInitList(
     const CheckingContext& ctx, ZoneVector<Expression*>* init_list,
     ConstantArrayType* type, SourceLocation location) {
   if (!type->is_multi_dimensional()) {
@@ -565,9 +558,9 @@ void SemanticAnalyzer::FillPaddingInMultiDimArrayInitList(
   }
 }
 
-MaybeInitListResult SemanticAnalyzer::CheckInitList(
-    const CheckingContext& ctx, InitListExpression* init_list_expr, size_t i,
-    ConstantArrayType* type) {
+MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
+                                        InitListExpression* init_list_expr,
+                                        size_t i, ConstantArrayType* type) {
   auto& list = init_list_expr->list();
   ZoneVector<Expression*> new_init_list(zone());
 
@@ -660,8 +653,8 @@ MaybeInitListResult SemanticAnalyzer::CheckInitList(
                         .init_list_expr = new_init_list_expr};
 }
 
-bool SemanticAnalyzer::CheckInitListExpression(
-    const CheckingContext& ctx, InitListExpression* init_list_expr) {
+bool Sema::CheckInitListExpression(const CheckingContext& ctx,
+                                   InitListExpression* init_list_expr) {
   DCHECK(ctx.decl_array_type);
 
   auto* array_type = To<ConstantArrayType>(ctx.decl_array_type);
@@ -677,7 +670,7 @@ bool SemanticAnalyzer::CheckInitListExpression(
   return false;
 }
 
-bool SemanticAnalyzer::CheckArraySubscriptExpression(
+bool Sema::CheckArraySubscriptExpression(
     const CheckingContext& ctx, ArraySubscriptExpression* array_subscript) {
   auto* base = array_subscript->base();
   if (auto* var_ref = DynamicTo<VariableReference>(base)) {
@@ -699,8 +692,8 @@ bool SemanticAnalyzer::CheckArraySubscriptExpression(
   return false;
 }
 
-bool SemanticAnalyzer::CheckCallExpression(const CheckingContext& ctx,
-                                           CallExpression* call_expr) {
+bool Sema::CheckCallExpression(const CheckingContext& ctx,
+                               CallExpression* call_expr) {
   auto* decl = current_scope()->ResolveSymbol(call_expr->name());
   if (!decl) {
     Diag(DiagnosticID::kUndefSymbol, call_expr->location());
@@ -739,8 +732,7 @@ bool SemanticAnalyzer::CheckCallExpression(const CheckingContext& ctx,
   return true;
 }
 
-bool SemanticAnalyzer::ImplicitlyConvertArithmetic(
-    BinaryOperation* binary_operation) {
+bool Sema::ImplicitlyConvertArithmetic(BinaryOperation* binary_operation) {
   auto* lhs = binary_operation->lhs();
   auto* rhs = binary_operation->rhs();
   auto* lhs_type = DynamicTo<BuiltinType>(lhs->type());
@@ -770,14 +762,13 @@ bool SemanticAnalyzer::ImplicitlyConvertArithmetic(
   return true;
 }
 
-ImplicitCastExpression* SemanticAnalyzer::ImplicitCast(Type* type,
-                                                       Expression* expression) {
+ImplicitCastExpression* Sema::ImplicitCast(Type* type, Expression* expression) {
   return context()->zone()->New<ImplicitCastExpression>(type, expression,
                                                         expression->location());
 }
 
-bool SemanticAnalyzer::EvaluateArrayTypeAndReplace(
-    const Declaration* decl, Type* type, bool allow_incomplete_array_type) {
+bool Sema::EvaluateArrayTypeAndReplace(const Declaration* decl, Type* type,
+                                       bool allow_incomplete_array_type) {
   if (!allow_incomplete_array_type) {
     if (IsA<IncompleteArrayType>(type)) {
       Diag(DiagnosticID::kArrayTypeIncomplete, decl->location());
@@ -787,7 +778,7 @@ bool SemanticAnalyzer::EvaluateArrayTypeAndReplace(
 
   if (auto* constant_array_type = DynamicTo<ConstantArrayType>(type)) {
     if (constant_array_type->is_expression()) {
-      ExpressionEvaluator evaluator(current_scope());
+      Evaluator evaluator(current_scope());
       if (auto result = evaluator.Evaluate(constant_array_type->expression())) {
         if (result.is_int()) {
           if (result.get_as_int() < 0) {
@@ -814,7 +805,7 @@ bool SemanticAnalyzer::EvaluateArrayTypeAndReplace(
   return true;
 }
 
-void SemanticAnalyzer::Diag(DiagnosticID diagnostic, SourceLocation location) {
+void Sema::Diag(DiagnosticID diagnostic, SourceLocation location) {
   Diagnostic diag{
       .diagnostic = diagnostic,
       .location = location,

@@ -5,7 +5,7 @@
 #include "ast/ast.h"
 #include "ast/ast_context.h"
 #include "base/zone.h"
-#include "parsing/lexer.h"
+#include "parse/lexer.h"
 
 namespace sysy {
 

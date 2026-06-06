@@ -1,13 +1,13 @@
 
-#include "semantic/semantic_analyzer.h"
+#include "sema/sema.h"
 
 #include <gtest/gtest.h>
 
 #include <print>
 #include <string_view>
 
-#include "parsing/parser.h"
-#include "semantic/diagnostic.h"
+#include "parse/parser.h"
+#include "sema/diagnostic.h"
 #include "tests/utils.h"
 
 namespace sysy::test {
@@ -32,13 +32,13 @@ void TestSingleDiagnostic(std::string_view source, DiagnosticID diagnostic,
 
   AstContext context;
   auto* compilation_unit = Parse(context, final_source);
-  SemanticAnalyzer semantic_analyzer(context);
-  bool success = semantic_analyzer.Analyze(compilation_unit);
-  PrintSemanticErrors(semantic_analyzer);
+  Sema sema(context);
+  bool success = sema.Analyze(compilation_unit);
+  PrintSemanticErrors(sema);
   EXPECT_FALSE(success);
-  EXPECT_GT(semantic_analyzer.diagnostics().size(), 0u);
-  if (!semantic_analyzer.diagnostics().empty()) {
-    EXPECT_EQ(semantic_analyzer.diagnostics()[0].diagnostic, diagnostic);
+  EXPECT_GT(sema.diagnostics().size(), 0u);
+  if (!sema.diagnostics().empty()) {
+    EXPECT_EQ(sema.diagnostics()[0].diagnostic, diagnostic);
   }
 }
 
@@ -49,15 +49,15 @@ void TestSingleDiagnostic(std::string_view source) {
 
   AstContext context;
   auto* compilation_unit = Parse(context, final_source);
-  SemanticAnalyzer semantic_analyzer(context);
-  bool success = semantic_analyzer.Analyze(compilation_unit);
-  PrintSemanticErrors(semantic_analyzer);
+  Sema sema(context);
+  bool success = sema.Analyze(compilation_unit);
+  PrintSemanticErrors(sema);
   EXPECT_TRUE(success);
 }
 
 }  // namespace
 
-TEST(SemanticAnalyzer, AnalyzeCompilationUnit) {
+TEST(Sema, AnalyzeCompilationUnit) {
   const char* source = R"(
     int main() {
       return 0;
@@ -65,27 +65,27 @@ TEST(SemanticAnalyzer, AnalyzeCompilationUnit) {
   )";
   AstContext context;
   auto* compilation_unit = Parse(context, source);
-  SemanticAnalyzer semantic_analyzer(context);
-  bool success = semantic_analyzer.Analyze(compilation_unit);
-  PrintSemanticErrors(semantic_analyzer);
+  Sema sema(context);
+  bool success = sema.Analyze(compilation_unit);
+  PrintSemanticErrors(sema);
   EXPECT_TRUE(success);
 }
 
-TEST(SemanticAnalyzer, MainFunctionReturnInt) {
+TEST(Sema, MainFunctionReturnInt) {
   const char* source = R"(
     void main() {}
   )";
   TestSingleDiagnostic(source, DiagnosticID::kMainReturnType, false);
 }
 
-TEST(SemanticAnalyzer, MainFunctionWithoutReturn) {
+TEST(Sema, MainFunctionWithoutReturn) {
   const char* source = R"(
     int main() {}
   )";
   TestSingleDiagnostic(source, DiagnosticID::kFuncNonVoidReturn, false);
 }
 
-TEST(SemanticAnalyzer, ConstDeclRedef) {
+TEST(Sema, ConstDeclRedef) {
   const char* source = R"(
     const int a = 10;
     const int a = 20;
@@ -93,35 +93,35 @@ TEST(SemanticAnalyzer, ConstDeclRedef) {
   TestSingleDiagnostic(source, DiagnosticID::kDeclRedef);
 }
 
-TEST(SemanticAnalyzer, ConstDeclTypeMismatch) {
+TEST(Sema, ConstDeclTypeMismatch) {
   const char* source = R"(
     const int arr[] = {};
   )";
   TestSingleDiagnostic(source, DiagnosticID::kArrayTypeIncomplete);
 }
 
-TEST(SemanticAnalyzer, ConstDeclTypeImplicitConversion) {
+TEST(Sema, ConstDeclTypeImplicitConversion) {
   const char* source = R"(
     const int a = 1.0;
   )";
   TestSingleDiagnostic(source);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayType) {
+TEST(Sema, ConstDeclArrayType) {
   const char* source = R"(
     const int arr[1] = {1};
   )";
   TestSingleDiagnostic(source);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayTypeRequiresPadding) {
+TEST(Sema, ConstDeclArrayTypeRequiresPadding) {
   const char* source = R"(
     const int arr[5] = {1};
   )";
   TestSingleDiagnostic(source);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayTypeWithConstantRef) {
+TEST(Sema, ConstDeclArrayTypeWithConstantRef) {
   const char* source = R"(
     int value = 1;
     const int arr[1] = {value};
@@ -129,21 +129,21 @@ TEST(SemanticAnalyzer, ConstDeclArrayTypeWithConstantRef) {
   TestSingleDiagnostic(source, DiagnosticID::kNonConstantRef);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayInitValue) {
+TEST(Sema, ConstDeclArrayInitValue) {
   const char* source = R"(
     const int arr[3][2] = {1, 2, {3, 4}, {5, 6}};
   )";
   TestSingleDiagnostic(source);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayInitValue2) {
+TEST(Sema, ConstDeclArrayInitValue2) {
   const char* source = R"(
     const int arr[3][2] = {1, 2, 3, 4, 5, 6};
   )";
   TestSingleDiagnostic(source);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayInitValue3) {
+TEST(Sema, ConstDeclArrayInitValue3) {
   const char* source = R"(
     const int arr[3][2] = {
       1, 2,
@@ -154,7 +154,7 @@ TEST(SemanticAnalyzer, ConstDeclArrayInitValue3) {
   TestSingleDiagnostic(source);
 }
 
-TEST(SemanticAnalyzer, MultiArrayInitValueWithPadding) {
+TEST(Sema, MultiArrayInitValueWithPadding) {
   const char* source = R"(
     const int arr[3][2] = {
       1, 2,
@@ -164,7 +164,7 @@ TEST(SemanticAnalyzer, MultiArrayInitValueWithPadding) {
   TestSingleDiagnostic(source);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayInitValue4) {
+TEST(Sema, ConstDeclArrayInitValue4) {
   const char* source = R"(
     const int arr[3][2][2] = {
       {{1, 2},  {3, 4}},
@@ -175,7 +175,7 @@ TEST(SemanticAnalyzer, ConstDeclArrayInitValue4) {
   TestSingleDiagnostic(source);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayInitValue5) {
+TEST(Sema, ConstDeclArrayInitValue5) {
   const char* source = R"(
     const int arr[3][2][2] = {
       1, 2,  3, 4,
@@ -186,7 +186,7 @@ TEST(SemanticAnalyzer, ConstDeclArrayInitValue5) {
   TestSingleDiagnostic(source);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayInitValue6) {
+TEST(Sema, ConstDeclArrayInitValue6) {
   const char* source = R"(
     const int arr[3][2][2] = {
       1, 2,  {3, 4},
@@ -197,7 +197,7 @@ TEST(SemanticAnalyzer, ConstDeclArrayInitValue6) {
   TestSingleDiagnostic(source);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayInitValue7) {
+TEST(Sema, ConstDeclArrayInitValue7) {
   const char* source = R"(
     const int arr[3][2][2] = {
       {{1, 2},  {3, 4}},
@@ -208,35 +208,35 @@ TEST(SemanticAnalyzer, ConstDeclArrayInitValue7) {
   TestSingleDiagnostic(source);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayInitExcessSize) {
+TEST(Sema, ConstDeclArrayInitExcessSize) {
   const char* source = R"(
     const int arr[1] = { 0, 1 };
   )";
   TestSingleDiagnostic(source, DiagnosticID::kExcessInitListSize);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayInitExcessSize2) {
+TEST(Sema, ConstDeclArrayInitExcessSize2) {
   const char* source = R"(
     const int arr[1][1] = { {0}, {1} };
   )";
   TestSingleDiagnostic(source, DiagnosticID::kExcessInitListSize);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayInitExcessSize3) {
+TEST(Sema, ConstDeclArrayInitExcessSize3) {
   const char* source = R"(
     const int arr[1][2] = { {0, 1, 2} };
   )";
   TestSingleDiagnostic(source, DiagnosticID::kExcessInitListSize);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayInitTypeCheck) {
+TEST(Sema, ConstDeclArrayInitTypeCheck) {
   const char* source = R"(
     const int arr[1] = { 0.0 };
   )";
   TestSingleDiagnostic(source, DiagnosticID::kInitListTypeMismatch);
 }
 
-TEST(SemanticAnalyzer, ConstDeclArrayInitTypeCheck2) {
+TEST(Sema, ConstDeclArrayInitTypeCheck2) {
   const char* source = R"(
     const int arr[1][1] = { {0.0} };
   )";

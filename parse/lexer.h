@@ -4,7 +4,7 @@
 
 #include "base/ring_buffer.h"
 #include "common/source_location.h"
-#include "parsing/token.h"
+#include "parse/token.h"
 
 namespace sysy {
 

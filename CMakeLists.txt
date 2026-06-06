@@ -16,12 +16,12 @@ set(SOURCE_FILES
   ast/ast_context.cc
   ast/type.cc
   base/zone.cc
-  parsing/lexer.cc
-  parsing/parser.cc
-  parsing/token.cc
-  semantic/expression_evaluator.cc
-  semantic/scope.cc
-  semantic/semantic_analyzer.cc)
+  parse/lexer.cc
+  parse/parser.cc
+  parse/token.cc
+  sema/evaluator.cc
+  sema/scope.cc
+  sema/sema.cc)
 
 add_library(sysy ${SOURCE_FILES})
 target_link_libraries(sysy PUBLIC magic_enum)
@@ -38,11 +38,11 @@ add_executable(
   sysy_test
   tests/base/zone_test.cc
   tests/base/type_casts_test.cc
-  tests/parsing/lexer_test.cc
-  tests/parsing/parser_test.cc
-  tests/parsing/token_test.cc
-  tests/semantic/expression_evaluator_test.cc
-  tests/semantic/semantic_analyzer_test.cc)
+  tests/parse/lexer_test.cc
+  tests/parse/parser_test.cc
+  tests/parse/token_test.cc
+  tests/sema/evaluator_test.cc
+  tests/sema/sema_test.cc)
 target_link_libraries(
   sysy_test
   sysy
@@ -50,8 +50,8 @@ target_link_libraries(
 
 # fixtures test
 add_executable(
-  sysy_fixtures_test 
-  tests/parsing/fixtures_test.cc)
+  sysy_fixtures_test
+  tests/parse/fixtures_test.cc)
 target_compile_definitions(sysy_fixtures_test
   PUBLIC
   PROJECT_ROOT_PATH="${CMAKE_SOURCE_DIR}")

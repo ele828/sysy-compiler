@@ -1,4 +1,4 @@
-#include "semantic/scope.h"
+#include "sema/scope.h"
 
 namespace sysy {
 
