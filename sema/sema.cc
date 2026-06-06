@@ -512,11 +512,24 @@ bool Sema::CheckVariableReference(const CheckingContext& ctx,
   return true;
 }
 
-void Sema::FillPaddingInArrayInitList(const CheckingContext& ctx,
-                                      ZoneVector<Expression*>* init_list,
-                                      size_t size, Type* element_type,
-                                      SourceLocation location) {
-  for (size_t i = init_list->size(); i < size; ++i) {
+void Sema::AlignArrayInitList(const CheckingContext& ctx,
+                              ZoneVector<Expression*>* init_list,
+                              ConstantArrayType* type,
+                              SourceLocation location) {
+  if (type->is_multi_dimensional()) {
+    for (size_t i = init_list->size(); i < type->size(); ++i) {
+      ZoneVector<Expression*> new_sub_init_list(zone());
+      AlignArrayInitList(ctx, &new_sub_init_list,
+                         To<ConstantArrayType>(type->element_type()), location);
+      auto* new_sub_init_list_expr = zone()->New<InitListExpression>(
+          std::move(new_sub_init_list), location);
+      init_list->push_back(new_sub_init_list_expr);
+    }
+    return;
+  }
+
+  Type* element_type = type->element_type();
+  for (size_t i = init_list->size(); i < type->size(); ++i) {
     Expression* padding_value{};
 
     if (element_type == context_.int_type()) {
@@ -526,33 +539,13 @@ void Sema::FillPaddingInArrayInitList(const CheckingContext& ctx,
     }
 
     if (!CheckExpression(ctx, padding_value)) {
-      // Check expression only set type for the newly created padding_value, so
-      // it won't never fail.
+      // Check expression only set type for the newly created padding_value,
+      // so it should never fail.
       DCHECK(false);
       return;
     }
 
     init_list->push_back(padding_value);
-  }
-}
-
-void Sema::FillPaddingInMultiDimArrayInitList(
-    const CheckingContext& ctx, ZoneVector<Expression*>* init_list,
-    ConstantArrayType* type, SourceLocation location) {
-  if (!type->is_multi_dimensional()) {
-    FillPaddingInArrayInitList(ctx, init_list, type->size(),
-                               type->element_type(), location);
-    return;
-  }
-
-  for (size_t i = init_list->size(); i < type->size(); ++i) {
-    ZoneVector<Expression*> new_sub_init_list(zone());
-    FillPaddingInMultiDimArrayInitList(
-        ctx, &new_sub_init_list, To<ConstantArrayType>(type->element_type()),
-        location);
-    auto* new_sub_init_list_expr =
-        zone()->New<InitListExpression>(std::move(new_sub_init_list), location);
-    init_list->push_back(new_sub_init_list_expr);
   }
 }
 
@@ -642,14 +635,7 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
   }
 
   // Add padding to array
-  if (!type->is_multi_dimensional()) {
-    FillPaddingInArrayInitList(ctx, &new_init_list, type->size(),
-                               type->element_type(),
-                               init_list_expr->location());
-  } else {
-    FillPaddingInMultiDimArrayInitList(ctx, &new_init_list, type,
-                                       init_list_expr->location());
-  }
+  AlignArrayInitList(ctx, &new_init_list, type, init_list_expr->location());
 
   auto* new_init_list_expr = zone()->New<InitListExpression>(
       std::move(new_init_list), init_list_expr->location());
