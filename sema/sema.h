@@ -119,15 +119,9 @@ class Sema : public AstRecursiveVisitor<Sema> {
                                     InitListExpression* init_list_expr,
                                     size_t i, ConstantArrayType* type);
 
-  void FillPaddingInArrayInitList(const CheckingContext& ctx,
-                                  ZoneVector<Expression*>* init_list,
-                                  size_t size, Type* element_type,
-                                  SourceLocation location);
-
-  void FillPaddingInMultiDimArrayInitList(const CheckingContext& ctx,
-                                          ZoneVector<Expression*>* init_list,
-                                          ConstantArrayType* type,
-                                          SourceLocation location);
+  void AlignArrayInitList(const CheckingContext& ctx,
+                          ZoneVector<Expression*>* init_list,
+                          ConstantArrayType* type, SourceLocation location);
 
   bool ImplicitlyConvertArithmetic(BinaryOperation* binary_operation);
 
