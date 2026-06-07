@@ -50,8 +50,9 @@ class AstRecursiveVisitor {
         return derived()->VisitUnaryOperation(To<UnaryOperation>(node));
       case AstNode::Kind::kBinaryOperation:
         return derived()->VisitBinaryOperation(To<BinaryOperation>(node));
-      case AstNode::Kind::kVariableReference:
-        return derived()->VisitVariableReference(To<VariableReference>(node));
+      case AstNode::Kind::kDeclarationReference:
+        return derived()->VisitDeclarationReference(
+            To<DeclarationReference>(node));
       case AstNode::Kind::kInitList:
         return derived()->VisitInitListExpression(To<InitListExpression>(node));
       case AstNode::Kind::kArraySubscript:
@@ -146,7 +147,7 @@ class AstRecursiveVisitor {
     Visit(bin_op->rhs());
   }
 
-  void VisitVariableReference(VariableReference* var_ref) {}
+  void VisitDeclarationReference(DeclarationReference* decl_ref) {}
 
   void VisitInitListExpression(InitListExpression* init_expr) {
     for (auto& expr : init_expr->list()) {

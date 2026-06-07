@@ -125,11 +125,11 @@ class AstDumper : public AstRecursiveVisitor<AstDumper>,
     Base::VisitBinaryOperation(bin_op);
   }
 
-  void VisitVariableReference(VariableReference* var_ref) {
+  void VisitDeclarationReference(DeclarationReference* decl_ref) {
     PrefixWriterScope scope(*this);
-    std::string str = std::format("VariableReference {}", var_ref->name());
+    std::string str = std::format("VariableReference {}", decl_ref->name());
     Write(str);
-    Base::VisitVariableReference(var_ref);
+    Base::VisitDeclarationReference(decl_ref);
   }
 
   void VisitInitListExpression(InitListExpression* init_expr) {

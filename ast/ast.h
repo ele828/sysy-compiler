@@ -67,7 +67,7 @@ class AstNode : public ZoneObject {
     kFloatingLiteral,
     kUnaryOperation,
     kBinaryOperation,
-    kVariableReference,
+    kDeclarationReference,
     kInitList,
     kArraySubscript,
     kCallExpression,
@@ -427,13 +427,13 @@ class BinaryOperation : public Expression {
   Expression* rhs_;
 };
 
-class VariableReference : public Expression {
+class DeclarationReference : public Expression {
  public:
-  VariableReference(std::string_view name, SourceLocation location)
-      : Expression(Kind::kVariableReference, location), name_(name) {}
+  DeclarationReference(std::string_view name, SourceLocation location)
+      : Expression(Kind::kDeclarationReference, location), name_(name) {}
 
   static bool classof(const AstNode& n) {
-    return n.kind() == Kind::kVariableReference;
+    return n.kind() == Kind::kDeclarationReference;
   }
 
   void set_declaration(Declaration* declaration) { declaration_ = declaration; }

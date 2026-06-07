@@ -67,7 +67,7 @@ class Evaluator final {
 
   Value EvaluateBinaryOperation(BinaryOperation* binary_operation);
 
-  Value EvaluateVariableReference(VariableReference* var_reference);
+  Value EvaluateDeclarationReference(DeclarationReference* decl_reference);
 
   Value EvaluateImplicitCast(ImplicitCastExpression* implicit_cast);
 

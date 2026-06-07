@@ -102,8 +102,8 @@ class Sema : public AstRecursiveVisitor<Sema> {
   bool CheckBinaryAssign(const CheckingContext& ctx,
                          BinaryOperation* binary_operation);
 
-  bool CheckVariableReference(const CheckingContext& ctx,
-                              VariableReference* var_ref);
+  bool CheckDeclarationReference(const CheckingContext& ctx,
+                                 DeclarationReference* decl_ref);
 
   bool CheckInitListExpression(const CheckingContext& ctx,
                                InitListExpression* init_list_expr);

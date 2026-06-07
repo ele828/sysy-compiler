@@ -193,7 +193,7 @@ TEST(Parser, ParseUnaryExpressionIdentifier) {
   Parser parser(context, source);
   auto* expression = parser.ParseUnaryExpression();
   CheckParserStates(parser);
-  EXPECT_TRUE(IsA<VariableReference>(expression));
+  EXPECT_TRUE(IsA<DeclarationReference>(expression));
 }
 
 TEST(Parser, ParseUnaryExpressionArraySubscript) {
@@ -331,20 +331,20 @@ TEST(Parser, ParseExpressionBinaryParenthesis) {
 
 TEST(Parser, ParseExpressionAssignment) {
   TestBinaryExpression("a = 1", BinaryOperator::kAssign,
-                       AstNode::Kind::kVariableReference,
+                       AstNode::Kind::kDeclarationReference,
                        AstNode::Kind::kIntegerLiteral);
 }
 
 TEST(Parser, ParseExpressionLogicalAnd) {
   TestBinaryExpression("a && b", BinaryOperator::kLAnd,
-                       AstNode::Kind::kVariableReference,
-                       AstNode::Kind::kVariableReference);
+                       AstNode::Kind::kDeclarationReference,
+                       AstNode::Kind::kDeclarationReference);
 }
 
 TEST(Parser, ParseExpressionLogicalOr) {
   TestBinaryExpression("a || b", BinaryOperator::kLOr,
-                       AstNode::Kind::kVariableReference,
-                       AstNode::Kind::kVariableReference);
+                       AstNode::Kind::kDeclarationReference,
+                       AstNode::Kind::kDeclarationReference);
 }
 
 TEST(Parser, ParseExpressionLogicalCombined) {
@@ -368,38 +368,38 @@ TEST(Parser, ParseExpressionLogicalCombined) {
 
 TEST(Parser, ParseEqualityExpression) {
   TestBinaryExpression("a == b", BinaryOperator::kEq,
-                       AstNode::Kind::kVariableReference,
-                       AstNode::Kind::kVariableReference);
+                       AstNode::Kind::kDeclarationReference,
+                       AstNode::Kind::kDeclarationReference);
 }
 
 TEST(Parser, ParseEqualityExpressionNotEq) {
   TestBinaryExpression("a != b", BinaryOperator::kNeq,
-                       AstNode::Kind::kVariableReference,
-                       AstNode::Kind::kVariableReference);
+                       AstNode::Kind::kDeclarationReference,
+                       AstNode::Kind::kDeclarationReference);
 }
 
 TEST(Parser, ParseRelationalExpressionLt) {
   TestBinaryExpression("a > b", BinaryOperator::kGt,
-                       AstNode::Kind::kVariableReference,
-                       AstNode::Kind::kVariableReference);
+                       AstNode::Kind::kDeclarationReference,
+                       AstNode::Kind::kDeclarationReference);
 }
 
 TEST(Parser, ParseRelationalExpressionGt) {
   TestBinaryExpression("a < b", BinaryOperator::kLt,
-                       AstNode::Kind::kVariableReference,
-                       AstNode::Kind::kVariableReference);
+                       AstNode::Kind::kDeclarationReference,
+                       AstNode::Kind::kDeclarationReference);
 }
 
 TEST(Parser, ParseRelationalExpressionLe) {
   TestBinaryExpression("a <= b", BinaryOperator::kLe,
-                       AstNode::Kind::kVariableReference,
-                       AstNode::Kind::kVariableReference);
+                       AstNode::Kind::kDeclarationReference,
+                       AstNode::Kind::kDeclarationReference);
 }
 
 TEST(Parser, ParseRelationalExpressionGe) {
   TestBinaryExpression("a >= b", BinaryOperator::kGe,
-                       AstNode::Kind::kVariableReference,
-                       AstNode::Kind::kVariableReference);
+                       AstNode::Kind::kDeclarationReference,
+                       AstNode::Kind::kDeclarationReference);
 }
 
 TEST(Parser, ParseIfStatement) {
