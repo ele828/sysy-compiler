@@ -142,6 +142,37 @@ TEST(Sema, ConstDeclTypeImplicitConversion2) {
   TestSema(source);
 }
 
+TEST(Sema, ConstDeclTypeConstRef) {
+  const char* source = R"(
+    const float a = 1;
+    const float b = a;
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, ConstDeclTypeNonConstRef) {
+  const char* source = R"(
+    float a = 1;
+    const float b = a;
+  )";
+  TestSema(source, DiagnosticID::kNonConstantRef);
+}
+
+TEST(Sema, ConstDeclTypeConstRefWithTypeConersion) {
+  const char* source = R"(
+    const int a = 1;
+    const float b = a;
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, ConstDeclTypeSelfReference) {
+  const char* source = R"(
+    const int a = a;
+  )";
+  TestSema(source, DiagnosticID::kUndefSymbol);
+}
+
 TEST(Sema, ConstDeclArrayType) {
   const char* source = R"(
     const int arr[1] = {1};
