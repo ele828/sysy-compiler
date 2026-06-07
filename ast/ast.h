@@ -154,6 +154,8 @@ class VariableDeclaration : public Declaration {
 
   Expression* init_value() const { return init_value_; }
 
+  void set_init_value(Expression* init_value) { init_value_ = init_value; }
+
  private:
   Expression* init_value_;
 };

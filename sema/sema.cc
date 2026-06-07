@@ -70,12 +70,6 @@ void Sema::VisitCompilationUnit(CompilationUnit* comp_unit) {
 }
 
 void Sema::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
-  auto success = current_scope()->AddSymbol(const_decl->name(), const_decl);
-  if (!success) {
-    Diag(DiagnosticID::kDeclRedef, const_decl->location());
-    return;
-  }
-
   CheckingContext ctx{
       .constant_reference_only = true,
   };
@@ -117,19 +111,22 @@ void Sema::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
   }
 
   if (!const_decl->init_value()->type()->Equals(*const_decl->type())) {
+    const_decl->type()->Dump();
+    const_decl->init_value()->type()->Dump();
     Diag(DiagnosticID::kInitValueTypeMismatch,
          const_decl->init_value()->location());
+    return;
+  }
+
+  // Add symbols at the end to prevent self-referencing in init value.
+  auto success = current_scope()->AddSymbol(const_decl->name(), const_decl);
+  if (!success) {
+    Diag(DiagnosticID::kDeclRedef, const_decl->location());
     return;
   }
 }
 
 void Sema::VisitVariableDeclaration(VariableDeclaration* var_decl) {
-  auto success = current_scope()->AddSymbol(var_decl->name(), var_decl);
-  if (!success) {
-    Diag(DiagnosticID::kDeclRedef, var_decl->location());
-    return;
-  }
-
   Type* type = var_decl->type();
   if (IsA<ArrayType>(type)) {
     if (!EvaluateArrayType(var_decl, type, false)) {
@@ -146,9 +143,32 @@ void Sema::VisitVariableDeclaration(VariableDeclaration* var_decl) {
     return;
   }
 
+  auto* var_decl_btype = DynamicTo<BuiltinType>(var_decl->type());
+  auto* init_value_btype =
+      DynamicTo<BuiltinType>(var_decl->init_value()->type());
+  if (var_decl_btype && init_value_btype) {
+    if (init_value_btype->is_int() && var_decl_btype->is_float()) {
+      auto* casted_init_value =
+          ImplicitCast(context()->float_type(), var_decl->init_value());
+      var_decl->set_init_value(casted_init_value);
+    }
+    if (init_value_btype->is_float() && var_decl_btype->is_int()) {
+      auto* casted_init_value =
+          ImplicitCast(context()->int_type(), var_decl->init_value());
+      var_decl->set_init_value(casted_init_value);
+    }
+  }
+
   if (!var_decl->init_value()->type()->Equals(*var_decl->type())) {
     Diag(DiagnosticID::kInitValueTypeMismatch,
          var_decl->init_value()->location());
+    return;
+  }
+
+  // Add symbols at the end to prevent self-referencing in init value.
+  auto success = current_scope()->AddSymbol(var_decl->name(), var_decl);
+  if (!success) {
+    Diag(DiagnosticID::kDeclRedef, var_decl->location());
     return;
   }
 }
