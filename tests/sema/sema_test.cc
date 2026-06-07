@@ -135,6 +135,13 @@ TEST(Sema, ConstDeclTypeImplicitConversion) {
   TestSema(source);
 }
 
+TEST(Sema, ConstDeclTypeImplicitConversion2) {
+  const char* source = R"(
+    const float a = 1;
+  )";
+  TestSema(source);
+}
+
 TEST(Sema, ConstDeclArrayType) {
   const char* source = R"(
     const int arr[1] = {1};

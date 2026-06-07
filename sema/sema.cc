@@ -104,17 +104,15 @@ void Sema::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
   auto* init_value_btype =
       DynamicTo<BuiltinType>(const_decl->init_value()->type());
   if (const_decl_btype && init_value_btype) {
-    if (!init_value_btype->Equals(*const_decl_btype)) {
-      if (init_value_btype->is_int() && const_decl_btype->is_float()) {
-        auto* casted_init_value =
-            ImplicitCast(context()->float_type(), const_decl->init_value());
-        const_decl->set_init_value(casted_init_value);
-      }
-      if (init_value_btype->is_float() && const_decl_btype->is_int()) {
-        auto* casted_init_value =
-            ImplicitCast(context()->int_type(), const_decl->init_value());
-        const_decl->set_init_value(casted_init_value);
-      }
+    if (init_value_btype->is_int() && const_decl_btype->is_float()) {
+      auto* casted_init_value =
+          ImplicitCast(context()->float_type(), const_decl->init_value());
+      const_decl->set_init_value(casted_init_value);
+    }
+    if (init_value_btype->is_float() && const_decl_btype->is_int()) {
+      auto* casted_init_value =
+          ImplicitCast(context()->int_type(), const_decl->init_value());
+      const_decl->set_init_value(casted_init_value);
     }
   }
 
