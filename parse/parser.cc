@@ -507,8 +507,8 @@ Expression* Parser::ParseUnaryExpression() {
         }
         default: {
           Token identifier = Consume();
-          return zone()->New<VariableReference>(identifier.value(),
-                                                current_.location());
+          return zone()->New<DeclarationReference>(identifier.value(),
+                                                   current_.location());
         }
       }
     }
@@ -520,8 +520,8 @@ Expression* Parser::ParseUnaryExpression() {
 
 ArraySubscriptExpression* Parser::ParseArraySubscriptExpression() {
   Token identifier = Consume();
-  auto* base =
-      zone()->New<VariableReference>(identifier.value(), current_.location());
+  auto* base = zone()->New<DeclarationReference>(identifier.value(),
+                                                 current_.location());
   return ParseArraySubscriptDimension(base);
 }
 

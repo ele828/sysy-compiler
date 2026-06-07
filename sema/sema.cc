@@ -333,9 +333,9 @@ bool Sema::CheckExpression(const CheckingContext& ctx, Expression* expr) {
     }
     case AstNode::Kind::kBinaryOperation:
       return CheckBinaryOperation(ctx, To<BinaryOperation>(expr));
-    case AstNode::Kind::kVariableReference: {
-      auto* var_ref = To<VariableReference>(expr);
-      return CheckVariableReference(ctx, var_ref);
+    case AstNode::Kind::kDeclarationReference: {
+      auto* decl_ref = To<DeclarationReference>(expr);
+      return CheckDeclarationReference(ctx, decl_ref);
     }
     case AstNode::Kind::kInitList: {
       auto* init_list_expr = To<InitListExpression>(expr);
@@ -513,20 +513,20 @@ bool Sema::CheckBinaryAssign(const CheckingContext& ctx,
   return true;
 }
 
-bool Sema::CheckVariableReference(const CheckingContext& ctx,
-                                  VariableReference* var_ref) {
-  auto* decl = current_scope()->ResolveSymbol(var_ref->name());
+bool Sema::CheckDeclarationReference(const CheckingContext& ctx,
+                                     DeclarationReference* decl_ref) {
+  auto* decl = current_scope()->ResolveSymbol(decl_ref->name());
   if (!decl) {
-    Diag(DiagnosticID::kUndefSymbol, var_ref->location());
+    Diag(DiagnosticID::kUndefSymbol, decl_ref->location());
     return false;
   }
 
   if (ctx.constant_reference_only && !IsA<ConstantDeclaration>(decl)) {
-    Diag(DiagnosticID::kNonConstantRef, var_ref->location());
+    Diag(DiagnosticID::kNonConstantRef, decl_ref->location());
     return false;
   }
 
-  var_ref->set_type(decl->type());
+  decl_ref->set_type(decl->type());
   return true;
 }
 
@@ -682,8 +682,8 @@ bool Sema::CheckInitListExpression(const CheckingContext& ctx,
 bool Sema::CheckArraySubscriptExpression(
     const CheckingContext& ctx, ArraySubscriptExpression* array_subscript) {
   auto* base = array_subscript->base();
-  if (auto* var_ref = DynamicTo<VariableReference>(base)) {
-    bool success = CheckExpression(ctx, var_ref);
+  if (auto* decl_ref = DynamicTo<DeclarationReference>(base)) {
+    bool success = CheckExpression(ctx, decl_ref);
     if (!success) {
       return false;
     }

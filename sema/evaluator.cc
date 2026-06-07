@@ -79,8 +79,8 @@ Value Evaluator::Evaluate(Expression* expression) {
       return EvaluateUnaryOperation(To<UnaryOperation>(expression));
     case AstNode::Kind::kBinaryOperation:
       return EvaluateBinaryOperation(To<BinaryOperation>(expression));
-    case AstNode::Kind::kVariableReference:
-      return EvaluateVariableReference(To<VariableReference>(expression));
+    case AstNode::Kind::kDeclarationReference:
+      return EvaluateDeclarationReference(To<DeclarationReference>(expression));
     case AstNode::Kind::kImplicitCast:
       return EvaluateImplicitCast(To<ImplicitCastExpression>(expression));
     default:
@@ -147,8 +147,9 @@ Value Evaluator::EvaluateBinaryOperation(BinaryOperation* binary_operation) {
   }
 }
 
-Value Evaluator::EvaluateVariableReference(VariableReference* var_reference) {
-  Declaration* decl = current_scope_->ResolveSymbol(var_reference->name());
+Value Evaluator::EvaluateDeclarationReference(
+    DeclarationReference* decl_reference) {
+  Declaration* decl = current_scope_->ResolveSymbol(decl_reference->name());
   if (auto* const_decl = DynamicTo<ConstantDeclaration>(decl)) {
     if (auto* btype = DynamicTo<BuiltinType>(const_decl->type())) {
       if (btype->is_int() || btype->is_float()) {
