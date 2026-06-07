@@ -9,21 +9,25 @@
 #include "common/source_location.h"
 #include "sema/diagnostic.h"
 #include "sema/evaluator.h"
+#include "sema/scope.h"
 
 namespace sysy {
 
+template <typename ScopeType>
 class Sema::NewScope {
  public:
-  NewScope(Scope::Type type, Sema& analyzer)
+  explicit NewScope(Sema& analyzer)
       : analyzer_(analyzer), outer_scope_(analyzer.current_scope()) {
     analyzer_.current_scope_ =
-        analyzer_.context()->zone()->New<Scope>(type, outer_scope_);
+        analyzer_.context()->zone()->template New<ScopeType>(outer_scope_);
   }
 
   ~NewScope() {
     // Restore to the previous scope
     analyzer_.current_scope_ = outer_scope_;
   }
+
+  ScopeType* current() const { return To<ScopeType>(analyzer_.current_scope_); }
 
   Scope* outer_scope() const { return outer_scope_; }
 
@@ -40,7 +44,7 @@ bool Sema::Analyze(AstNode* node) {
 }
 
 void Sema::VisitCompilationUnit(CompilationUnit* comp_unit) {
-  NewScope scope(Scope::Type::kGlobal, *this);
+  NewScope<GlobalScope> scope(*this);
 
   bool has_main_function = false;
   for (auto& decl : comp_unit->body()) {
@@ -191,9 +195,9 @@ void Sema::VisitParameterDeclaration(ParameterDeclaration* param_decl) {
 }
 
 void Sema::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
-  NewScope scope(Scope::Type::kFunction, *this);
+  NewScope<FunctionScope> scope(*this);
 
-  if (scope.outer_scope()->is_global_scope()) {
+  if (IsA<GlobalScope>(scope.outer_scope())) {
     auto success = current_scope()->AddSymbol(fun_decl->name(), fun_decl);
     if (!success) {
       Diag(DiagnosticID::kDeclRedef, fun_decl->location());
@@ -204,18 +208,18 @@ void Sema::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
     return;
   }
 
-  current_scope()->set_function_declaration(fun_decl);
+  scope.current()->set_function_declaration(fun_decl);
   Base::VisitFunctionDeclaration(fun_decl);
 
   if (fun_decl->type() != context()->void_type() &&
-      !current_scope()->has_return_statement()) {
+      !scope.current()->has_return_statement()) {
     Diag(DiagnosticID::kFuncNonVoidReturn, fun_decl->location());
     return;
   }
 }
 
 void Sema::VisitCompoundStatement(CompoundStatement* compound_stmt) {
-  NewScope scope(Scope::Type::kBlock, *this);
+  NewScope<BlockScope> scope(*this);
 
   Base::VisitCompoundStatement(compound_stmt);
 }
@@ -256,7 +260,7 @@ void Sema::VisitIfStatement(IfStatement* if_stmt) {
 }
 
 void Sema::VisitWhileStatement(WhileStatement* while_stmt) {
-  NewScope scope(Scope::Type::kWhileBlock, *this);
+  NewScope<WhileBlockScope> scope(*this);
 
   CheckingContext ctx;
   if (!CheckExpression(ctx, while_stmt->condition())) {
@@ -601,7 +605,7 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
     }
   }
 
-  while (i < list.size() && new_init_list.size() < type->size()) {
+  for (; i < list.size() && new_init_list.size() < type->size(); ++i) {
     if (type->is_multi_dimensional()) {
       if (!IsA<InitListExpression>(list[i])) {
         break;
@@ -609,22 +613,19 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
 
       auto* child_init_list_expr = To<InitListExpression>(list[i]);
       auto* element_type = To<ConstantArrayType>(type->element_type());
-      if (auto result =
-              CheckInitList(ctx, child_init_list_expr, 0, element_type)) {
-        auto* init_list_expr = result->init_list_expr;
-        init_list_expr->set_type(element_type);
-        new_init_list.push_back(init_list_expr);
-        if (init_list_expr->list().size() <
-            child_init_list_expr->list().size()) {
-          Diag(DiagnosticID::kExcessInitListSize, init_list_expr->location());
-          return std::nullopt;
-        }
-
-        ++i;
-        continue;
-      } else {
+      auto result = CheckInitList(ctx, child_init_list_expr, 0, element_type);
+      if (!result) {
         return std::nullopt;
       }
+      auto* init_list_expr = result->init_list_expr;
+      init_list_expr->set_type(element_type);
+      new_init_list.push_back(init_list_expr);
+
+      if (init_list_expr->list().size() < child_init_list_expr->list().size()) {
+        Diag(DiagnosticID::kExcessInitListSize, init_list_expr->location());
+        return std::nullopt;
+      }
+      continue;
     }
 
     if (!CheckExpression(ctx, list[i])) {
@@ -642,7 +643,6 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
       return std::nullopt;
     }
     new_init_list.push_back(list[i]);
-    ++i;
   }
 
   if (type->is_multi_dimensional()) {

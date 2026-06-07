@@ -67,6 +67,7 @@ class Sema : public AstRecursiveVisitor<Sema> {
   const std::vector<Diagnostic>& diagnostics() const { return diagnostics_; }
 
  private:
+  template <typename ScopeType>
   class NewScope;
 
   AstContext* context() const { return &context_; }

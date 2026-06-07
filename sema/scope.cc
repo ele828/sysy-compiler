@@ -26,8 +26,8 @@ Declaration* Scope::ResolveSymbol(std::string_view symbol) const {
   return nullptr;
 }
 
-Scope* Scope::GetEnclosingFunctionScope() {
-  if (is_function_scope()) return this;
+FunctionScope* Scope::GetEnclosingFunctionScope() {
+  if (IsA<FunctionScope>(this)) return To<FunctionScope>(this);
   if (outer_scope_) {
     return outer_scope_->GetEnclosingFunctionScope();
   }
@@ -35,7 +35,7 @@ Scope* Scope::GetEnclosingFunctionScope() {
 }
 
 bool Scope::IsInFunctionScope() const {
-  if (is_function_scope()) return true;
+  if (IsA<FunctionScope>(this)) return true;
   if (outer_scope_) {
     return outer_scope_->IsInFunctionScope();
   }
@@ -43,7 +43,7 @@ bool Scope::IsInFunctionScope() const {
 }
 
 bool Scope::IsInWhileScope() const {
-  if (is_while_scope()) return true;
+  if (IsA<WhileBlockScope>(this)) return true;
   if (outer_scope_) {
     return outer_scope_->IsInWhileScope();
   }
