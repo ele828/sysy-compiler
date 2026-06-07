@@ -131,18 +131,24 @@ void Sema::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
 }
 
 void Sema::VisitVariableDeclaration(VariableDeclaration* var_decl) {
+  CheckingContext ctx{};
+
   Type* type = var_decl->type();
-  if (IsA<ArrayType>(type)) {
-    if (!EvaluateArrayType(var_decl, type, false)) {
+  if (auto* array_type = DynamicTo<ArrayType>(type)) {
+    if (!EvaluateArrayType(var_decl, array_type,
+                           /*allow_incomplete_array_type=*/false)) {
       return;
     }
+
+    // Pass down array type in const declaration, so that we can check and
+    // organize array list in init value expression.
+    ctx.decl_array_type = array_type;
   }
 
   if (!var_decl->init_value()) {
     return;
   }
 
-  CheckingContext ctx;
   if (!CheckExpression(ctx, var_decl->init_value())) {
     return;
   }
@@ -682,6 +688,16 @@ bool Sema::CheckInitListExpression(const CheckingContext& ctx,
 bool Sema::CheckArraySubscriptExpression(
     const CheckingContext& ctx, ArraySubscriptExpression* array_subscript) {
   auto* base = array_subscript->base();
+  if (auto* base_array_subscrpt = DynamicTo<ArraySubscriptExpression>(base)) {
+    bool success = CheckExpression(ctx, base_array_subscrpt);
+    if (!success) {
+      return false;
+    }
+    auto* array_type = To<ConstantArrayType>(base->type());
+    array_subscript->set_type(array_type->element_type());
+    return true;
+  }
+
   if (auto* decl_ref = DynamicTo<DeclarationReference>(base)) {
     bool success = CheckExpression(ctx, decl_ref);
     if (!success) {
@@ -694,7 +710,9 @@ bool Sema::CheckArraySubscriptExpression(
       return false;
     }
 
-    return success;
+    auto* array_type = To<ConstantArrayType>(decl_ref->type());
+    array_subscript->set_type(array_type->element_type());
+    return true;
   }
 
   Diag(DiagnosticID::kInvalidArraySubscript, array_subscript->location());

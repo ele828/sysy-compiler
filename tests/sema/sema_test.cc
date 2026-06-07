@@ -483,4 +483,57 @@ TEST(Sema, ConstDeclArrayInitIncompleteType) {
   TestSema(source, DiagnosticID::kArrayTypeIncomplete);
 }
 
+TEST(Sema, VarDeclWithoutInitValue) {
+  const char* source = R"(
+    int a;
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, VarDeclWithInitValue) {
+  const char* source = R"(
+    int a = 1;
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, VarDeclWithReference) {
+  const char* source = R"(
+    int a = 1;
+    int b = a;
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, VarDeclArrayWithReference) {
+  const char* source = R"(
+    int a[2] = {0, 1};
+    int b[2] = {a[0], a[1]};
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, VarDeclArrayWithReference2) {
+  const char* source = R"(
+    int a[2][1] = {{0}, {1}};
+    int b[2] = {a[0][0], a[1][0]};
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, VarDeclArrayInitAlignment) {
+  const char* source = R"(
+    int arr[2] = {};
+  )";
+  TestSema(source, [](CompilationUnit* unit) {
+    auto& init_list =
+        To<InitListExpression>(
+            To<VariableDeclaration>(unit->body()[1])->init_value())
+            ->list();
+    EXPECT_EQ(init_list.size(), 2u);
+    EXPECT_EQ(To<IntegerLiteral>(init_list[0])->value(), 0);
+    EXPECT_EQ(To<IntegerLiteral>(init_list[1])->value(), 0);
+  });
+}
+
 }  // namespace sysy::test
