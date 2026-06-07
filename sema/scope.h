@@ -8,9 +8,11 @@
 
 namespace sysy {
 
+class FunctionScope;
+
 class Scope : public ZoneObject {
  public:
-  enum class Type {
+  enum Type {
     kGlobal,
     kFunction,
     kBlock,
@@ -22,37 +24,14 @@ class Scope : public ZoneObject {
 
   // Returns false when symbol exists in current scope
   bool AddSymbol(std::string_view symbol, Declaration* declaration);
-
   Declaration* ResolveSymbol(std::string_view symbol) const;
 
-  void set_function_declaration(FunctionDeclaration* function_declaration) {
-    function_declaration_ = function_declaration;
-  }
-
-  FunctionDeclaration* function_declaration() const {
-    DCHECK(is_function_scope());
-    return function_declaration_;
-  }
-
-  Scope* GetEnclosingFunctionScope();
+  FunctionScope* GetEnclosingFunctionScope();
 
   bool IsInFunctionScope() const;
   bool IsInWhileScope() const;
 
-  bool is_global_scope() const { return type_ == Type::kGlobal; }
-  bool is_function_scope() const { return type_ == Type::kFunction; }
-  bool is_block_scope() const { return type_ == Type::kBlock; }
-  bool is_while_scope() const { return type_ == Type::kWhileBlock; }
-
-  void set_has_return_statement() {
-    DCHECK(is_function_scope());
-    has_return_statement_ = true;
-  }
-
-  bool has_return_statement() const {
-    DCHECK(is_function_scope());
-    return has_return_statement_;
-  }
+  Type type() const { return type_; }
 
  private:
   using SymbolTable = std::unordered_map<std::string_view, Declaration*>;
@@ -60,8 +39,53 @@ class Scope : public ZoneObject {
   Type type_;
   Scope* outer_scope_;
   SymbolTable symbols_;
+};
+
+class GlobalScope : public Scope {
+ public:
+  explicit GlobalScope(Scope* outer_scope)
+      : Scope(Type::kGlobal, outer_scope) {}
+
+  static bool classof(const Scope& s) { return s.type() == Type::kGlobal; }
+};
+
+class FunctionScope : public Scope {
+ public:
+  explicit FunctionScope(Scope* outer_scope)
+      : Scope(Type::kFunction, outer_scope) {}
+
+  bool has_return_statement() const { return has_return_statement_; }
+
+  void set_has_return_statement() { has_return_statement_ = true; }
+
+  FunctionDeclaration* function_declaration() const {
+    return function_declaration_;
+  }
+
+  void set_function_declaration(FunctionDeclaration* function_declaration) {
+    function_declaration_ = function_declaration;
+  }
+
+  static bool classof(const Scope& s) { return s.type() == Type::kFunction; }
+
+ private:
   FunctionDeclaration* function_declaration_{};
   bool has_return_statement_{};
+};
+
+class BlockScope : public Scope {
+ public:
+  explicit BlockScope(Scope* outer_scope) : Scope(Type::kBlock, outer_scope) {}
+
+  static bool classof(const Scope& s) { return s.type() == Type::kBlock; }
+};
+
+class WhileBlockScope : public Scope {
+ public:
+  explicit WhileBlockScope(Scope* outer_scope)
+      : Scope(Type::kWhileBlock, outer_scope) {}
+
+  static bool classof(const Scope& s) { return s.type() == Type::kWhileBlock; }
 };
 
 }  // namespace sysy
