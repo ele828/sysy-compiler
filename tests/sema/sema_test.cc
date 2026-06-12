@@ -497,9 +497,9 @@ TEST(Sema, VarDeclWithInitValue) {
   TestSema(source);
 }
 
-TEST(Sema, VarDeclWithReference) {
+TEST(Sema, VarDeclWithConstReference) {
   const char* source = R"(
-    int a = 1;
+    const int a = 1;
     int b = a;
   )";
   TestSema(source);
@@ -507,7 +507,7 @@ TEST(Sema, VarDeclWithReference) {
 
 TEST(Sema, VarDeclArrayWithReference) {
   const char* source = R"(
-    int a[2] = {0, 1};
+    const int a[2] = {0, 1};
     int b[2] = {a[0], a[1]};
   )";
   TestSema(source);
@@ -515,7 +515,7 @@ TEST(Sema, VarDeclArrayWithReference) {
 
 TEST(Sema, VarDeclArrayWithReference2) {
   const char* source = R"(
-    int a[2][1] = {{0}, {1}};
+    const int a[2][1] = {{0}, {1}};
     int b[2] = {a[0][0], a[1][0]};
   )";
   TestSema(source);
@@ -534,6 +534,54 @@ TEST(Sema, VarDeclArrayInitAlignment) {
     EXPECT_EQ(To<IntegerLiteral>(init_list[0])->value(), 0);
     EXPECT_EQ(To<IntegerLiteral>(init_list[1])->value(), 0);
   });
+}
+
+TEST(Sema, GlobalVarDeclConstInitValue) {
+  const char* source = R"(
+    const int a = 10;
+    int b = a;
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, GlobalConstDeclConstInitValue) {
+  const char* source = R"(
+    const int a = 10;
+    const int b = a;
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, GlobalVarDeclZeroInit) {
+  const char* source = R"(
+    int a;
+  )";
+  TestSema(source, [](CompilationUnit* unit) {
+    auto* var_decl = To<VariableDeclaration>(unit->body()[1]);
+    EXPECT_TRUE(IsA<IntegerLiteral>(var_decl->init_value()));
+    EXPECT_EQ(To<IntegerLiteral>(var_decl->init_value())->value(), 0);
+  });
+}
+
+TEST(Sema, GlobalVarDeclZeroInitFloat) {
+  const char* source = R"(
+    float a;
+  )";
+  TestSema(source, [](CompilationUnit* unit) {
+    auto* var_decl = To<VariableDeclaration>(unit->body()[1]);
+    EXPECT_TRUE(IsA<FloatingLiteral>(var_decl->init_value()));
+    EXPECT_EQ(To<FloatingLiteral>(var_decl->init_value())->value(), 0.f);
+  });
+}
+
+TEST(Sema, LocalDeclConstInitValue) {
+  const char* source = R"(
+    void local() {
+      int a = 1;
+      int b = a;
+    }
+  )";
+  TestSema(source);
 }
 
 }  // namespace sysy::test

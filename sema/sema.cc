@@ -131,7 +131,9 @@ void Sema::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
 }
 
 void Sema::VisitVariableDeclaration(VariableDeclaration* var_decl) {
-  CheckingContext ctx{};
+  CheckingContext ctx{
+      // The spec says global variable must be constant expression.
+      .constant_reference_only = IsA<GlobalScope>(current_scope())};
 
   Type* type = var_decl->type();
   if (auto* array_type = DynamicTo<ArrayType>(type)) {
@@ -146,6 +148,11 @@ void Sema::VisitVariableDeclaration(VariableDeclaration* var_decl) {
   }
 
   if (!var_decl->init_value()) {
+    // Zero init when there is no init value
+    auto* init_value = GetZeroLiteral(type, var_decl->location());
+    if (init_value) {
+      var_decl->set_init_value(init_value);
+    }
     return;
   }
 
@@ -558,12 +565,10 @@ void Sema::AlignArrayInitList(const CheckingContext& ctx,
 
   Type* element_type = type->element_type();
   for (size_t i = init_list->size(); i < type->size(); ++i) {
-    Expression* padding_value{};
-
-    if (element_type == context_.int_type()) {
-      padding_value = zone()->New<IntegerLiteral>(0, location);
-    } else if (element_type == context_.float_type()) {
-      padding_value = zone()->New<FloatingLiteral>(0, location);
+    Expression* padding_value = GetZeroLiteral(element_type, location);
+    if (!padding_value) {
+      DCHECK(false);
+      return;
     }
 
     if (!CheckExpression(ctx, padding_value)) {
@@ -639,7 +644,7 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
     }
     if (!list[i]->type()->Equals(*type->element_type())) {
       // The spec says it allows implicitly cast int to float in init list
-      if (Type::IsFloat(type->element_type()) && Type::IsInt(list[i]->type())) {
+      if (IsFloat(type->element_type()) && IsInt(list[i]->type())) {
         auto* cast = ImplicitCast(context()->float_type(), list[i]);
         new_init_list.push_back(cast);
         ++i;
@@ -670,7 +675,11 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
 
 bool Sema::CheckInitListExpression(const CheckingContext& ctx,
                                    InitListExpression* init_list_expr) {
-  DCHECK(ctx.decl_array_type);
+  // InitValueExpr is not rhs of an array declaration.
+  if (!ctx.decl_array_type) {
+    Diag(DiagnosticID::kInitValueTypeMismatch, init_list_expr->location());
+    return false;
+  }
 
   auto* array_type = To<ConstantArrayType>(ctx.decl_array_type);
   if (auto result = CheckInitList(ctx, init_list_expr, 0, array_type)) {
@@ -792,6 +801,15 @@ bool Sema::ImplicitlyConvertArithmetic(BinaryOperation* binary_operation) {
 ImplicitCastExpression* Sema::ImplicitCast(Type* type, Expression* expression) {
   return context()->zone()->New<ImplicitCastExpression>(type, expression,
                                                         expression->location());
+}
+
+Expression* Sema::GetZeroLiteral(Type* type, SourceLocation location) {
+  if (IsInt(type)) {
+    return zone()->New<IntegerLiteral>(0, location);
+  } else if (IsFloat(type)) {
+    return zone()->New<FloatingLiteral>(0.f, location);
+  }
+  return nullptr;
 }
 
 bool Sema::EvaluateArrayType(const Declaration* decl, Type* type,
