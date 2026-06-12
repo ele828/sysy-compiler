@@ -584,4 +584,32 @@ TEST(Sema, LocalDeclConstInitValue) {
   TestSema(source);
 }
 
+TEST(Sema, FunctionDeclParam) {
+  const char* source = R"(
+    void func(int a, float b) {}
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, FunctionDeclParamArrayType) {
+  const char* source = R"(
+    void func(int arr[]) {}
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, FunctionDeclParamIncorrectArrayType) {
+  const char* source = R"(
+    void func(int arr[][]) {}
+  )";
+  TestSema(source, DiagnosticID::kUnexpectedIncompleteArrayType);
+}
+
+TEST(Sema, FunctionDeclParamCorrectArrayType) {
+  const char* source = R"(
+    void func(int arr[][1]) {}
+  )";
+  TestSema(source);
+}
+
 }  // namespace sysy::test
