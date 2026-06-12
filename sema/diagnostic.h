@@ -6,43 +6,44 @@
 
 namespace sysy {
 
-#define DIAGNOSTICS(V)                                                      \
-  V(kUndefMain, "compilation unit should have a main function declaration") \
-  V(kMainReturnType, "main function should return a value with int type")   \
-  V(kRedefMain, "main function has been defined")                           \
-  V(kDeclRedef, "declaration has been defined")                             \
-  V(kInitValueTypeMismatch,                                                 \
-    "the type of initial value should match with the type in "              \
-    "declaration")                                                          \
-  V(kFuncDefDisallow, "function definition is not allowed here")            \
-  V(kFuncNonVoidReturn, "non-void function does not return a value")        \
-  V(kIfCondType, "if condition should be evaluated to int type (boolean)")  \
-  V(kWhileCondType,                                                         \
-    "While condition should be evaluated to int type "                      \
-    "(boolean)")                                                            \
-  V(kBreakScope, "break statement should be in while scope")                \
-  V(kContinueScope, "continue statement should be in while scope")          \
-  V(kReturnScope, "return statement should be in function scope")           \
-  V(kReturnTypeMismatch,                                                    \
-    "return type does not match with function "                             \
-    "declaration")                                                          \
-  V(kAssignToVoid, "can not assign to a variable of void type")             \
-  V(kUndefSymbol, "undefined symbol")                                       \
-  V(kNonConstantRef,                                                        \
-    "can only reference to constant declaration in this expression")        \
-  V(kInitListTypeMismatch,                                                  \
-    "the type of initializer element does not match declaration")           \
-  V(kExcessInitListSize, "excess elements in array initializers")           \
-  V(kInvalidArraySubscript, "invalid array subscript expression")           \
-  V(kCallTarget, "call target is not a function")                           \
-  V(kCallArgArity,                                                          \
-    "arguments length does not match with function "                        \
-    "declaration")                                                          \
-  V(kCallArgType, "argument type does not match function parameter type")   \
-  V(kArrayNegDimension,                                                     \
-    "array dimenstion should be evalauted to non-negative value")           \
-  V(kArrayIntDimension, "array dimenstion should be evalauted to a int")    \
-  V(kArrayTypeEval, "can not evaluate array type")                          \
+#define DIAGNOSTICS(V)                                                       \
+  V(kUndefMain, "compilation unit should have a main function declaration")  \
+  V(kMainReturnType, "main function should return a value with int type")    \
+  V(kRedefMain, "main function has been defined")                            \
+  V(kDeclRedef, "declaration has been defined")                              \
+  V(kInitValueTypeMismatch,                                                  \
+    "the type of initial value should match with the type in "               \
+    "declaration")                                                           \
+  V(kFuncDefDisallow, "function definition is not allowed here")             \
+  V(kFuncNonVoidReturn, "non-void function does not return a value")         \
+  V(kUnexpectedIncompleteArrayType, "unexpected incomplete array dimension") \
+  V(kIfCondType, "if condition should be evaluated to int type (boolean)")   \
+  V(kWhileCondType,                                                          \
+    "While condition should be evaluated to int type "                       \
+    "(boolean)")                                                             \
+  V(kBreakScope, "break statement should be in while scope")                 \
+  V(kContinueScope, "continue statement should be in while scope")           \
+  V(kReturnScope, "return statement should be in function scope")            \
+  V(kReturnTypeMismatch,                                                     \
+    "return type does not match with function "                              \
+    "declaration")                                                           \
+  V(kAssignToVoid, "can not assign to a variable of void type")              \
+  V(kUndefSymbol, "undefined symbol")                                        \
+  V(kNonConstantRef,                                                         \
+    "can only reference to constant declaration in this expression")         \
+  V(kInitListTypeMismatch,                                                   \
+    "the type of initializer element does not match declaration")            \
+  V(kExcessInitListSize, "excess elements in array initializers")            \
+  V(kInvalidArraySubscript, "invalid array subscript expression")            \
+  V(kCallTarget, "call target is not a function")                            \
+  V(kCallArgArity,                                                           \
+    "arguments length does not match with function "                         \
+    "declaration")                                                           \
+  V(kCallArgType, "argument type does not match function parameter type")    \
+  V(kArrayNegDimension,                                                      \
+    "array dimenstion should be evalauted to non-negative value")            \
+  V(kArrayIntDimension, "array dimenstion should be evalauted to a int")     \
+  V(kArrayTypeEval, "can not evaluate array type")                           \
   V(kArrayTypeIncomplete, "incomplete array dimensions is not allowed")
 
 enum class DiagnosticID {

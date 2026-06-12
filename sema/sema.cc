@@ -198,12 +198,33 @@ void Sema::VisitParameterDeclaration(ParameterDeclaration* param_decl) {
   }
 
   Type* type = param_decl->type();
-  if (IsA<ArrayType>(type)) {
-    if (!EvaluateArrayType(param_decl, type, true)) {
+  if (!IsA<ArrayType>(type)) {
+    return;
+  }
+
+  if (!EvaluateArrayType(param_decl, type, true)) {
+    return;
+  }
+
+  // Incomplete array type can only be in the first dimension.
+  auto* incomplete_array_type = DynamicTo<IncompleteArrayType>(type);
+  if (!incomplete_array_type) {
+    return;
+  }
+
+  Type* element_type = incomplete_array_type->element_type();
+  while (true) {
+    if (IsA<IncompleteArrayType>(element_type)) {
+      Diag(DiagnosticID::kUnexpectedIncompleteArrayType,
+           param_decl->location());
       return;
     }
 
-    // TODO: allow incomplete first dimension in array type in parameter decls.
+    auto* array_type = DynamicTo<ArrayType>(element_type);
+    if (!array_type) {
+      break;
+    }
+    element_type = array_type->element_type();
   }
 }
 
@@ -446,9 +467,9 @@ bool Sema::CheckBinaryRelational(const CheckingContext& ctx,
   }
 
   // Set type of binary relational expression:
-  // The type of any relational operator expression is int, and its value (which
-  // is not an lvalue) is 1 when the specified relationship holds true and
-  // 0 when the specified relationship does not hold.
+  // The type of any relational operator expression is int, and its value
+  // (which is not an lvalue) is 1 when the specified relationship holds true
+  // and 0 when the specified relationship does not hold.
   // https://en.cppreference.com/w/c/language/operator_comparison.html
   binary_operation->set_type(context()->int_type());
 
@@ -496,8 +517,8 @@ bool Sema::CheckBinaryAssign(const CheckingContext& ctx,
   // converted to the unqualified type of the left-hand operand.
   // https://en.cppreference.com/w/c/language/conversion.html#Usual_arithmetic_conversions
 
-  // If both lhs and rhs are not builtin types, then they should be exactly the
-  // same type.
+  // If both lhs and rhs are not builtin types, then they should be exactly
+  // the same type.
   if (!IsA<BuiltinType>(lhs->type()) && !IsA<BuiltinType>(rhs->type())) {
     if (lhs->type()->Equals(*rhs->type())) {
       return true;
@@ -783,9 +804,9 @@ bool Sema::ImplicitlyConvertArithmetic(BinaryOperation* binary_operation) {
   }
 
   // Perform implicit type conversion:
-  // If one operand is float, float complex, or float imaginary(since C99), the
-  // other operand is implicitly converted as follows: integer type to float(the
-  // only real type possible is float, which remains as - is)
+  // If one operand is float, float complex, or float imaginary(since C99),
+  // the other operand is implicitly converted as follows: integer type to
+  // float(the only real type possible is float, which remains as - is)
   // https://en.cppreference.com/w/c/language/conversion.html#Usual_arithmetic_conversions
   if (lhs_type->is_float() && rhs_type->is_int()) {
     auto* casted_rhs = ImplicitCast(context()->float_type(), rhs);
