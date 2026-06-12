@@ -27,10 +27,6 @@ class Type : public ZoneObject {
 
   void Dump() const;
 
-  // Helper methods
-  static inline bool IsInt(const Type* type);
-  static inline bool IsFloat(const Type* type);
-
  private:
   TypeClass type_class_;
 
@@ -144,12 +140,12 @@ class IncompleteArrayType : public ArrayType {
   }
 };
 
-inline bool Type::IsInt(const Type* type) {
+inline bool IsInt(const Type* type) {
   auto* builtin = DynamicTo<BuiltinType>(type);
   return builtin && builtin->is_int();
 }
 
-inline bool Type::IsFloat(const Type* type) {
+inline bool IsFloat(const Type* type) {
   auto* builtin = DynamicTo<BuiltinType>(type);
   return builtin && builtin->is_float();
 }

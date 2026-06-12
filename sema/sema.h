@@ -129,6 +129,8 @@ class Sema : public AstRecursiveVisitor<Sema> {
   /// Add an ImplicitCastExpression AstNode above the original expression node.
   ImplicitCastExpression* ImplicitCast(Type* type, Expression* expression);
 
+  Expression* GetZeroLiteral(Type* type, SourceLocation location);
+
   /// Returns false when evaluation fails
   bool EvaluateArrayType(const Declaration* decl, Type* type,
                          bool allow_incomplete_array_type);
