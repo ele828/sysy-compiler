@@ -180,6 +180,13 @@ TEST(Sema, ConstDeclArrayType) {
   TestSema(source);
 }
 
+TEST(Sema, ConstDeclInvalidArrayType) {
+  const char* source = R"(
+    const int arr[-1] = {1};
+  )";
+  TestSema(source, DiagnosticID::kArrayNegDimension);
+}
+
 TEST(Sema, ConstDeclArrayTypeRequiresPadding) {
   const char* source = R"(
     const int arr[5] = {1};
@@ -610,6 +617,57 @@ TEST(Sema, FunctionDeclParamCorrectArrayType) {
     void func(int arr[][1]) {}
   )";
   TestSema(source);
+}
+
+TEST(Sema, FunctionDeclVoidReturnType) {
+  const char* source = R"(
+    void func() {}
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, FunctionDeclVoidReturnType2) {
+  const char* source = R"(
+    void func() {
+      return;
+    }
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, FunctionDeclVoidReturnType3) {
+  const char* source = R"(
+    void func() {
+      return 0;
+    }
+  )";
+  TestSema(source, DiagnosticID::kReturnTypeMismatch);
+}
+
+TEST(Sema, FunctionDeclReturnStmt) {
+  const char* source = R"(
+    int func() {
+      return 0;
+    }
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, FunctionDeclReturnStmt2) {
+  const char* source = R"(
+    int func() {}
+  )";
+  TestSema(source, DiagnosticID::kFuncNonVoidReturn);
+}
+
+TEST(Sema, ArraySubscriptRefersToNonArrayDecl) {
+  const char* source = R"(
+    void func() {
+      int a = 0;
+      a[0];
+    }
+  )";
+  TestSema(source, DiagnosticID::kArraySubscriptRefersToNonArrayDecl);
 }
 
 }  // namespace sysy::test
