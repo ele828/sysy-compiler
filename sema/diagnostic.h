@@ -35,6 +35,8 @@ namespace sysy {
     "the type of initializer element does not match declaration")            \
   V(kExcessInitListSize, "excess elements in array initializers")            \
   V(kInvalidArraySubscript, "invalid array subscript expression")            \
+  V(kArraySubscriptRefersToNonArrayDecl,                                     \
+    "can not access non-array declaration using array subscript")            \
   V(kCallTarget, "call target is not a function")                            \
   V(kCallArgArity,                                                           \
     "arguments length does not match with function "                         \

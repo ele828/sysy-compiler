@@ -740,7 +740,12 @@ bool Sema::CheckArraySubscriptExpression(
       return false;
     }
 
-    auto* array_type = To<ConstantArrayType>(decl_ref->type());
+    auto* array_type = DynamicTo<ConstantArrayType>(decl_ref->type());
+    if (!array_type) {
+      Diag(DiagnosticID::kArraySubscriptRefersToNonArrayDecl,
+           array_subscript->location());
+      return false;
+    }
     array_subscript->set_type(array_type->element_type());
     return true;
   }
