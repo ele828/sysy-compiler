@@ -147,39 +147,42 @@ void Sema::VisitVariableDeclaration(VariableDeclaration* var_decl) {
     ctx.decl_array_type = array_type;
   }
 
-  if (!var_decl->init_value()) {
-    // Zero init when there is no init value
-    auto* init_value = GetZeroLiteral(type, var_decl->location());
-    if (init_value) {
-      var_decl->set_init_value(init_value);
-    }
-    return;
-  }
-
-  if (!CheckExpression(ctx, var_decl->init_value())) {
-    return;
-  }
-
-  auto* var_decl_btype = DynamicTo<BuiltinType>(var_decl->type());
-  auto* init_value_btype =
-      DynamicTo<BuiltinType>(var_decl->init_value()->type());
-  if (var_decl_btype && init_value_btype) {
-    if (init_value_btype->is_int() && var_decl_btype->is_float()) {
-      auto* casted_init_value =
-          ImplicitCast(context()->float_type(), var_decl->init_value());
-      var_decl->set_init_value(casted_init_value);
-    }
-    if (init_value_btype->is_float() && var_decl_btype->is_int()) {
-      auto* casted_init_value =
-          ImplicitCast(context()->int_type(), var_decl->init_value());
-      var_decl->set_init_value(casted_init_value);
+  if (IsA<GlobalScope>(current_scope())) {
+    if (!var_decl->init_value()) {
+      // Zero init when there is no init value
+      auto* init_value = GetZeroLiteral(type, var_decl->location());
+      if (init_value) {
+        var_decl->set_init_value(init_value);
+      }
     }
   }
 
-  if (!var_decl->init_value()->type()->Equals(*var_decl->type())) {
-    Diag(DiagnosticID::kInitValueTypeMismatch,
-         var_decl->init_value()->location());
-    return;
+  if (var_decl->init_value()) {
+    if (!CheckExpression(ctx, var_decl->init_value())) {
+      return;
+    }
+
+    auto* var_decl_btype = DynamicTo<BuiltinType>(var_decl->type());
+    auto* init_value_btype =
+        DynamicTo<BuiltinType>(var_decl->init_value()->type());
+    if (var_decl_btype && init_value_btype) {
+      if (init_value_btype->is_int() && var_decl_btype->is_float()) {
+        auto* casted_init_value =
+            ImplicitCast(context()->float_type(), var_decl->init_value());
+        var_decl->set_init_value(casted_init_value);
+      }
+      if (init_value_btype->is_float() && var_decl_btype->is_int()) {
+        auto* casted_init_value =
+            ImplicitCast(context()->int_type(), var_decl->init_value());
+        var_decl->set_init_value(casted_init_value);
+      }
+    }
+
+    if (!var_decl->init_value()->type()->Equals(*var_decl->type())) {
+      Diag(DiagnosticID::kInitValueTypeMismatch,
+           var_decl->init_value()->location());
+      return;
+    }
   }
 
   // Add symbols at the end to prevent self-referencing in init value.
@@ -232,7 +235,7 @@ void Sema::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
   NewScope<FunctionScope> scope(*this);
 
   if (IsA<GlobalScope>(scope.outer_scope())) {
-    auto success = current_scope()->AddSymbol(fun_decl->name(), fun_decl);
+    auto success = scope.outer_scope()->AddSymbol(fun_decl->name(), fun_decl);
     if (!success) {
       Diag(DiagnosticID::kDeclRedef, fun_decl->location());
       return;
@@ -506,7 +509,9 @@ bool Sema::CheckBinaryAssign(const CheckingContext& ctx,
                              BinaryOperation* binary_operation) {
   auto* lhs = binary_operation->lhs();
   auto* rhs = binary_operation->rhs();
-  if (!CheckExpression(ctx, lhs)) {
+  CheckingContext lhs_ctx = ctx;
+  lhs_ctx.left_hand_side_of_assignment = true;
+  if (!CheckExpression(lhs_ctx, lhs)) {
     return false;
   }
   if (!CheckExpression(ctx, rhs)) {
@@ -559,8 +564,14 @@ bool Sema::CheckDeclarationReference(const CheckingContext& ctx,
     return false;
   }
 
-  if (ctx.constant_reference_only && !IsA<ConstantDeclaration>(decl)) {
+  const bool is_const_decl = IsA<ConstantDeclaration>(decl);
+  if (ctx.constant_reference_only && !is_const_decl) {
     Diag(DiagnosticID::kNonConstantRef, decl_ref->location());
+    return false;
+  }
+
+  if (ctx.left_hand_side_of_assignment && is_const_decl) {
+    Diag(DiagnosticID::kAssignToConst, decl_ref->location());
     return false;
   }
 

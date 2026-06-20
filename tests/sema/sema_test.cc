@@ -593,7 +593,9 @@ TEST(Sema, LocalDeclConstInitValue) {
 
 TEST(Sema, FunctionDeclParam) {
   const char* source = R"(
-    void func(int a, float b) {}
+    void func(int a, float b) {
+      int c = a + b;
+    }
   )";
   TestSema(source);
 }
@@ -669,5 +671,90 @@ TEST(Sema, ArraySubscriptRefersToNonArrayDecl) {
   )";
   TestSema(source, DiagnosticID::kArraySubscriptRefersToNonArrayDecl);
 }
+
+TEST(Sema, UndefinedSymbol) {
+  const char* source = R"(
+    void func() {
+      a;
+    }
+  )";
+  TestSema(source, DiagnosticID::kUndefSymbol);
+}
+
+TEST(Sema, AssignToVariable) {
+  const char* source = R"(
+    void func() {
+      int a;
+      a = 0;
+    }
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, AssignToConst) {
+  const char* source = R"(
+    void func() {
+      const int a = 0;
+      a = 1;
+    }
+  )";
+  TestSema(source, DiagnosticID::kAssignToConst);
+}
+
+TEST(Sema, FunctionCall) {
+  const char* source = R"(
+    void foo() {}
+
+    void bar() {
+      foo();
+    }
+  )";
+
+  TestSema(source);
+}
+
+TEST(Sema, FunctionCallMatchParams) {
+  const char* source = R"(
+    void foo(int a, int b) {}
+
+    void bar() {
+      foo(1, 2);
+    }
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, FunctionCallMismatchParams) {
+  const char* source = R"(
+    void foo(int a, int b) {}
+
+    void bar() {
+      foo(1, 2, 3);
+    }
+  )";
+  TestSema(source, DiagnosticID::kCallArgArity);
+}
+
+TEST(Sema, FunctionCallMismatchParams2) {
+  const char* source = R"(
+    void foo(int a, int b) {}
+
+    void bar() {
+      foo(1);
+    }
+  )";
+  TestSema(source, DiagnosticID::kCallArgArity);
+}
+
+// TEST(Sema, FunctionCallParamTypeMisMatch) {
+// const char* source = R"(
+// void foo(int a) {}
+
+// void bar() {
+// foo(1.0);
+//}
+//)";
+// TestSema(source);
+//}
 
 }  // namespace sysy::test

@@ -76,6 +76,7 @@ class Sema : public AstRecursiveVisitor<Sema> {
 
   struct CheckingContext {
     bool constant_reference_only = false;
+    bool left_hand_side_of_assignment = false;
     ArrayType* decl_array_type = nullptr;
   };
 

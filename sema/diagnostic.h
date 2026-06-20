@@ -31,6 +31,7 @@ namespace sysy {
   V(kUndefSymbol, "undefined symbol")                                        \
   V(kNonConstantRef,                                                         \
     "can only reference to constant declaration in this expression")         \
+  V(kAssignToConst, "can not assign to a constant")                          \
   V(kInitListTypeMismatch,                                                   \
     "the type of initializer element does not match declaration")            \
   V(kExcessInitListSize, "excess elements in array initializers")            \
