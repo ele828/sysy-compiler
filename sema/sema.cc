@@ -251,7 +251,7 @@ void Sema::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
   Base::VisitFunctionDeclaration(fun_decl);
 
   if (fun_decl->type() != context()->void_type() &&
-      !scope.current()->has_return_statement()) {
+      !scope.current()->has_return_statement() && !fun_decl->is_prelude()) {
     Diag(DiagnosticID::kFuncNonVoidReturn, fun_decl->location());
     return;
   }

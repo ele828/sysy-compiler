@@ -175,10 +175,11 @@ class FunctionDeclaration : public Declaration {
  public:
   FunctionDeclaration(Type* type, std::string_view name,
                       ZoneVector<ParameterDeclaration*> parameters,
-                      Statement* body, SourceLocation location)
+                      Statement* body, bool is_prelude, SourceLocation location)
       : Declaration(Kind::kFunctionDelcaration, type, name, location),
         parameters_(std::move(parameters)),
-        body_(body) {}
+        body_(body),
+        is_prelude_(is_prelude) {}
 
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kFunctionDelcaration;
@@ -189,9 +190,12 @@ class FunctionDeclaration : public Declaration {
   }
   Statement* body() const { return body_; }
 
+  bool is_prelude() const { return is_prelude_; }
+
  private:
   ZoneVector<ParameterDeclaration*> parameters_;
   Statement* body_;
+  bool is_prelude_;
 };
 
 class Statement : public AstNode {
