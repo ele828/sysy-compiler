@@ -21,6 +21,9 @@ CompilationUnit* Parse(AstContext& context, std::string_view source) {
   CompilationUnit* compilation_unit = parser.ParseCompilationUnit();
   PrintParseErrors(parser);
   EXPECT_FALSE(parser.has_errors());
+  if (parser.has_errors()) {
+    return nullptr;
+  }
   return compilation_unit;
 }
 
@@ -34,6 +37,10 @@ void TestSema(std::string_view source, DiagnosticID diagnostic,
 
   AstContext context;
   auto* compilation_unit = Parse(context, final_source);
+  if (!compilation_unit) {
+    return;
+  }
+
   Sema sema(context);
   bool success = sema.Analyze(compilation_unit);
   PrintSemanticErrors(sema);
@@ -52,6 +59,10 @@ void TestSema(std::string_view source,
 
   AstContext context;
   auto* compilation_unit = Parse(context, final_source);
+  if (!compilation_unit) {
+    return;
+  }
+
   Sema sema(context);
   bool success = sema.Analyze(compilation_unit);
   PrintSemanticErrors(sema);
