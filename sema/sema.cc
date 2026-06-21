@@ -1,6 +1,7 @@
 #include "sema/sema.h"
 
 #include <array>
+#include <complex>
 #include <optional>
 #include <print>
 
@@ -791,9 +792,22 @@ bool Sema::CheckCallExpression(const CheckingContext& ctx,
       return false;
     }
 
-    // Argument type should match the parameter of function declaration
     Type* param_type = fun_decl->parameters()[i]->type();
-    if (!arg_expr->type()->Equals(*param_type)) {
+    Type* arg_type = arg_expr->type();
+
+    // Perform implicit cast for int and float type.
+    if (IsInt(param_type) && IsFloat(arg_type)) {
+      auto* casted = ImplicitCast(context()->int_type(), arg_expr);
+      call_expr->set_argument(i, casted);
+      arg_type = casted->type();
+    } else if (IsFloat(param_type) && IsInt(arg_type)) {
+      auto* casted = ImplicitCast(context()->float_type(), arg_expr);
+      call_expr->set_argument(i, casted);
+      arg_type = casted->type();
+    }
+
+    // Argument type should match the parameter of function declaration
+    if (!arg_type->Equals(*param_type)) {
       Diag(DiagnosticID::kCallArgType, arg_expr->location());
       return false;
     }
