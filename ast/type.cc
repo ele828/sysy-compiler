@@ -105,6 +105,20 @@ bool ConstantArrayType::Equals(const ConstantArrayType& other) const {
   return ArrayType::Equals(other) && size_ == other.size_;
 }
 
+bool IncompleteArrayType::IsCompatibleWith(const Type& other) const {
+  if (Type::Equals(other)) {
+    return true;
+  }
+
+  const ArrayType* other_array_type = DynamicTo<ArrayType>(other);
+  if (!other_array_type) {
+    return false;
+  }
+
+  // Incomplete Array Type is Compatible with any array type in first dimension.
+  return element_type()->Equals(*other_array_type->element_type());
+}
+
 bool IncompleteArrayType::Equals(const IncompleteArrayType& other) const {
   return ArrayType::Equals(other);
 }

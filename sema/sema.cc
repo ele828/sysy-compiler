@@ -806,8 +806,15 @@ bool Sema::CheckCallExpression(const CheckingContext& ctx,
       arg_type = casted->type();
     }
 
-    // Argument type should match the parameter of function declaration
-    if (!arg_type->Equals(*param_type)) {
+    // Incomplete array type indicates one-dimensional array
+    if (auto* incomplete_array_type =
+            DynamicTo<IncompleteArrayType>(param_type)) {
+      if (!incomplete_array_type->IsCompatibleWith(*arg_type)) {
+        Diag(DiagnosticID::kCallArgType, arg_expr->location());
+        return false;
+      }
+    } else if (!arg_type->Equals(*param_type)) {
+      // Argument type should match the parameter of function declaration
       Diag(DiagnosticID::kCallArgType, arg_expr->location());
       return false;
     }

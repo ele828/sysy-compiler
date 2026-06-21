@@ -133,6 +133,8 @@ class IncompleteArrayType : public ArrayType {
   explicit IncompleteArrayType(Type* element_type)
       : ArrayType(TypeClass::kIncompleteArray, element_type) {}
 
+  bool IsCompatibleWith(const Type& other) const;
+
   bool Equals(const IncompleteArrayType& other) const;
 
   static bool classof(const Type& t) {
