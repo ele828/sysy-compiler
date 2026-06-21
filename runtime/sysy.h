@@ -1,4 +1,6 @@
-#pragma once
+// NOTE: intentionally not use include guard or pragma once, since sysy does not
+// support header files and this file will only be used as prelude for sysy
+// program.
 
 // Reads an integer from the standard input.
 int getint();
