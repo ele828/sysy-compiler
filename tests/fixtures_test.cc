@@ -71,7 +71,14 @@ void InitFixtureTest() {
   auto fixtures =
       DiscoverFixtures(fs::path{PROJECT_ROOT_PATH} / "tests" / "fixtures");
   for (auto& fixture : fixtures) {
-    std::string code = sysy::test::ReadFile(fixture.path);
+    std::string source = ReadFile(fixture.path);
+    std::string runtime_lib_prelude =
+        ReadFile(fs::path{PROJECT_ROOT_PATH} / "runtime" / "sysy.h");
+
+    std::string code;
+    code.reserve(runtime_lib_prelude.length() + source.length());
+    code.append(runtime_lib_prelude);
+    code.append(source);
 
     testing::RegisterTest("LexerFixture", fixture.name.c_str(), nullptr,
                           nullptr, __FILE__, __LINE__, [code]() mutable {
