@@ -758,6 +758,78 @@ TEST(Sema, FunctionCallArgTypeMisMatch) {
   TestSema(source, DiagnosticID::kCallArgType);
 }
 
+TEST(Sema, FunctionCallArgArrayType) {
+  const char* source = R"(
+    void foo(int arr[]) {}
+
+    void bar() {
+      int arr[1] = {1};
+      foo(arr);
+    }
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, FunctionCallArgArrayType2) {
+  const char* source = R"(
+    void foo(int arr[][2]) {}
+
+    void bar() {
+      int arr[2][2] = {{1, 2}, {3, 4}};
+      foo(arr);
+    }
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, FunctionCallArgArrayType3) {
+  const char* source = R"(
+    void foo(int arr[][1]) {}
+
+    void bar() {
+      int arr[2][2] = {{1, 2}, {3, 4}};
+      foo(arr);
+    }
+  )";
+  TestSema(source, DiagnosticID::kCallArgType);
+}
+
+TEST(Sema, FunctionCallArgArrayType4) {
+  const char* source = R"(
+    void foo(int arr[][1]) {}
+
+    void bar() {
+      int arr[1] = {1};
+      foo(arr);
+    }
+  )";
+  TestSema(source, DiagnosticID::kCallArgType);
+}
+
+TEST(Sema, FunctionCallArgArrayType5) {
+  const char* source = R"(
+    void foo(int arr[2]) {}
+
+    void bar() {
+      int arr[2][2] = {{1, 2}, {3, 4}};
+      foo(arr[0]);
+    }
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, FunctionCallArgArrayType6) {
+  const char* source = R"(
+    void foo(int arr[2][2]) {}
+
+    void bar() {
+      int arr[2][2] = {{1, 2}, {3, 4}};
+      foo(arr);
+    }
+  )";
+  TestSema(source);
+}
+
 TEST(Sema, FunctionCallArgTypeImplicitCast) {
   const char* source = R"(
     void foo(int a) {}
