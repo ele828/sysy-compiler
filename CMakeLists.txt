@@ -26,6 +26,11 @@ set(SOURCE_FILES
 add_library(sysy ${SOURCE_FILES})
 target_link_libraries(sysy PUBLIC magic_enum)
 
+# sysy runtime library
+set(RUNTIME_FILES
+  runtime/sysy.cc)
+add_library(sysy_runtime ${RUNTIME_FILES})
+
 # sysy binary
 add_executable(
   sysy_bin
@@ -58,6 +63,7 @@ target_compile_definitions(sysy_fixtures_test
 target_link_libraries(
   sysy_fixtures_test 
   sysy
+  sysy_runtime
   GTest::gtest)
 
 include(GoogleTest)
