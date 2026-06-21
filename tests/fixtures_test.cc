@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
+
 #include "base/type_casts.h"
 #include "parse/lexer.h"
 #include "parse/parser.h"
@@ -31,49 +33,57 @@ class LexerFixtureTest : public testing::Test {
 
 class ParserFixtureTest : public testing::Test {
  public:
-  explicit ParserFixtureTest(std::string code) : code_(std::move(code)) {}
+  explicit ParserFixtureTest(std::string code, size_t prelude_lines)
+      : code_(std::move(code)), prelude_lines_(prelude_lines) {}
 
   void TestBody() override {
     AstContext context;
+    context.set_prelude_lines(prelude_lines_);
     Parser parser(context, code_);
     auto* compilation_unit = parser.ParseCompilationUnit();
-    CheckParserStates(parser);
+    CheckParserStates(context, parser);
 
     EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
   }
 
  private:
   std::string code_;
+  size_t prelude_lines_;
 };
 
 class SemaFixtureTest : public testing::Test {
  public:
-  explicit SemaFixtureTest(std::string code) : code_(std::move(code)) {}
+  explicit SemaFixtureTest(std::string code, size_t prelude_lines)
+      : code_(std::move(code)), prelude_lines_(prelude_lines) {}
 
   void TestBody() override {
     AstContext context;
     Parser parser(context, code_);
+    context.set_prelude_lines(prelude_lines_);
     auto* compilation_unit = parser.ParseCompilationUnit();
-    CheckParserStates(parser);
+    CheckParserStates(context, parser);
 
     Sema sema(context);
     bool success = sema.Analyze(compilation_unit);
-    PrintSemanticErrors(sema);
+    PrintSemanticErrors(context, sema);
     EXPECT_TRUE(success);
     EXPECT_TRUE(sema.diagnostics().empty());
   }
 
  private:
   std::string code_;
+  size_t prelude_lines_;
 };
 
 void InitFixtureTest() {
   auto fixtures =
       DiscoverFixtures(fs::path{PROJECT_ROOT_PATH} / "tests" / "fixtures");
+  std::string runtime_lib_prelude =
+      ReadFile(fs::path{PROJECT_ROOT_PATH} / "runtime" / "sysy.h");
+  size_t runtime_lib_source_lines =
+      std::ranges::count(runtime_lib_prelude, '\n');
   for (auto& fixture : fixtures) {
     std::string source = ReadFile(fixture.path);
-    std::string runtime_lib_prelude =
-        ReadFile(fs::path{PROJECT_ROOT_PATH} / "runtime" / "sysy.h");
 
     std::string code;
     code.reserve(runtime_lib_prelude.length() + source.length());
@@ -86,14 +96,17 @@ void InitFixtureTest() {
                           });
 
     testing::RegisterTest("ParserFixture", fixture.name.c_str(), nullptr,
-                          nullptr, __FILE__, __LINE__, [code]() mutable {
-                            return new ParserFixtureTest(std::move(code));
+                          nullptr, __FILE__, __LINE__,
+                          [code, runtime_lib_source_lines]() mutable {
+                            return new ParserFixtureTest(
+                                std::move(code), runtime_lib_source_lines);
                           });
 
-    testing::RegisterTest("SemaFixture", fixture.name.c_str(), nullptr, nullptr,
-                          __FILE__, __LINE__, [code]() mutable {
-                            return new SemaFixtureTest(std::move(code));
-                          });
+    testing::RegisterTest(
+        "SemaFixture", fixture.name.c_str(), nullptr, nullptr, __FILE__,
+        __LINE__, [code, runtime_lib_source_lines]() mutable {
+          return new SemaFixtureTest(std::move(code), runtime_lib_source_lines);
+        });
   }
 }
 

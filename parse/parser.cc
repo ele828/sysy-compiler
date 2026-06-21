@@ -263,13 +263,13 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
     Statement* compound_statement =
         zone()->New<CompoundStatement>(std::move(body), current_.location());
     return zone()->New<FunctionDeclaration>(type, name, std::move(parameters),
-                                            compound_statement,
+                                            compound_statement, true,
                                             current_.location());
   }
 
   Statement* body = ParseBlock();
   return zone()->New<FunctionDeclaration>(type, name, std::move(parameters),
-                                          body, current_.location());
+                                          body, false, current_.location());
 }
 
 ParameterDeclaration* Parser::ParseFunctionParameter() {

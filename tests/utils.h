@@ -42,23 +42,25 @@ inline std::vector<Fixture> DiscoverFixtures(std::filesystem::path path) {
   return fixtures;
 }
 
-inline void PrintParseErrors(const Parser& parser) {
+inline void PrintParseErrors(AstContext& context, const Parser& parser) {
   for (auto& error : parser.errors()) {
     std::println(stderr, "{} at line: {} column: {}", error.error_message,
-                 error.location.line, error.location.column);
+                 error.location.line - context.prelude_lines(),
+                 error.location.column);
   }
 }
 
-inline void CheckParserStates(const Parser& parser) {
-  PrintParseErrors(parser);
+inline void CheckParserStates(AstContext& context, const Parser& parser) {
+  PrintParseErrors(context, parser);
   EXPECT_FALSE(parser.has_errors());
   EXPECT_TRUE(parser.done());
 }
 
-inline void PrintSemanticErrors(const Sema& analyzer) {
+inline void PrintSemanticErrors(AstContext& context, const Sema& analyzer) {
   for (auto& diag : analyzer.diagnostics()) {
     std::println("Semantic Error: {} (at line {}, column {})", diag.message,
-                 diag.location.line, diag.location.column);
+                 diag.location.line - context.prelude_lines(),
+                 diag.location.column);
   }
 }
 
