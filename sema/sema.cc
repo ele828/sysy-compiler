@@ -451,7 +451,9 @@ bool Sema::CheckBinaryArithmetic(const CheckingContext& ctx,
   // Set type of binary arithmetic expression:
   // After type conversion, the type of lhs and rhs is the same, we randomly
   // choose one as the type of binary expression.
-  binary_operation->set_type(lhs->type());
+  // NOTE: we need to get the new lhs after conversion.
+  auto* new_lhs = binary_operation->lhs();
+  binary_operation->set_type(new_lhs->type());
 
   return true;
 }
