@@ -124,6 +124,14 @@ TEST(Sema, MainFunctionWithoutReturn) {
   TestSema(source, DiagnosticID::kFuncNonVoidReturn, false);
 }
 
+TEST(Sema, BinaryOperationTypeCast) {
+  const char* source = R"(
+    const float x = 1.0;
+    float y = 3 * x - 4 * x * x * x;
+  )";
+  TestSema(source);
+}
+
 TEST(Sema, ConstDeclRedef) {
   const char* source = R"(
     const int a = 10;
