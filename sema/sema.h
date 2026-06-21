@@ -26,6 +26,7 @@ class Sema : public AstRecursiveVisitor<Sema> {
  public:
   struct Diagnostic {
     DiagnosticID diagnostic;
+    std::string message;
     SourceLocation location;
   };
 
@@ -137,6 +138,9 @@ class Sema : public AstRecursiveVisitor<Sema> {
                          bool allow_incomplete_array_type);
 
   void Diag(DiagnosticID diagnostic, SourceLocation location);
+
+  void Diag(DiagnosticID diagnostic, std::string message,
+            SourceLocation location);
 
   AstContext& context_;
   Scope* current_scope_;

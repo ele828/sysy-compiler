@@ -2,6 +2,7 @@
 
 #include <array>
 #include <complex>
+#include <format>
 #include <optional>
 #include <print>
 
@@ -561,7 +562,11 @@ bool Sema::CheckDeclarationReference(const CheckingContext& ctx,
                                      DeclarationReference* decl_ref) {
   auto* decl = current_scope()->ResolveSymbol(decl_ref->name());
   if (!decl) {
-    Diag(DiagnosticID::kUndefSymbol, decl_ref->location());
+    std::string decl_name(decl_ref->name().data(), decl_ref->name().length());
+    std::string message =
+        std::vformat(GetDiagnosticMessage(DiagnosticID::kUndefSymbol),
+                     std::make_format_args(decl_name));
+    Diag(DiagnosticID::kUndefSymbol, std::move(message), decl_ref->location());
     return false;
   }
 
@@ -770,7 +775,11 @@ bool Sema::CheckCallExpression(const CheckingContext& ctx,
                                CallExpression* call_expr) {
   auto* decl = current_scope()->ResolveSymbol(call_expr->name());
   if (!decl) {
-    Diag(DiagnosticID::kUndefSymbol, call_expr->location());
+    std::string decl_name(call_expr->name().data(), call_expr->name().length());
+    std::string message =
+        std::vformat(GetDiagnosticMessage(DiagnosticID::kUndefSymbol),
+                     std::make_format_args(decl_name));
+    Diag(DiagnosticID::kUndefSymbol, std::move(message), call_expr->location());
     return false;
   }
 
@@ -911,6 +920,17 @@ bool Sema::EvaluateArrayType(const Declaration* decl, Type* type,
 void Sema::Diag(DiagnosticID diagnostic, SourceLocation location) {
   Diagnostic diag{
       .diagnostic = diagnostic,
+      .message = std::string(GetDiagnosticMessage(diagnostic)),
+      .location = location,
+  };
+  diagnostics_.push_back(diag);
+}
+
+void Sema::Diag(DiagnosticID diagnostic, std::string message,
+                SourceLocation location) {
+  Diagnostic diag{
+      .diagnostic = diagnostic,
+      .message = std::move(message),
       .location = location,
   };
   diagnostics_.push_back(diag);

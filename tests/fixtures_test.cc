@@ -4,6 +4,7 @@
 #include "parse/lexer.h"
 #include "parse/parser.h"
 #include "parse/token.h"
+#include "sema/sema.h"
 #include "tests/utils.h"
 
 namespace sysy::test {
@@ -45,6 +46,27 @@ class ParserFixtureTest : public testing::Test {
   std::string code_;
 };
 
+class SemaFixtureTest : public testing::Test {
+ public:
+  explicit SemaFixtureTest(std::string code) : code_(std::move(code)) {}
+
+  void TestBody() override {
+    AstContext context;
+    Parser parser(context, code_);
+    auto* compilation_unit = parser.ParseCompilationUnit();
+    CheckParserStates(parser);
+
+    Sema sema(context);
+    bool success = sema.Analyze(compilation_unit);
+    PrintSemanticErrors(sema);
+    EXPECT_TRUE(success);
+    EXPECT_TRUE(sema.diagnostics().empty());
+  }
+
+ private:
+  std::string code_;
+};
+
 void InitFixtureTest() {
   auto fixtures =
       DiscoverFixtures(fs::path{PROJECT_ROOT_PATH} / "tests" / "fixtures");
@@ -59,6 +81,11 @@ void InitFixtureTest() {
     testing::RegisterTest("ParserFixture", fixture.name.c_str(), nullptr,
                           nullptr, __FILE__, __LINE__, [code]() mutable {
                             return new ParserFixtureTest(std::move(code));
+                          });
+
+    testing::RegisterTest("SemaFixture", fixture.name.c_str(), nullptr, nullptr,
+                          __FILE__, __LINE__, [code]() mutable {
+                            return new SemaFixtureTest(std::move(code));
                           });
   }
 }
