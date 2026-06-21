@@ -257,6 +257,16 @@ FunctionDeclaration* Parser::ParseFunctionDeclaration() {
 
   ExpectAndConsume(TokenType::kRightParen);
 
+  // Function declaration without body
+  if (TryConsume(TokenType::kSemicolon)) {
+    ZoneVector<Statement*> body(zone());
+    Statement* compound_statement =
+        zone()->New<CompoundStatement>(std::move(body), current_.location());
+    return zone()->New<FunctionDeclaration>(type, name, std::move(parameters),
+                                            compound_statement,
+                                            current_.location());
+  }
+
   Statement* body = ParseBlock();
   return zone()->New<FunctionDeclaration>(type, name, std::move(parameters),
                                           body, current_.location());

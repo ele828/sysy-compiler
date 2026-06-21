@@ -150,6 +150,25 @@ TEST(Parser, ParseFunctionDeclarationWithBody) {
   EXPECT_EQ(body->body().size(), 2u);
 }
 
+TEST(Parser, ParseFunctionDeclarationWithoutBody) {
+  const char* source = R"(
+    void fun();
+  )";
+
+  AstContext context;
+  Parser parser(context, source);
+  auto decl_group = parser.ParseDeclarationGroup();
+  auto decl = decl_group[0];
+
+  CheckParserStates(parser);
+  EXPECT_TRUE(IsA<FunctionDeclaration>(decl));
+
+  auto* fun_decl = To<FunctionDeclaration>(decl);
+  EXPECT_TRUE(IsA<CompoundStatement>(fun_decl->body()));
+  auto* body = To<CompoundStatement>(fun_decl->body());
+  EXPECT_TRUE(body->body().empty());
+}
+
 TEST(Parser, ParseUnaryExpressionPlus) {
   TestUnaryExpression("+1", UnaryOperator::kPlus,
                       AstNode::Kind::kIntegerLiteral);
