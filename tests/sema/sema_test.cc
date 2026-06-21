@@ -724,7 +724,7 @@ TEST(Sema, FunctionCallMatchParams) {
   TestSema(source);
 }
 
-TEST(Sema, FunctionCallMismatchParams) {
+TEST(Sema, FunctionCallArityMismatchParams) {
   const char* source = R"(
     void foo(int a, int b) {}
 
@@ -735,7 +735,7 @@ TEST(Sema, FunctionCallMismatchParams) {
   TestSema(source, DiagnosticID::kCallArgArity);
 }
 
-TEST(Sema, FunctionCallMismatchParams2) {
+TEST(Sema, FunctionCallArityMismatchParams2) {
   const char* source = R"(
     void foo(int a, int b) {}
 
@@ -746,15 +746,38 @@ TEST(Sema, FunctionCallMismatchParams2) {
   TestSema(source, DiagnosticID::kCallArgArity);
 }
 
-// TEST(Sema, FunctionCallParamTypeMisMatch) {
-// const char* source = R"(
-// void foo(int a) {}
+TEST(Sema, FunctionCallArgTypeMisMatch) {
+  const char* source = R"(
+    void foo(int a) {}
 
-// void bar() {
-// foo(1.0);
-//}
-//)";
-// TestSema(source);
-//}
+    void bar() {
+      int arr[1] = {1};
+      foo(arr);
+    }
+  )";
+  TestSema(source, DiagnosticID::kCallArgType);
+}
+
+TEST(Sema, FunctionCallArgTypeImplicitCast) {
+  const char* source = R"(
+    void foo(int a) {}
+
+    void bar() {
+      foo(1.0);
+    }
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, FunctionCallArgTypeImplicitCast2) {
+  const char* source = R"(
+    void foo(float a) {}
+
+    void bar() {
+      foo(1);
+    }
+  )";
+  TestSema(source);
+}
 
 }  // namespace sysy::test

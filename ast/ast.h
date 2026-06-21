@@ -500,7 +500,14 @@ class CallExpression : public Expression {
   }
 
   std::string_view name() const { return name_; }
+
   const ZoneVector<Expression*>& arguments() const { return arguments_; }
+
+  void set_argument(size_t index, Expression* argument) {
+    DCHECK(index < arguments_.size());
+    arguments_[index] = argument;
+  }
+
   FunctionDeclaration* function_declaration() const {
     return function_declaration_;
   }
