@@ -28,7 +28,7 @@ namespace sysy {
     "return type does not match with function "                              \
     "declaration")                                                           \
   V(kAssignToVoid, "can not assign to a variable of void type")              \
-  V(kUndefSymbol, "undefined symbol")                                        \
+  V(kUndefSymbol, "undefined symbol: {}")                                    \
   V(kNonConstantRef,                                                         \
     "can only reference to constant declaration in this expression")         \
   V(kAssignToConst, "can not assign to a constant")                          \
