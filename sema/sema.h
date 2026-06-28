@@ -123,10 +123,6 @@ class Sema : public AstRecursiveVisitor<Sema> {
                                     size_t i, ConstantArrayType* type,
                                     bool check_size);
 
-  void AlignArrayInitList(const CheckingContext& ctx,
-                          ZoneVector<Expression*>* init_list,
-                          ConstantArrayType* type, SourceLocation location);
-
   bool ImplicitlyConvertArithmetic(BinaryOperation* binary_operation);
 
   bool PerformImplicitCast(Expression* lhs, Expression* rhs);

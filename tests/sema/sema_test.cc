@@ -212,16 +212,12 @@ TEST(Sema, ConstDeclArrayTypeRequiresPadding) {
   )";
 
   TestSema(source, [](CompilationUnit* unit) {
-    auto& init_list =
-        To<InitListExpression>(
-            To<ConstantDeclaration>(unit->body()[1])->init_value())
-            ->list();
-    EXPECT_EQ(init_list.size(), 5u);
+    auto* init_list_expr = To<InitListExpression>(
+        To<ConstantDeclaration>(unit->body()[1])->init_value());
+    auto& init_list = init_list_expr->list();
+    EXPECT_EQ(init_list.size(), 1u);
     EXPECT_EQ(To<IntegerLiteral>(init_list[0])->value(), 1);
-    EXPECT_EQ(To<IntegerLiteral>(init_list[1])->value(), 0);
-    EXPECT_EQ(To<IntegerLiteral>(init_list[2])->value(), 0);
-    EXPECT_EQ(To<IntegerLiteral>(init_list[3])->value(), 0);
-    EXPECT_EQ(To<IntegerLiteral>(init_list[4])->value(), 0);
+    EXPECT_NE(init_list_expr->array_filler(), nullptr);
   });
 }
 
@@ -400,11 +396,11 @@ TEST(Sema, ConstDeclArrayInitValue7) {
     auto& i1 = To<InitListExpression>(init_list[1])->list();
     auto& i2 = To<InitListExpression>(init_list[2])->list();
     EXPECT_EQ(i0.size(), 2u);
-    EXPECT_EQ(i1.size(), 2u);
+    EXPECT_EQ(i1.size(), 0u);
     EXPECT_EQ(i2.size(), 2u);
 
     MatchInitList(i0, {{1, 2}, {3, 4}});
-    MatchInitList(i1, {{0, 0}, {0, 0}});
+    EXPECT_NE(To<InitListExpression>(init_list[1])->array_filler(), nullptr);
     MatchInitList(i2, {{5, 6}, {7, 8}});
   });
 }
@@ -414,22 +410,11 @@ TEST(Sema, ConstDeclArrayInitValue8) {
     const int arr[3][2] = {};
   )";
   TestSema(source, [](CompilationUnit* unit) {
-    auto& init_list =
-        To<InitListExpression>(
-            To<ConstantDeclaration>(unit->body()[1])->init_value())
-            ->list();
-    EXPECT_EQ(init_list.size(), 3u);
-
-    auto& i0 = To<InitListExpression>(init_list[0])->list();
-    auto& i1 = To<InitListExpression>(init_list[1])->list();
-    auto& i2 = To<InitListExpression>(init_list[2])->list();
-    EXPECT_EQ(i0.size(), 2u);
-    EXPECT_EQ(i1.size(), 2u);
-    EXPECT_EQ(i2.size(), 2u);
-
-    MatchInitList(i0, {0, 0});
-    MatchInitList(i1, {0, 0});
-    MatchInitList(i2, {0, 0});
+    auto* init_list_expr = To<InitListExpression>(
+        To<ConstantDeclaration>(unit->body()[1])->init_value());
+    auto& init_list = init_list_expr->list();
+    EXPECT_EQ(init_list.size(), 0u);
+    EXPECT_NE(init_list_expr->array_filler(), nullptr);
   });
 }
 
@@ -441,15 +426,14 @@ TEST(Sema, MultiArrayInitValueWithPadding) {
     };
   )";
   TestSema(source, [](CompilationUnit* unit) {
-    auto& init_list =
-        To<InitListExpression>(
-            To<ConstantDeclaration>(unit->body()[1])->init_value())
-            ->list();
-    EXPECT_EQ(init_list.size(), 3u);
+    auto* init_list_expr = To<InitListExpression>(
+        To<ConstantDeclaration>(unit->body()[1])->init_value());
+    auto& init_list = init_list_expr->list();
+    EXPECT_EQ(init_list.size(), 2u);
 
     MatchInitList(To<InitListExpression>(init_list[0])->list(), {1, 2});
     MatchInitList(To<InitListExpression>(init_list[1])->list(), {3, 4});
-    MatchInitList(To<InitListExpression>(init_list[2])->list(), {0, 0});
+    EXPECT_NE(init_list_expr->array_filler(), nullptr);
   });
 }
 
@@ -566,13 +550,11 @@ TEST(Sema, VarDeclArrayInitAlignment) {
     int arr[2] = {};
   )";
   TestSema(source, [](CompilationUnit* unit) {
-    auto& init_list =
-        To<InitListExpression>(
-            To<VariableDeclaration>(unit->body()[1])->init_value())
-            ->list();
-    EXPECT_EQ(init_list.size(), 2u);
-    EXPECT_EQ(To<IntegerLiteral>(init_list[0])->value(), 0);
-    EXPECT_EQ(To<IntegerLiteral>(init_list[1])->value(), 0);
+    auto* init_list_expr = To<InitListExpression>(
+        To<VariableDeclaration>(unit->body()[1])->init_value());
+    auto& init_list = init_list_expr->list();
+    EXPECT_EQ(init_list.size(), 0u);
+    EXPECT_NE(init_list_expr->array_filler(), nullptr);
   });
 }
 

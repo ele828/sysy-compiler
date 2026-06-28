@@ -63,6 +63,9 @@ class AstRecursiveVisitor {
       case AstNode::Kind::kImplicitCast:
         return derived()->VisitImplicitCastExpression(
             To<ImplicitCastExpression>(node));
+      case AstNode::Kind::kImplicitValueInit:
+        return derived()->VisitImplicitValueInitExpression(
+            To<ImplicitValueInitExpression>(node));
     }
   }
 
@@ -153,6 +156,9 @@ class AstRecursiveVisitor {
     for (auto& expr : init_expr->list()) {
       Visit(expr);
     }
+    if (auto* filler = init_expr->array_filler()) {
+      Visit(filler);
+    }
   }
 
   void VisitArraySubscriptExpression(
@@ -170,6 +176,9 @@ class AstRecursiveVisitor {
   void VisitImplicitCastExpression(ImplicitCastExpression* implicit_cast_expr) {
     Visit(implicit_cast_expr->sub_expression());
   }
+
+  void VisitImplicitValueInitExpression(
+      ImplicitValueInitExpression* implicit_value_init_expr) {}
 
  private:
   Derived* derived() { return static_cast<Derived*>(this); }

@@ -72,6 +72,7 @@ class AstNode : public ZoneObject {
     kArraySubscript,
     kCallExpression,
     kImplicitCast,
+    kImplicitValueInit,
     // Expression end
   };
 
@@ -457,18 +458,27 @@ class DeclarationReference : public Expression {
 class InitListExpression : public Expression {
  public:
   InitListExpression(ZoneVector<Expression*> list, SourceLocation location)
-      : Expression(Kind::kInitList, location), list_(std::move(list)) {}
+      : Expression(Kind::kInitList, location),
+        list_(std::move(list)),
+        array_filler_(nullptr) {}
 
   static bool classof(const AstNode& n) { return n.kind() == Kind::kInitList; }
 
   void set_list(ZoneVector<Expression*> list) { list_ = std::move(list); }
 
+  void set_array_filler(Expression* array_filer) {
+    array_filler_ = array_filer;
+  }
+
   ZoneVector<Expression*>& mutable_list() { return list_; }
 
   const ZoneVector<Expression*>& list() const { return list_; }
 
+  Expression* array_filler() const { return array_filler_; }
+
  private:
   ZoneVector<Expression*> list_;
+  Expression* array_filler_;
 };
 
 class ArraySubscriptExpression : public Expression {
@@ -545,6 +555,16 @@ class ImplicitCastExpression : public Expression {
 
  private:
   Expression* sub_expression_;
+};
+
+class ImplicitValueInitExpression : public Expression {
+ public:
+  ImplicitValueInitExpression(Type* type, SourceLocation location)
+      : Expression(Kind::kImplicitValueInit, type, location) {}
+
+  static bool classof(const AstNode& n) {
+    return n.kind() == Kind::kImplicitValueInit;
+  }
 };
 
 }  // namespace sysy
