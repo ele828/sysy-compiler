@@ -117,8 +117,6 @@ void Sema::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
   }
 
   if (!const_decl->init_value()->type()->Equals(*const_decl->type())) {
-    const_decl->type()->Dump();
-    const_decl->init_value()->type()->Dump();
     Diag(DiagnosticID::kInitValueTypeMismatch,
          const_decl->init_value()->location());
     return;
@@ -251,7 +249,8 @@ void Sema::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
   Base::VisitFunctionDeclaration(fun_decl);
 
   if (fun_decl->type() != context()->void_type() &&
-      !scope.current()->has_return_statement() && !fun_decl->is_prelude()) {
+      !scope.current()->has_return_statement() && !fun_decl->is_prelude() &&
+      !has_diagnostics()) {
     Diag(DiagnosticID::kFuncNonVoidReturn, fun_decl->location());
     return;
   }
@@ -260,7 +259,14 @@ void Sema::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
 void Sema::VisitCompoundStatement(CompoundStatement* compound_stmt) {
   NewScope<BlockScope> scope(*this);
 
-  Base::VisitCompoundStatement(compound_stmt);
+  for (auto& stmt : compound_stmt->body()) {
+    Visit(stmt);
+
+    // If previous statement has diagnostics, we abort checking.
+    if (has_diagnostics()) {
+      break;
+    }
+  }
 }
 
 void Sema::VisitDeclarationStatement(DeclarationStatement* decl_stmt) {
@@ -624,7 +630,8 @@ void Sema::AlignArrayInitList(const CheckingContext& ctx,
 
 MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
                                         InitListExpression* init_list_expr,
-                                        size_t i, ConstantArrayType* type) {
+                                        size_t i, ConstantArrayType* type,
+                                        bool check_size) {
   auto& list = init_list_expr->list();
   ZoneVector<Expression*> new_init_list(zone());
 
@@ -637,7 +644,8 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
       }
 
       auto* element_type = To<ConstantArrayType>(type->element_type());
-      if (auto result = CheckInitList(ctx, init_list_expr, i, element_type)) {
+      if (auto result =
+              CheckInitList(ctx, init_list_expr, i, element_type, false)) {
         auto* init_list_expr = result->init_list_expr;
         init_list_expr->set_type(element_type);
         new_init_list.push_back(init_list_expr);
@@ -664,18 +672,14 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
 
       auto* child_init_list_expr = To<InitListExpression>(list[i]);
       auto* element_type = To<ConstantArrayType>(type->element_type());
-      auto result = CheckInitList(ctx, child_init_list_expr, 0, element_type);
+      auto result =
+          CheckInitList(ctx, child_init_list_expr, 0, element_type, true);
       if (!result) {
         return std::nullopt;
       }
       auto* init_list_expr = result->init_list_expr;
       init_list_expr->set_type(element_type);
       new_init_list.push_back(init_list_expr);
-
-      if (init_list_expr->list().size() < child_init_list_expr->list().size()) {
-        Diag(DiagnosticID::kExcessInitListSize, init_list_expr->location());
-        return std::nullopt;
-      }
       continue;
     }
 
@@ -703,6 +707,11 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
     }
   }
 
+  if (check_size && i < list.size()) {
+    Diag(DiagnosticID::kExcessInitListSize, init_list_expr->location());
+    return std::nullopt;
+  }
+
   // Add padding to array
   AlignArrayInitList(ctx, &new_init_list, type, init_list_expr->location());
 
@@ -722,11 +731,7 @@ bool Sema::CheckInitListExpression(const CheckingContext& ctx,
   }
 
   auto* array_type = To<ConstantArrayType>(ctx.decl_array_type);
-  if (auto result = CheckInitList(ctx, init_list_expr, 0, array_type)) {
-    if (result->offset_delta < init_list_expr->list().size()) {
-      Diag(DiagnosticID::kExcessInitListSize, init_list_expr->location());
-      return false;
-    }
+  if (auto result = CheckInitList(ctx, init_list_expr, 0, array_type, true)) {
     init_list_expr->set_list(result->init_list_expr->list());
     init_list_expr->set_type(ctx.decl_array_type);
     return true;
@@ -742,7 +747,11 @@ bool Sema::CheckArraySubscriptExpression(
     if (!success) {
       return false;
     }
-    auto* array_type = To<ConstantArrayType>(base->type());
+    auto* array_type = DynamicTo<ConstantArrayType>(base->type());
+    if (!array_type) {
+      Diag(DiagnosticID::kInvalidArraySubscript, array_subscript->location());
+      return false;
+    }
     array_subscript->set_type(array_type->element_type());
     return true;
   }

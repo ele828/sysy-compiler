@@ -297,26 +297,6 @@ TEST(Sema, ConstDeclArrayInitValue3) {
   });
 }
 
-TEST(Sema, MultiArrayInitValueWithPadding) {
-  const char* source = R"(
-    const int arr[3][2] = {
-      1, 2,
-      {3, 4},
-    };
-  )";
-  TestSema(source, [](CompilationUnit* unit) {
-    auto& init_list =
-        To<InitListExpression>(
-            To<ConstantDeclaration>(unit->body()[1])->init_value())
-            ->list();
-    EXPECT_EQ(init_list.size(), 3u);
-
-    MatchInitList(To<InitListExpression>(init_list[0])->list(), {1, 2});
-    MatchInitList(To<InitListExpression>(init_list[1])->list(), {3, 4});
-    MatchInitList(To<InitListExpression>(init_list[2])->list(), {0, 0});
-  });
-}
-
 TEST(Sema, ConstDeclArrayInitValue4) {
   const char* source = R"(
     const int arr[3][2][2] = {
@@ -453,6 +433,26 @@ TEST(Sema, ConstDeclArrayInitValue8) {
   });
 }
 
+TEST(Sema, MultiArrayInitValueWithPadding) {
+  const char* source = R"(
+    const int arr[3][2] = {
+      1, 2,
+      {3, 4},
+    };
+  )";
+  TestSema(source, [](CompilationUnit* unit) {
+    auto& init_list =
+        To<InitListExpression>(
+            To<ConstantDeclaration>(unit->body()[1])->init_value())
+            ->list();
+    EXPECT_EQ(init_list.size(), 3u);
+
+    MatchInitList(To<InitListExpression>(init_list[0])->list(), {1, 2});
+    MatchInitList(To<InitListExpression>(init_list[1])->list(), {3, 4});
+    MatchInitList(To<InitListExpression>(init_list[2])->list(), {0, 0});
+  });
+}
+
 TEST(Sema, ConstDeclArrayInitExcessSize) {
   const char* source = R"(
     const int arr[1] = { 0, 1 };
@@ -472,6 +472,20 @@ TEST(Sema, ConstDeclArrayInitExcessSize3) {
     const int arr[1][2] = { {0, 1, 2} };
   )";
   TestSema(source, DiagnosticID::kExcessInitListSize);
+}
+
+TEST(Sema, ConstDeclArrayInitExcessSize4) {
+  const char* source = R"(
+    const int c[7][1][5] = {{}, {}, {2, 1, 8, 0, 0, 0, 0}, {{}}};
+  )";
+  TestSema(source, DiagnosticID::kExcessInitListSize);
+}
+
+TEST(Sema, ConstDeclArrayInitExcessSize5) {
+  const char* source = R"(
+    const int c[7][1][5] = {{}, {}, {2, 1, 8}, {{}}};
+  )";
+  TestSema(source);
 }
 
 TEST(Sema, ConstDeclArrayInitTypeCheck) {
