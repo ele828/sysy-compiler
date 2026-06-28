@@ -120,7 +120,8 @@ class Sema : public AstRecursiveVisitor<Sema> {
 
   MaybeInitListResult CheckInitList(const CheckingContext& ctx,
                                     InitListExpression* init_list_expr,
-                                    size_t i, ConstantArrayType* type);
+                                    size_t i, ConstantArrayType* type,
+                                    bool check_size);
 
   void AlignArrayInitList(const CheckingContext& ctx,
                           ZoneVector<Expression*>* init_list,
