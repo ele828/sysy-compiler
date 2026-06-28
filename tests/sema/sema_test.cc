@@ -624,6 +624,24 @@ TEST(Sema, LocalDeclConstInitValue) {
   TestSema(source);
 }
 
+TEST(Sema, IfConditionTypeCast) {
+  const char* source = R"(
+    void local() {
+      if (1.0) {}
+    }
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, WhileConditionTypeCast) {
+  const char* source = R"(
+    void local() {
+      while (1.0) {}
+    }
+  )";
+  TestSema(source);
+}
+
 TEST(Sema, FunctionDeclParam) {
   const char* source = R"(
     void func(int a, float b) {
@@ -693,6 +711,24 @@ TEST(Sema, FunctionDeclReturnStmt2) {
     int func() {}
   )";
   TestSema(source, DiagnosticID::kFuncNonVoidReturn);
+}
+
+TEST(Sema, FunctionDeclReturnTypeCast) {
+  const char* source = R"(
+    int func() {
+      return 0.0;
+    }
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, FunctionDeclReturnTypeCast2) {
+  const char* source = R"(
+    float func() {
+      return 0;
+    }
+  )";
+  TestSema(source);
 }
 
 TEST(Sema, ArraySubscriptRefersToNonArrayDecl) {

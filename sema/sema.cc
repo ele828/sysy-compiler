@@ -108,8 +108,7 @@ void Sema::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
       auto* casted_init_value =
           ImplicitCast(context()->float_type(), const_decl->init_value());
       const_decl->set_init_value(casted_init_value);
-    }
-    if (init_value_btype->is_float() && const_decl_btype->is_int()) {
+    } else if (init_value_btype->is_float() && const_decl_btype->is_int()) {
       auto* casted_init_value =
           ImplicitCast(context()->int_type(), const_decl->init_value());
       const_decl->set_init_value(casted_init_value);
@@ -293,6 +292,11 @@ void Sema::VisitIfStatement(IfStatement* if_stmt) {
   }
 
   // Type check condition
+  Type* condition_type = if_stmt->condition()->type();
+  if (IsFloat(condition_type)) {
+    auto* casted = ImplicitCast(context_.int_type(), if_stmt->condition());
+    if_stmt->set_condition(casted);
+  }
   if (if_stmt->condition()->type() != context()->int_type()) {
     Diag(DiagnosticID::kIfCondType, if_stmt->condition()->location());
     return;
@@ -313,6 +317,11 @@ void Sema::VisitWhileStatement(WhileStatement* while_stmt) {
   }
 
   // Type check condition
+  Type* condition_type = while_stmt->condition()->type();
+  if (IsFloat(condition_type)) {
+    auto* casted = ImplicitCast(context_.int_type(), while_stmt->condition());
+    while_stmt->set_condition(casted);
+  }
   if (while_stmt->condition()->type() != context()->int_type()) {
     Diag(DiagnosticID::kWhileCondType, while_stmt->condition()->location());
     return;
@@ -346,9 +355,21 @@ void Sema::VisitReturnStatement(ReturnStatement* return_stmt) {
   // Return type should match with its function declaration.
   if (auto* expr = return_stmt->expression()) {
     CheckingContext ctx;
-    CheckExpression(ctx, return_stmt->expression());
-    if (!expr->type()->Equals(
-            *enclosing_function_scope->function_declaration()->type())) {
+    if (!CheckExpression(ctx, return_stmt->expression())) {
+      return;
+    }
+
+    Type* function_return_type =
+        enclosing_function_scope->function_declaration()->type();
+    if (IsInt(expr->type()) && IsFloat(function_return_type)) {
+      auto* casted = ImplicitCast(context_.float_type(), expr);
+      return_stmt->set_expression(casted);
+    } else if (IsFloat(expr->type()) && IsInt(function_return_type)) {
+      auto* casted = ImplicitCast(context_.int_type(), expr);
+      return_stmt->set_expression(casted);
+    }
+
+    if (!return_stmt->expression()->type()->Equals(*function_return_type)) {
       Diag(DiagnosticID::kReturnTypeMismatch, expr->location());
       return;
     }

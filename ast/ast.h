@@ -270,6 +270,7 @@ class IfStatement : public Statement {
     return n.kind() == Kind::kIfStatement;
   }
 
+  void set_condition(Expression* condition) { condition_ = condition; }
   Expression* condition() const { return condition_; }
   Statement* get_then() const { return then_; }
   Statement* get_else() const { return else_; }
@@ -292,6 +293,7 @@ class WhileStatement : public Statement {
     return n.kind() == Kind::kWhileStatement;
   }
 
+  void set_condition(Expression* condition) { condition_ = condition; }
   Expression* condition() const { return condition_; }
   Statement* body() const { return body_; }
 
@@ -328,6 +330,8 @@ class ReturnStatement : public Statement {
   static bool classof(const AstNode& n) {
     return n.kind() == Kind::kReturnStatement;
   }
+
+  void set_expression(Expression* expression) { expression_ = expression; }
 
   Expression* expression() const { return expression_; }
 
