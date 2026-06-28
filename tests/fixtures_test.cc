@@ -79,7 +79,7 @@ void InitFixtureTest() {
   auto fixtures =
       DiscoverFixtures(fs::path{PROJECT_ROOT_PATH} / "tests" / "fixtures");
   std::string runtime_lib_prelude =
-      ReadFile(fs::path{PROJECT_ROOT_PATH} / "runtime" / "sysy.h");
+      ReadFile(fs::path{PROJECT_ROOT_PATH} / "runtime" / "sylib.h");
   size_t runtime_lib_source_lines =
       std::ranges::count(runtime_lib_prelude, '\n');
   for (auto& fixture : fixtures) {

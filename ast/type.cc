@@ -115,7 +115,8 @@ bool IncompleteArrayType::IsCompatibleWith(const Type& other) const {
     return false;
   }
 
-  // Incomplete Array Type is Compatible with any array type in first dimension.
+  // Incomplete Array Type is compatible with any array type in the first
+  // dimension.
   return element_type()->Equals(*other_array_type->element_type());
 }
 
