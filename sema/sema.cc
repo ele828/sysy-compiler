@@ -614,41 +614,6 @@ bool Sema::CheckDeclarationReference(const CheckingContext& ctx,
   return true;
 }
 
-void Sema::AlignArrayInitList(const CheckingContext& ctx,
-                              ZoneVector<Expression*>* init_list,
-                              ConstantArrayType* type,
-                              SourceLocation location) {
-  if (type->is_multi_dimensional()) {
-    for (size_t i = init_list->size(); i < type->size(); ++i) {
-      ZoneVector<Expression*> new_sub_init_list(zone());
-      AlignArrayInitList(ctx, &new_sub_init_list,
-                         To<ConstantArrayType>(type->element_type()), location);
-      auto* new_sub_init_list_expr = zone()->New<InitListExpression>(
-          std::move(new_sub_init_list), location);
-      init_list->push_back(new_sub_init_list_expr);
-    }
-    return;
-  }
-
-  Type* element_type = type->element_type();
-  for (size_t i = init_list->size(); i < type->size(); ++i) {
-    Expression* padding_value = GetZeroLiteral(element_type, location);
-    if (!padding_value) {
-      DCHECK(false);
-      return;
-    }
-
-    if (!CheckExpression(ctx, padding_value)) {
-      // Check expression only set type for the newly created padding_value,
-      // so it should never fail.
-      DCHECK(false);
-      return;
-    }
-
-    init_list->push_back(padding_value);
-  }
-}
-
 MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
                                         InitListExpression* init_list_expr,
                                         size_t i, ConstantArrayType* type,
@@ -733,12 +698,17 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
     return std::nullopt;
   }
 
-  // Add padding to array
-  AlignArrayInitList(ctx, &new_init_list, type, init_list_expr->location());
-
   auto* new_init_list_expr = zone()->New<InitListExpression>(
       std::move(new_init_list), init_list_expr->location());
   new_init_list_expr->set_type(type->element_type());
+
+  // Add array filler if necessary.
+  if (new_init_list_expr->list().size() < type->size()) {
+    auto* array_filler = zone()->New<ImplicitValueInitExpression>(
+        type->element_type(), init_list_expr->location());
+    new_init_list_expr->set_array_filler(array_filler);
+  }
+
   return InitListResult{.offset_delta = i - start_index,
                         .init_list_expr = new_init_list_expr};
 }
@@ -754,6 +724,7 @@ bool Sema::CheckInitListExpression(const CheckingContext& ctx,
   auto* array_type = To<ConstantArrayType>(ctx.decl_array_type);
   if (auto result = CheckInitList(ctx, init_list_expr, 0, array_type, true)) {
     init_list_expr->set_list(result->init_list_expr->list());
+    init_list_expr->set_array_filler(result->init_list_expr->array_filler());
     init_list_expr->set_type(ctx.decl_array_type);
     return true;
   }

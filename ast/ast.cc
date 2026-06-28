@@ -157,6 +157,13 @@ class AstDumper : public AstRecursiveVisitor<AstDumper>,
     Write("ImplicitCastExpression");
     Base::VisitImplicitCastExpression(cast_expr);
   }
+
+  void VisitImplicitValueInitExpression(
+      ImplicitValueInitExpression* implicit_value_init_expr) {
+    PrefixWriterScope scope(*this);
+    Write("ImplicitValueInitExpression");
+    Base::VisitImplicitValueInitExpression(implicit_value_init_expr);
+  }
 };
 
 void AstNode::Dump() {
