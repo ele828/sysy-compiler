@@ -129,6 +129,8 @@ class Sema : public AstRecursiveVisitor<Sema> {
 
   bool ImplicitlyConvertArithmetic(BinaryOperation* binary_operation);
 
+  bool PerformImplicitCast(Expression* lhs, Expression* rhs);
+
   /// Add an ImplicitCastExpression AstNode above the original expression node.
   ImplicitCastExpression* ImplicitCast(Type* type, Expression* expression);
 
