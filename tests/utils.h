@@ -35,7 +35,7 @@ struct Fixture {
 inline std::vector<Fixture> DiscoverFixtures(std::filesystem::path path) {
   std::vector<Fixture> fixtures;
   for (const auto& entry : fs::recursive_directory_iterator(path)) {
-    if (fs::is_regular_file(entry) && entry.path().extension() == ".sy") {
+    if (fs::is_regular_file(entry) && entry.path().extension() == ".c") {
       fixtures.emplace_back(entry.path().filename().string(), entry.path());
     }
   }
