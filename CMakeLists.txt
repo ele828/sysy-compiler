@@ -28,7 +28,7 @@ target_link_libraries(sysy PUBLIC magic_enum)
 
 # sysy runtime library
 set(RUNTIME_FILES
-  runtime/sylib.cc)
+  runtime/sysy_lib.cc)
 add_library(sysy_runtime ${RUNTIME_FILES})
 
 # sysy binary
