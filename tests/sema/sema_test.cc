@@ -752,6 +752,28 @@ TEST(Sema, AssignToConst) {
   TestSema(source, DiagnosticID::kAssignToConst);
 }
 
+TEST(Sema, AssignToConst2) {
+  const char* source = R"(
+    void func() {
+      int arr[1] = {};
+      const int index = 0;
+      arr[index] = 1;
+    }
+  )";
+  TestSema(source);
+}
+
+TEST(Sema, AssignToConst3) {
+  const char* source = R"(
+    void func() {
+      int arr[1][1] = {};
+      const int index = 0;
+      arr[index][0] = 1;
+    }
+  )";
+  TestSema(source);
+}
+
 TEST(Sema, FunctionCall) {
   const char* source = R"(
     void foo() {}

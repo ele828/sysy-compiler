@@ -540,11 +540,23 @@ bool Sema::CheckBinaryAssign(const CheckingContext& ctx,
                              BinaryOperation* binary_operation) {
   auto* lhs = binary_operation->lhs();
   auto* rhs = binary_operation->rhs();
-  CheckingContext lhs_ctx = ctx;
-  lhs_ctx.left_hand_side_of_assignment = true;
-  if (!CheckExpression(lhs_ctx, lhs)) {
+
+  if (!CheckExpression(ctx, lhs)) {
     return false;
   }
+
+  Expression* left_value = lhs;
+  while (auto* array_subcript_expr =
+             DynamicTo<ArraySubscriptExpression>(left_value)) {
+    left_value = array_subcript_expr->base();
+  }
+
+  CheckingContext lhs_ctx = ctx;
+  lhs_ctx.non_constant_reference_only = true;
+  if (!CheckExpression(lhs_ctx, left_value)) {
+    return false;
+  }
+
   if (!CheckExpression(ctx, rhs)) {
     return false;
   }
@@ -605,7 +617,7 @@ bool Sema::CheckDeclarationReference(const CheckingContext& ctx,
     return false;
   }
 
-  if (ctx.left_hand_side_of_assignment && is_const_decl) {
+  if (ctx.non_constant_reference_only && is_const_decl) {
     Diag(DiagnosticID::kAssignToConst, decl_ref->location());
     return false;
   }
