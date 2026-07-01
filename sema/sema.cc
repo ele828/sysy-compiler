@@ -169,8 +169,7 @@ void Sema::VisitVariableDeclaration(VariableDeclaration* var_decl) {
         auto* casted_init_value =
             ImplicitCast(context()->float_type(), var_decl->init_value());
         var_decl->set_init_value(casted_init_value);
-      }
-      if (init_value_btype->is_float() && var_decl_btype->is_int()) {
+      } else if (init_value_btype->is_float() && var_decl_btype->is_int()) {
         auto* casted_init_value =
             ImplicitCast(context()->int_type(), var_decl->init_value());
         var_decl->set_init_value(casted_init_value);
@@ -712,7 +711,7 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
 
   auto* new_init_list_expr = zone()->New<InitListExpression>(
       std::move(new_init_list), init_list_expr->location());
-  new_init_list_expr->set_type(type->element_type());
+  new_init_list_expr->set_type(type);
 
   // Add array filler if necessary.
   if (new_init_list_expr->list().size() < type->size()) {
