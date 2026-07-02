@@ -215,6 +215,16 @@ TEST(Parser, ParseUnaryExpressionIdentifier) {
   EXPECT_TRUE(IsA<DeclarationReference>(expression));
 }
 
+TEST(Parser, ParseUnaryExpressionComplex) {
+  const char* source = "-a * b";
+
+  AstContext context;
+  Parser parser(context, source);
+  auto* expression = parser.ParseExpression();
+  CheckParserStates(context, parser);
+  EXPECT_TRUE(IsA<BinaryOperation>(expression));
+}
+
 TEST(Parser, ParseUnaryExpressionArraySubscript) {
   const char* source = "arr[1][2]";
 

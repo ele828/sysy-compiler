@@ -453,19 +453,19 @@ Expression* Parser::ParseUnaryExpression() {
   switch (current_.type()) {
     case TokenType::kPlus: {
       Consume();
-      auto* expression = ParseExpression();
+      auto* expression = ParseUnaryExpression();
       return zone()->New<UnaryOperation>(UnaryOperator::kPlus, expression,
                                          current_.location());
     }
     case TokenType::kMinus: {
       Consume();
-      auto* expression = ParseExpression();
+      auto* expression = ParseUnaryExpression();
       return zone()->New<UnaryOperation>(UnaryOperator::kMinus, expression,
                                          current_.location());
     }
     case TokenType::kExclaim: {
       Consume();
-      auto* expression = ParseExpression();
+      auto* expression = ParseUnaryExpression();
       return zone()->New<UnaryOperation>(UnaryOperator::kLNot, expression,
                                          current_.location());
     }
@@ -497,10 +497,11 @@ Expression* Parser::ParseUnaryExpression() {
       Consume();
       if (!result.has_value()) {
         if (result.error() == Token::ConversionError::kInvalid) {
-          SyntaxError("Invalid integer", current_.location());
+          SyntaxError("Invalid floting point number", current_.location());
           return nullptr;
         } else if (result.error() == Token::ConversionError::kOutOfRange) {
-          SyntaxError("Integer is out of range", current_.location());
+          SyntaxError("Floating point number is out of range",
+                      current_.location());
           return nullptr;
         }
       }
