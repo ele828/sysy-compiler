@@ -745,11 +745,18 @@ bool Sema::CheckInitListExpression(const CheckingContext& ctx,
 bool Sema::CheckArraySubscriptExpression(
     const CheckingContext& ctx, ArraySubscriptExpression* array_subscript) {
   auto* base = array_subscript->base();
-  if (auto* base_array_subscrpt = DynamicTo<ArraySubscriptExpression>(base)) {
-    bool success = CheckExpression(ctx, base_array_subscrpt);
+  if (auto* base_array_subscript = DynamicTo<ArraySubscriptExpression>(base)) {
+    bool success = CheckExpression(ctx, base_array_subscript);
     if (!success) {
       return false;
     }
+
+    // Type check dimension expression for outer subscript.
+    success = CheckExpression(ctx, array_subscript->dimension());
+    if (!success) {
+      return false;
+    }
+
     auto* array_type = DynamicTo<ConstantArrayType>(base->type());
     if (!array_type) {
       Diag(DiagnosticID::kInvalidArraySubscript, array_subscript->location());
@@ -757,9 +764,7 @@ bool Sema::CheckArraySubscriptExpression(
     }
     array_subscript->set_type(array_type->element_type());
     return true;
-  }
-
-  if (auto* decl_ref = DynamicTo<DeclarationReference>(base)) {
+  } else if (auto* decl_ref = DynamicTo<DeclarationReference>(base)) {
     bool success = CheckExpression(ctx, decl_ref);
     if (!success) {
       return false;
@@ -779,10 +784,10 @@ bool Sema::CheckArraySubscriptExpression(
     }
     array_subscript->set_type(array_type->element_type());
     return true;
+  } else {
+    Diag(DiagnosticID::kInvalidArraySubscript, array_subscript->location());
+    return false;
   }
-
-  Diag(DiagnosticID::kInvalidArraySubscript, array_subscript->location());
-  return false;
 }
 
 bool Sema::CheckCallExpression(const CheckingContext& ctx,
