@@ -4,6 +4,6 @@
 
 namespace sysy {
 
-class Instruction : public User {};
+class Constant : public User {};
 
 }  // namespace sysy

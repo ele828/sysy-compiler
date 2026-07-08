@@ -4,6 +4,6 @@
 
 namespace sysy {
 
-class BasicBlock : public Value {};
+class Argument : public Value {};
 
 }  // namespace sysy

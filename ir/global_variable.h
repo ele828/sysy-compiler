@@ -4,6 +4,6 @@
 
 namespace sysy {
 
-class Function : public Constant {};
+class GlobalVariable : public Constant {};
 
 }  // namespace sysy

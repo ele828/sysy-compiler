@@ -16,6 +16,17 @@ set(SOURCE_FILES
   ast/ast_context.cc
   ast/type.cc
   base/zone.cc
+  ir/argument.cc
+  ir/basic_block.cc
+  ir/constant.cc
+  ir/function.cc
+  ir/global_variable.cc
+  ir/instruction.cc
+  ir/ir_builder.cc
+  ir/module.cc
+  ir/type.cc
+  ir/user.cc
+  ir/value.cc
   parse/lexer.cc
   parse/parser.cc
   parse/token.cc

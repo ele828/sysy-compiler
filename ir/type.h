@@ -2,6 +2,6 @@
 
 namespace sysy {
 
-class Module {};
+class Type {};
 
 }  // namespace sysy
