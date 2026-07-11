@@ -1,11 +1,11 @@
-#include "ast/type.h"
+#include "common/type.h"
 
 #include <print>
 
-#include "ast/type_visitor.h"
 #include "base/logging.h"
 #include "base/tree_dumper.h"
 #include "base/type_casts.h"
+#include "common/type_visitor.h"
 
 namespace sysy {
 

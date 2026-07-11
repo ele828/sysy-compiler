@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "base/type_casts.h"
+#include "common/global_context.h"
 #include "parse/lexer.h"
 #include "parse/parser.h"
 #include "parse/token.h"
@@ -37,11 +38,12 @@ class ParserFixtureTest : public testing::Test {
       : code_(std::move(code)), prelude_lines_(prelude_lines) {}
 
   void TestBody() override {
-    AstContext context;
-    context.set_prelude_lines(prelude_lines_);
-    Parser parser(context, code_);
+    GlobalContext global_context;
+    AstContext ast_context;
+    ast_context.set_prelude_lines(prelude_lines_);
+    Parser parser(global_context, ast_context, code_);
     auto* compilation_unit = parser.ParseCompilationUnit();
-    CheckParserStates(context, parser);
+    CheckParserStates(ast_context, parser);
 
     EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
   }
@@ -57,15 +59,16 @@ class SemaFixtureTest : public testing::Test {
       : code_(std::move(code)), prelude_lines_(prelude_lines) {}
 
   void TestBody() override {
-    AstContext context;
-    Parser parser(context, code_);
-    context.set_prelude_lines(prelude_lines_);
+    GlobalContext global_context;
+    AstContext ast_context;
+    Parser parser(global_context, ast_context, code_);
+    ast_context.set_prelude_lines(prelude_lines_);
     auto* compilation_unit = parser.ParseCompilationUnit();
-    CheckParserStates(context, parser);
+    CheckParserStates(ast_context, parser);
 
-    Sema sema(context);
+    Sema sema(global_context, ast_context);
     bool success = sema.Analyze(compilation_unit);
-    PrintSemanticErrors(context, sema);
+    PrintSemanticErrors(ast_context, sema);
     EXPECT_TRUE(success);
     EXPECT_TRUE(sema.diagnostics().empty());
   }

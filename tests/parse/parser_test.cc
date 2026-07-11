@@ -9,6 +9,7 @@
 #include "ast/ast_context.h"
 #include "base/type_casts.h"
 #include "tests/utils.h"
+#include "common/global_context.h"
 
 namespace sysy::test {
 
@@ -16,10 +17,11 @@ namespace {
 
 void TestBinaryExpression(std::string_view source, BinaryOperator op,
                           AstNode::Kind lhs_kind, AstNode::Kind rhs_kind) {
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseExpression();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
 
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
@@ -32,10 +34,11 @@ void TestBinaryExpression(std::string_view source, BinaryOperator op,
 
 void TestUnaryExpression(std::string_view source, UnaryOperator op,
                          AstNode::Kind kind) {
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseUnaryExpression();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<UnaryOperation>(expression));
 
   auto* unary_expr = To<UnaryOperation>(expression);
@@ -48,8 +51,9 @@ void TestUnaryExpression(std::string_view source, UnaryOperator op,
 TEST(Parser, ParseCompilationUnit) {
   const char* source = "";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
 }
@@ -57,8 +61,9 @@ TEST(Parser, ParseCompilationUnit) {
 TEST(Parser, ParseConstantaDeclaration) {
   const char* source = "const int a = 1;";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
 }
@@ -66,8 +71,9 @@ TEST(Parser, ParseConstantaDeclaration) {
 TEST(Parser, ParseConstantaDeclarationWithoutInitValue) {
   const char* source = "const int a;";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(parser.has_errors());
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
@@ -76,8 +82,9 @@ TEST(Parser, ParseConstantaDeclarationWithoutInitValue) {
 TEST(Parser, ParseConstantDeclarationMultiples) {
   const char* source = "const int a = 1, b[1] = {1}, c[2] = {1,2};";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
 }
@@ -85,8 +92,9 @@ TEST(Parser, ParseConstantDeclarationMultiples) {
 TEST(Parser, ParseVariableDeclaration) {
   const char* source = "int a = 1;";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
 }
@@ -94,8 +102,9 @@ TEST(Parser, ParseVariableDeclaration) {
 TEST(Parser, ParseVariableDeclarationMultiples) {
   const char* source = "int a = 1, b[1] = {1}, c[2] = {1, 2}, d;";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
 }
@@ -103,8 +112,9 @@ TEST(Parser, ParseVariableDeclarationMultiples) {
 TEST(Parser, ParseFunctionDeclarationSimple) {
   const char* source = "void foo() {}";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* compilation_unit = parser.ParseCompilationUnit();
   EXPECT_TRUE(IsA<CompilationUnit>(compilation_unit));
 }
@@ -112,17 +122,18 @@ TEST(Parser, ParseFunctionDeclarationSimple) {
 TEST(Parser, ParseFunctionDeclaration) {
   const char* source = "void fun(int a, float b[1+1][1]) {}";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto decl_group = parser.ParseDeclarationGroup();
   auto decl = decl_group[0];
 
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<FunctionDeclaration>(decl));
 
   auto* fun_decl = To<FunctionDeclaration>(decl);
   EXPECT_EQ(fun_decl->name(), "fun");
-  EXPECT_EQ(fun_decl->type(), context.void_type());
+  EXPECT_EQ(fun_decl->type(), global_context.void_type());
   EXPECT_EQ(fun_decl->parameters().size(), 2u);
 
   EXPECT_TRUE(IsA<CompoundStatement>(fun_decl->body()));
@@ -136,12 +147,13 @@ TEST(Parser, ParseFunctionDeclarationWithBody) {
     }
   )";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto decl_group = parser.ParseDeclarationGroup();
   auto decl = decl_group[0];
 
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<FunctionDeclaration>(decl));
 
   auto* fun_decl = To<FunctionDeclaration>(decl);
@@ -155,12 +167,13 @@ TEST(Parser, ParseFunctionDeclarationWithoutBody) {
     void fun();
   )";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto decl_group = parser.ParseDeclarationGroup();
   auto decl = decl_group[0];
 
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<FunctionDeclaration>(decl));
 
   auto* fun_decl = To<FunctionDeclaration>(decl);
@@ -187,10 +200,11 @@ TEST(Parser, ParseUnaryExpressionNot) {
 TEST(Parser, ParseUnaryExpressionInt) {
   const char* source = "1";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseUnaryExpression();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<IntegerLiteral>(expression));
   EXPECT_EQ(To<IntegerLiteral>(expression)->value(), 1);
 }
@@ -198,50 +212,55 @@ TEST(Parser, ParseUnaryExpressionInt) {
 TEST(Parser, ParseUnaryExpressionFloat) {
   const char* source = "1.1";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseUnaryExpression();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<FloatingLiteral>(expression));
 }
 
 TEST(Parser, ParseUnaryExpressionIdentifier) {
   const char* source = "a";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseUnaryExpression();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<DeclarationReference>(expression));
 }
 
 TEST(Parser, ParseUnaryExpressionComplex) {
   const char* source = "-a * b";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseExpression();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 }
 
 TEST(Parser, ParseUnaryExpressionArraySubscript) {
   const char* source = "arr[1][2]";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseUnaryExpression();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<ArraySubscriptExpression>(expression));
 }
 
 TEST(Parser, ParseUnaryExpressionCallExpression) {
   const char* source = "fun(1, 2)";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseUnaryExpression();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<CallExpression>(expression));
   EXPECT_EQ(To<CallExpression>(expression)->name(), "fun");
   EXPECT_EQ(To<CallExpression>(expression)->arguments().size(), 2);
@@ -256,10 +275,11 @@ TEST(Parser, ParseExpressionBinary) {
 TEST(Parser, ParseExpressionBinaryOperationAddWithMul) {
   const char* source = "1 + 2 * 3";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseExpression();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
@@ -276,10 +296,11 @@ TEST(Parser, ParseExpressionBinaryOperationAddWithMul) {
 TEST(Parser, ParseExpressionBinaryOperationAddWithDiv) {
   const char* source = "1 + 2 / 3";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseExpression();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
@@ -296,10 +317,11 @@ TEST(Parser, ParseExpressionBinaryOperationAddWithDiv) {
 TEST(Parser, ParseExpressionBinaryOperationAddWithRem) {
   const char* source = "1 + 2 % 3";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseExpression();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
@@ -316,10 +338,11 @@ TEST(Parser, ParseExpressionBinaryOperationAddWithRem) {
 TEST(Parser, ParseExpressionBinaryOperationCombined) {
   const char* source = "1 * 2 + 3 / 4";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseExpression();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
@@ -341,10 +364,11 @@ TEST(Parser, ParseExpressionBinaryOperationCombined) {
 TEST(Parser, ParseExpressionBinaryParenthesis) {
   const char* source = "1 + (2 + 3)";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseExpression();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
@@ -379,10 +403,11 @@ TEST(Parser, ParseExpressionLogicalOr) {
 TEST(Parser, ParseExpressionLogicalCombined) {
   const char* source = "a && b || c && d";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseExpression();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<BinaryOperation>(expression));
 
   auto* bin_expr = To<BinaryOperation>(expression);
@@ -438,10 +463,11 @@ TEST(Parser, ParseIfStatement) {
     }
   )";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* statement = parser.ParseStatement();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
 
   EXPECT_TRUE(IsA<IfStatement>(statement));
   auto* if_stmt = To<IfStatement>(statement);
@@ -461,10 +487,11 @@ TEST(Parser, ParseIfStatementElse) {
     }
   )";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* statement = parser.ParseStatement();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
 
   EXPECT_TRUE(IsA<IfStatement>(statement));
   auto* if_stmt = To<IfStatement>(statement);
@@ -485,10 +512,11 @@ TEST(Parser, ParseIfStatementWithSingleStatementBody) {
     else a = 2;
   )";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* statement = parser.ParseStatement();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
 
   EXPECT_TRUE(IsA<IfStatement>(statement));
   auto* if_stmt = To<IfStatement>(statement);
@@ -510,10 +538,11 @@ TEST(Parser, ParseWhileStatement) {
     }
   )";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* statement = parser.ParseStatement();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
 
   EXPECT_TRUE(IsA<WhileStatement>(statement));
   auto* while_stmt = To<WhileStatement>(statement);
@@ -529,10 +558,11 @@ TEST(Parser, ParseWhileStatementWithSingleStatementBody) {
     while (1 == 1) a = 1;
   )";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* statement = parser.ParseStatement();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
 
   EXPECT_TRUE(IsA<WhileStatement>(statement));
   auto* while_stmt = To<WhileStatement>(statement);
@@ -548,10 +578,11 @@ TEST(Parser, ParseBreakStatement) {
     break;
   )";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* statement = parser.ParseStatement();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<BreakStatement>(statement));
 }
 
@@ -560,10 +591,11 @@ TEST(Parser, ParseContinueStatement) {
     continue;
   )";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* statement = parser.ParseStatement();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<ContinueStatement>(statement));
 }
 
@@ -572,10 +604,11 @@ TEST(Parser, ParseReturnStatementValuedVoid) {
     return;
   )";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* statement = parser.ParseStatement();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<ReturnStatement>(statement));
 
   auto* return_stmt = To<ReturnStatement>(statement);
@@ -587,10 +620,11 @@ TEST(Parser, ParseReturnStatementValuedExpression) {
     return 1;
   )";
 
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* statement = parser.ParseStatement();
-  CheckParserStates(context, parser);
+  CheckParserStates(ast_context, parser);
   EXPECT_TRUE(IsA<ReturnStatement>(statement));
 
   auto* return_stmt = To<ReturnStatement>(statement);

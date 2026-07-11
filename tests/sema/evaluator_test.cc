@@ -12,12 +12,13 @@ namespace {
 
 template <typename T>
 void TestEvaluator(std::string_view source, T expect) {
-  AstContext context;
-  Parser parser(context, source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  Parser parser(global_context, ast_context, source);
   auto* expression = parser.ParseExpression();
   EXPECT_FALSE(parser.has_errors());
 
-  Scope* scope = context.zone()->New<Scope>(Scope::Type::kGlobal, nullptr);
+  Scope* scope = ast_context.zone()->New<Scope>(Scope::Type::kGlobal, nullptr);
   Evaluator evaluator(scope);
   auto result = evaluator.Evaluate(expression);
   if constexpr (std::is_integral_v<T>) {

@@ -8,6 +8,7 @@
 #include <string_view>
 
 #include "ast/ast.h"
+#include "common/global_context.h"
 #include "parse/parser.h"
 #include "sema/diagnostic.h"
 #include "tests/utils.h"
@@ -16,10 +17,10 @@ namespace sysy::test {
 
 namespace {
 
-CompilationUnit* Parse(AstContext& context, std::string_view source) {
-  Parser parser(context, source);
+CompilationUnit* Parse(GlobalContext& global_context, AstContext& ast_context, std::string_view source) {
+  Parser parser(global_context, ast_context, source);
   CompilationUnit* compilation_unit = parser.ParseCompilationUnit();
-  PrintParseErrors(context, parser);
+  PrintParseErrors(ast_context, parser);
   EXPECT_FALSE(parser.has_errors());
   if (parser.has_errors()) {
     return nullptr;
@@ -35,15 +36,16 @@ void TestSema(std::string_view source, DiagnosticID diagnostic,
   }
   final_source.append(source);
 
-  AstContext context;
-  auto* compilation_unit = Parse(context, final_source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  auto* compilation_unit = Parse(global_context, ast_context, final_source);
   if (!compilation_unit) {
     return;
   }
 
-  Sema sema(context);
+  Sema sema(global_context, ast_context);
   bool success = sema.Analyze(compilation_unit);
-  PrintSemanticErrors(context, sema);
+  PrintSemanticErrors(ast_context, sema);
   EXPECT_FALSE(success);
   EXPECT_GT(sema.diagnostics().size(), 0u);
   if (!sema.diagnostics().empty()) {
@@ -57,15 +59,16 @@ void TestSema(std::string_view source,
   final_source.append("int main() { return 0; }");
   final_source.append(source);
 
-  AstContext context;
-  auto* compilation_unit = Parse(context, final_source);
+  GlobalContext global_context;
+  AstContext ast_context;
+  auto* compilation_unit = Parse(global_context, ast_context, final_source);
   if (!compilation_unit) {
     return;
   }
 
-  Sema sema(context);
+  Sema sema(global_context, ast_context);
   bool success = sema.Analyze(compilation_unit);
-  PrintSemanticErrors(context, sema);
+  PrintSemanticErrors(ast_context, sema);
   EXPECT_TRUE(success);
 
   if (callback) {
@@ -102,11 +105,12 @@ TEST(Sema, AnalyzeCompilationUnit) {
       return 0;
     }
   )";
-  AstContext context;
-  auto* compilation_unit = Parse(context, source);
-  Sema sema(context);
+  GlobalContext global_context;
+  AstContext ast_context;
+  auto* compilation_unit = Parse(global_context, ast_context, source);
+  Sema sema(global_context, ast_context);
   bool success = sema.Analyze(compilation_unit);
-  PrintSemanticErrors(context, sema);
+  PrintSemanticErrors(ast_context, sema);
   EXPECT_TRUE(success);
 }
 

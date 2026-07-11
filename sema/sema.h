@@ -5,6 +5,7 @@
 #include "ast/ast.h"
 #include "ast/ast_context.h"
 #include "ast/ast_recursive_visitor.h"
+#include "common/global_context.h"
 #include "common/source_location.h"
 #include "sema/diagnostic.h"
 #include "sema/scope.h"
@@ -30,7 +31,7 @@ class Sema : public AstRecursiveVisitor<Sema> {
     SourceLocation location;
   };
 
-  explicit Sema(AstContext& context);
+  Sema(GlobalContext& global_context, AstContext& ast_context);
 
   /// Returns true if semantic analysis succeed, otherwise returns false.
   bool Analyze(AstNode* node);
@@ -71,8 +72,9 @@ class Sema : public AstRecursiveVisitor<Sema> {
   template <typename ScopeType>
   class NewScope;
 
-  AstContext* context() const { return &context_; }
-  Zone* zone() const { return context_.zone(); }
+  GlobalContext* global_context() const { return &global_context_; }
+  AstContext* ast_context() const { return &ast_context_; }
+  Zone* zone() const { return ast_context_.zone(); }
   Scope* current_scope() const { return current_scope_; }
 
   struct CheckingContext {
@@ -141,7 +143,8 @@ class Sema : public AstRecursiveVisitor<Sema> {
   void Diag(DiagnosticID diagnostic, std::string message,
             SourceLocation location);
 
-  AstContext& context_;
+  GlobalContext& global_context_;
+  AstContext& ast_context_;
   Scope* current_scope_;
 
   std::vector<Diagnostic> diagnostics_;

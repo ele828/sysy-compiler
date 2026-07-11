@@ -14,8 +14,9 @@ add_dependencies()
 set(SOURCE_FILES
   ast/ast.cc
   ast/ast_context.cc
-  ast/type.cc
   base/zone.cc
+  common/global_context.cc
+  common/type.cc
   ir/argument.cc
   ir/basic_block.cc
   ir/constant.cc

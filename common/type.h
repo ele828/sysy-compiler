@@ -3,7 +3,6 @@
 #include <string_view>
 #include <variant>
 
-#include "base/logging.h"
 #include "base/type_casts.h"
 #include "base/zone.h"
 

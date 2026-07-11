@@ -1,14 +1,11 @@
 #include "sema/sema.h"
 
-#include <array>
-#include <complex>
 #include <format>
 #include <optional>
-#include <print>
 
-#include "ast/type.h"
 #include "base/logging.h"
 #include "common/source_location.h"
+#include "common/type.h"
 #include "sema/diagnostic.h"
 #include "sema/evaluator.h"
 #include "sema/scope.h"
@@ -21,7 +18,7 @@ class Sema::NewScope {
   explicit NewScope(Sema& analyzer)
       : analyzer_(analyzer), outer_scope_(analyzer.current_scope()) {
     analyzer_.current_scope_ =
-        analyzer_.context()->zone()->template New<ScopeType>(outer_scope_);
+        analyzer_.zone()->template New<ScopeType>(outer_scope_);
   }
 
   ~NewScope() {
@@ -38,7 +35,10 @@ class Sema::NewScope {
   Scope* outer_scope_;
 };
 
-Sema::Sema(AstContext& context) : context_(context), current_scope_(nullptr) {}
+Sema::Sema(GlobalContext& global_context, AstContext& context)
+    : global_context_(global_context),
+      ast_context_(context),
+      current_scope_(nullptr) {}
 
 bool Sema::Analyze(AstNode* node) {
   Visit(node);
@@ -61,7 +61,7 @@ void Sema::VisitCompilationUnit(CompilationUnit* comp_unit) {
       }
 
       has_main_function = true;
-      if (fun_decl->type() != context()->int_type()) {
+      if (fun_decl->type() != global_context()->int_type()) {
         Diag(DiagnosticID::kMainReturnType, comp_unit->location());
         return;
       }
@@ -105,12 +105,12 @@ void Sema::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
       DynamicTo<BuiltinType>(const_decl->init_value()->type());
   if (const_decl_btype && init_value_btype) {
     if (init_value_btype->is_int() && const_decl_btype->is_float()) {
-      auto* casted_init_value =
-          ImplicitCast(context()->float_type(), const_decl->init_value());
+      auto* casted_init_value = ImplicitCast(global_context()->float_type(),
+                                             const_decl->init_value());
       const_decl->set_init_value(casted_init_value);
     } else if (init_value_btype->is_float() && const_decl_btype->is_int()) {
       auto* casted_init_value =
-          ImplicitCast(context()->int_type(), const_decl->init_value());
+          ImplicitCast(global_context()->int_type(), const_decl->init_value());
       const_decl->set_init_value(casted_init_value);
     }
   }
@@ -166,12 +166,12 @@ void Sema::VisitVariableDeclaration(VariableDeclaration* var_decl) {
         DynamicTo<BuiltinType>(var_decl->init_value()->type());
     if (var_decl_btype && init_value_btype) {
       if (init_value_btype->is_int() && var_decl_btype->is_float()) {
-        auto* casted_init_value =
-            ImplicitCast(context()->float_type(), var_decl->init_value());
+        auto* casted_init_value = ImplicitCast(global_context()->float_type(),
+                                               var_decl->init_value());
         var_decl->set_init_value(casted_init_value);
       } else if (init_value_btype->is_float() && var_decl_btype->is_int()) {
         auto* casted_init_value =
-            ImplicitCast(context()->int_type(), var_decl->init_value());
+            ImplicitCast(global_context()->int_type(), var_decl->init_value());
         var_decl->set_init_value(casted_init_value);
       }
     }
@@ -246,7 +246,7 @@ void Sema::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
   scope.current()->set_function_declaration(fun_decl);
   Base::VisitFunctionDeclaration(fun_decl);
 
-  if (fun_decl->type() != context()->void_type() &&
+  if (fun_decl->type() != global_context()->void_type() &&
       !scope.current()->has_return_statement() && !fun_decl->is_prelude() &&
       !has_diagnostics()) {
     Diag(DiagnosticID::kFuncNonVoidReturn, fun_decl->location());
@@ -293,10 +293,11 @@ void Sema::VisitIfStatement(IfStatement* if_stmt) {
   // Type check condition
   Type* condition_type = if_stmt->condition()->type();
   if (IsFloat(condition_type)) {
-    auto* casted = ImplicitCast(context_.int_type(), if_stmt->condition());
+    auto* casted =
+        ImplicitCast(global_context()->int_type(), if_stmt->condition());
     if_stmt->set_condition(casted);
   }
-  if (if_stmt->condition()->type() != context()->int_type()) {
+  if (if_stmt->condition()->type() != global_context()->int_type()) {
     Diag(DiagnosticID::kIfCondType, if_stmt->condition()->location());
     return;
   }
@@ -318,10 +319,11 @@ void Sema::VisitWhileStatement(WhileStatement* while_stmt) {
   // Type check condition
   Type* condition_type = while_stmt->condition()->type();
   if (IsFloat(condition_type)) {
-    auto* casted = ImplicitCast(context_.int_type(), while_stmt->condition());
+    auto* casted =
+        ImplicitCast(global_context()->int_type(), while_stmt->condition());
     while_stmt->set_condition(casted);
   }
-  if (while_stmt->condition()->type() != context()->int_type()) {
+  if (while_stmt->condition()->type() != global_context()->int_type()) {
     Diag(DiagnosticID::kWhileCondType, while_stmt->condition()->location());
     return;
   }
@@ -361,10 +363,10 @@ void Sema::VisitReturnStatement(ReturnStatement* return_stmt) {
     Type* function_return_type =
         enclosing_function_scope->function_declaration()->type();
     if (IsInt(expr->type()) && IsFloat(function_return_type)) {
-      auto* casted = ImplicitCast(context_.float_type(), expr);
+      auto* casted = ImplicitCast(global_context()->float_type(), expr);
       return_stmt->set_expression(casted);
     } else if (IsFloat(expr->type()) && IsInt(function_return_type)) {
-      auto* casted = ImplicitCast(context_.int_type(), expr);
+      auto* casted = ImplicitCast(global_context()->int_type(), expr);
       return_stmt->set_expression(casted);
     }
 
@@ -375,7 +377,7 @@ void Sema::VisitReturnStatement(ReturnStatement* return_stmt) {
   } else {
     // No return type, expect function declaration to have void return type.
     if (enclosing_function_scope->function_declaration()->type() !=
-        context()->void_type()) {
+        global_context()->void_type()) {
       Diag(DiagnosticID::kReturnTypeMismatch, return_stmt->location());
       return;
     }
@@ -387,10 +389,10 @@ void Sema::VisitReturnStatement(ReturnStatement* return_stmt) {
 bool Sema::CheckExpression(const CheckingContext& ctx, Expression* expr) {
   switch (expr->kind()) {
     case AstNode::Kind::kIntegerLiteral:
-      expr->set_type(context()->int_type());
+      expr->set_type(global_context()->int_type());
       return true;
     case AstNode::Kind::kFloatingLiteral:
-      expr->set_type(context()->float_type());
+      expr->set_type(global_context()->float_type());
       return true;
     case AstNode::Kind::kUnaryOperation: {
       auto* unary_op = To<UnaryOperation>(expr);
@@ -504,7 +506,7 @@ bool Sema::CheckBinaryRelational(const CheckingContext& ctx,
   // (which is not an lvalue) is 1 when the specified relationship holds true
   // and 0 when the specified relationship does not hold.
   // https://en.cppreference.com/w/c/language/operator_comparison.html
-  binary_operation->set_type(context()->int_type());
+  binary_operation->set_type(global_context()->int_type());
 
   return true;
 }
@@ -530,7 +532,7 @@ bool Sema::CheckBinaryLogical(const CheckingContext& ctx,
   }
 
   // Set type of binary logical expression to int.
-  binary_operation->set_type(context()->int_type());
+  binary_operation->set_type(global_context()->int_type());
 
   return true;
 }
@@ -686,7 +688,7 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
     if (!list[i]->type()->Equals(*type->element_type())) {
       // The spec says it allows implicitly cast int to float in init list
       if (IsFloat(type->element_type()) && IsInt(list[i]->type())) {
-        auto* cast = ImplicitCast(context()->float_type(), list[i]);
+        auto* cast = ImplicitCast(global_context()->float_type(), list[i]);
         new_init_list.push_back(cast);
         ++i;
         continue;
@@ -825,11 +827,11 @@ bool Sema::CheckCallExpression(const CheckingContext& ctx,
 
     // Perform implicit cast for int and float type.
     if (IsInt(param_type) && IsFloat(arg_type)) {
-      auto* casted = ImplicitCast(context()->int_type(), arg_expr);
+      auto* casted = ImplicitCast(global_context()->int_type(), arg_expr);
       call_expr->set_argument(i, casted);
       arg_type = casted->type();
     } else if (IsFloat(param_type) && IsInt(arg_type)) {
-      auto* casted = ImplicitCast(context()->float_type(), arg_expr);
+      auto* casted = ImplicitCast(global_context()->float_type(), arg_expr);
       call_expr->set_argument(i, casted);
       arg_type = casted->type();
     }
@@ -874,10 +876,10 @@ bool Sema::ImplicitlyConvertArithmetic(BinaryOperation* binary_operation) {
   // float(the only real type possible is float, which remains as - is)
   // https://en.cppreference.com/w/c/language/conversion.html#Usual_arithmetic_conversions
   if (lhs_type->is_float() && rhs_type->is_int()) {
-    auto* casted_rhs = ImplicitCast(context()->float_type(), rhs);
+    auto* casted_rhs = ImplicitCast(global_context()->float_type(), rhs);
     binary_operation->set_rhs(casted_rhs);
   } else if (lhs_type->is_int() && rhs_type->is_float()) {
-    auto* casted_lhs = ImplicitCast(context()->float_type(), lhs);
+    auto* casted_lhs = ImplicitCast(global_context()->float_type(), lhs);
     binary_operation->set_lhs(casted_lhs);
   }
 
@@ -885,8 +887,8 @@ bool Sema::ImplicitlyConvertArithmetic(BinaryOperation* binary_operation) {
 }
 
 ImplicitCastExpression* Sema::ImplicitCast(Type* type, Expression* expression) {
-  return context()->zone()->New<ImplicitCastExpression>(type, expression,
-                                                        expression->location());
+  return zone()->New<ImplicitCastExpression>(type, expression,
+                                             expression->location());
 }
 
 Expression* Sema::GetZeroLiteral(Type* type, SourceLocation location) {

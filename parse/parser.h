@@ -5,6 +5,7 @@
 #include "ast/ast.h"
 #include "ast/ast_context.h"
 #include "base/zone.h"
+#include "common/global_context.h"
 #include "parse/lexer.h"
 
 namespace sysy {
@@ -16,7 +17,8 @@ class Parser {
     SourceLocation location;
   };
 
-  Parser(AstContext& context, std::string_view source);
+  Parser(GlobalContext& global_context, AstContext& ast_context,
+         std::string_view source);
 
   CompilationUnit* ParseCompilationUnit();
 
@@ -96,11 +98,12 @@ class Parser {
 
   void Unexpected(TokenType type);
 
-  Zone* zone() { return context_.zone(); }
+  Zone* zone() { return ast_context_.zone(); }
 
   Lexer* lexer() { return &lexer_; }
 
-  AstContext& context_;
+  GlobalContext& global_context_;
+  AstContext& ast_context_;
   Lexer lexer_;
   Token current_;
   std::vector<Error> errors_;

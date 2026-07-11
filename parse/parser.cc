@@ -1,10 +1,9 @@
 #include "parse/parser.h"
 
 #include <format>
-#include <print>
 
 #include "ast/ast.h"
-#include "ast/type.h"
+#include "common/type.h"
 #include "parse/token.h"
 
 namespace sysy {
@@ -108,8 +107,11 @@ constexpr OperatorPrecedenceTable operator_precedence_table;
 
 }  // namespace
 
-Parser::Parser(AstContext& context, std::string_view source)
-    : context_(context), lexer_(source) {
+Parser::Parser(GlobalContext& global_context, AstContext& ast_context,
+               std::string_view source)
+    : global_context_(global_context),
+      ast_context_(ast_context),
+      lexer_(source) {
   // make current_ point to the first token
   Consume();
 }
@@ -617,11 +619,11 @@ void Parser::Unexpected(TokenType type) {
 Type* Parser::ResolveBuiltinType(const Token& token) {
   switch (token.type()) {
     case TokenType::kKeywordVoid:
-      return context_.void_type();
+      return global_context_.void_type();
     case TokenType::kKeywordInt:
-      return context_.int_type();
+      return global_context_.int_type();
     case TokenType::kKeywordFloat:
-      return context_.float_type();
+      return global_context_.float_type();
     default:
       SyntaxError(std::format("Unknown type {}", token.value()),
                   token.location());
