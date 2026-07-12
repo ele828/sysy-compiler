@@ -1,4 +1,4 @@
-# SysY Compiler
+# SysY Compiler [![macOS C++ CI](https://github.com/ele828/sysy-compiler/actions/workflows/test.yml/badge.svg)](https://github.com/ele828/sysy-compiler/actions/workflows/test.yml)
 A compiler for SysY language, which is a subset of C language.
 
 ## Build
