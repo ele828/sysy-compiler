@@ -80,5 +80,11 @@ target_link_libraries(
   GTest::gtest)
 
 include(GoogleTest)
+if(TARGET gtest)
+    target_compile_options(gtest PRIVATE -Wno-error)
+endif()
+if(TARGET gtest_main)
+    target_compile_options(gtest_main PRIVATE -Wno-error)
+endif()
 gtest_discover_tests(sysy_test)
 gtest_discover_tests(sysy_fixtures_test)
