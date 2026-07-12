@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/type_casts.h"
 #include "ir/user.h"
 
 namespace sysy {
@@ -7,15 +8,27 @@ namespace sysy {
 class Instruction : public User {
  public:
   enum Operation {
-    kReturn,
+    kReturn = 1,
   };
 
-  Operation op_code() { return op_code_; }
+  Operation op_code() {
+    return static_cast<Operation>(id() - Value::kInstruction);
+  }
+
+  static bool classof(const Value& v) { return v.id() >= Value::kInstruction; }
 
  private:
-  Operation op_code_;
 };
 
-class ReturnInst : public Instruction {};
+class ReturnInst : public Instruction {
+ public:
+  static bool classof(Instruction& i) {
+    return i.op_code() == Operation::kReturn;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+};
 
 }  // namespace sysy

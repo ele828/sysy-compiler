@@ -11,19 +11,18 @@ class GlobalContext final {
 
   Zone* zone() { return &zone_; }
 
-  Type* void_type() const { return builtin_types_.void_type; }
-  Type* int_type() const { return builtin_types_.int_type; }
-  Type* float_type() const { return builtin_types_.float_type; }
+  Type* void_type() const { return void_type_; }
+
+  Type* int_type() const { return int_type_; }
+
+  Type* float_type() const { return float_type_; }
 
  private:
-  struct BuiltinTypes {
-    BuiltinType* void_type;
-    BuiltinType* int_type;
-    BuiltinType* float_type;
-  };
-
   Zone zone_;
-  BuiltinTypes builtin_types_;
+
+  Type* void_type_;
+  Type* int_type_;
+  Type* float_type_;
 };
 
 }  // namespace sysy

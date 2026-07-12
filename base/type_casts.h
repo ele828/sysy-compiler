@@ -1,21 +1,47 @@
 #pragma once
 
+#include <type_traits>
+
 #include "base/logging.h"
 
 namespace sysy::base {
 
+template <typename Derived>
+struct DowncastTraits;
+
 namespace internal {
 
 template <typename Derived, typename Base>
-auto IsDowncastAllowedHelper(const Base& from) {
-  return Derived::classof(from);
-}
+concept HasDowncastTraits =
+    requires(const Base& b) { DowncastTraits<Derived>::AllowFrom(b); };
+
+template <typename Derived, typename Base>
+struct DowncastTraitsHelper {
+  static bool AllowFrom(const Base& from) { return Derived::classof(from); }
+};
+
+template <typename Derived, typename Base>
+  requires(!std::is_base_of_v<Derived, Base> &&
+           HasDowncastTraits<Derived, Base>)
+struct DowncastTraitsHelper<Derived, Base> {
+  static bool AllowFrom(const Base& from) {
+    return DowncastTraits<Derived>::AllowFrom(from);
+  }
+};
+
+// If Derived is actually a base class of Base, unconditionally return true to
+// skip the type checks.
+template <typename Derived, typename Base>
+  requires(std::is_base_of_v<Derived, Base>)
+struct DowncastTraitsHelper<Derived, Base> {
+  static bool AllowFrom(const Base&) { return true; }
+};
 
 };  // namespace internal
 
 template <typename Derived, typename Base>
 bool IsA(const Base& from) {
-  return internal::IsDowncastAllowedHelper<Derived>(from);
+  return internal::DowncastTraitsHelper<Derived, Base>::AllowFrom(from);
 }
 
 template <typename Derived, typename Base>

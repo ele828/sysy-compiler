@@ -20,12 +20,13 @@ set(SOURCE_FILES
   ir/argument.cc
   ir/basic_block.cc
   ir/constant.cc
+  ir/constant_data.cc
   ir/function.cc
   ir/global_variable.cc
   ir/instruction.cc
   ir/ir_builder.cc
   ir/module.cc
-  ir/type.cc
+  ir/use.cc
   ir/user.cc
   ir/value.cc
   parse/lexer.cc
