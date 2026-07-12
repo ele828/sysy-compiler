@@ -14,6 +14,7 @@ add_dependencies()
 set(SOURCE_FILES
   ast/ast.cc
   ast/ast_context.cc
+  base/linked_list.cc
   base/zone.cc
   common/global_context.cc
   common/type.cc
@@ -54,6 +55,7 @@ target_link_libraries(sysy_bin sysy)
 enable_testing()
 add_executable(
   sysy_test
+  tests/base/linked_list_test.cc
   tests/base/zone_test.cc
   tests/base/type_casts_test.cc
   tests/parse/lexer_test.cc
