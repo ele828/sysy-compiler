@@ -8,7 +8,7 @@ class Value;
 // A Use represents the edge between a Value definition and its users.
 class Use {
  public:
-  explicit Use(User* user) : user_(user) {}
+  explicit Use(User* parent) : parent_(parent) {}
   Use(const Use&) = delete;
   ~Use();
 
@@ -21,14 +21,14 @@ class Use {
   operator Value*() const { return value_; }
   Value* get() const { return value_; }
 
-  User* user() const { return user_; }
+  User* user() const { return parent_; }
 
  private:
   void AddToList(Use** list);
   void RemoveFromList();
 
   Value* value_{};
-  User* user_{};
+  User* parent_{};
   Use* next_{};
   Use** prev_{};
 

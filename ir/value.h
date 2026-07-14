@@ -12,7 +12,7 @@ class Instruction;
 
 class Value {
  public:
-  enum ValueID {
+  enum ValueID : uint8_t {
     kArgument,
     kBasicBlock,
 
@@ -33,20 +33,30 @@ class Value {
 
   Value(ValueID id, Type* type);
 
+  virtual ~Value() = default;
+
   void AddUse(Use* use) {
     if (has_use_list()) {
       use->AddToList(&use_list_);
     }
   }
 
-  ValueID id() const { return id_; }
+  ValueID id() const { return static_cast<ValueID>(id_); }
 
   Type* type() const { return type_; }
 
   bool has_use_list() const { return !IsA<ConstantData>(this); }
 
+ protected:
+  using SubClassDataType = std::array<uint8_t, 7>;
+
+  uint8_t* sub_class_data() { return sub_class_data_.data(); }
+  const uint8_t* sub_class_data() const { return sub_class_data_.data(); }
+
  private:
-  ValueID id_;
+  uint8_t id_;
+  SubClassDataType sub_class_data_;
+
   Type* type_;
   Use* use_list_{};
 };

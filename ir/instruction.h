@@ -1,11 +1,12 @@
 #pragma once
 
+#include "base/linked_list.h"
 #include "base/type_casts.h"
 #include "ir/user.h"
 
 namespace sysy {
 
-class Instruction : public User {
+class Instruction : public User, public base::LinkNode<Instruction> {
  public:
   enum Operation {
     kReturn = 1,
