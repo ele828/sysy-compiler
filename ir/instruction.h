@@ -19,6 +19,10 @@ class Instruction : public User, public base::LinkNode<Instruction> {
   static bool classof(const Value& v) { return v.id() >= Value::kInstruction; }
 
  private:
+  // Called by Value::DeleteValue
+  void DeleteInst(uint8_t inst);
+
+  friend Value;
 };
 
 class ReturnInst : public Instruction {

@@ -16,7 +16,11 @@ class User : public Value {
     return IsA<Instruction>(v) || IsA<Constant>(v);
   }
 
+  void operator delete(void*);
+
  protected:
+  ~User() = default;
+
   void* operator new(size_t size) = delete;
 
   struct AllocMarker {
@@ -24,8 +28,6 @@ class User : public Value {
   };
 
   void* operator new(size_t size, AllocMarker marker);
-
-  void operator delete(void*);
 
  private:
   void set_num_of_operands(uint32_t num_ops) {
