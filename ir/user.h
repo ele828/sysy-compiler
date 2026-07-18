@@ -39,13 +39,6 @@ class User : public Value {
     memcpy(&num_ops, &sub_class_data()[0], sizeof(uint32_t));
     return num_ops;
   }
-
-  void set_stub() {
-    uint16_t stub1;
-    uint8_t stub2;
-    memcpy(&sub_class_data()[4], &stub1, sizeof(uint16_t));
-    memcpy(&sub_class_data()[6], &stub2, sizeof(uint8_t));
-  }
 };
 
 }  // namespace sysy
