@@ -3,7 +3,9 @@
 namespace sysy {
 
 Instruction::Instruction(Operation op, Type* type, AllocInfo info)
-    : User(static_cast<ValueID>(ValueID::kInstruction + op), type, info) {}
+    : User(static_cast<ValueID>(static_cast<uint8_t>(ValueID::kInstruction) +
+                                static_cast<uint8_t>(op)),
+           type, info) {}
 
 void Instruction::DeleteInst(uint8_t inst) {
   Operation op = static_cast<Operation>(inst);
