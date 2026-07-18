@@ -2,13 +2,13 @@
 
 namespace sysy {
 
-User::User(ValueID id, Type* type, uint32_t num_ops) : Value(id, type) {
-  set_num_of_operands(num_ops);
+User::User(ValueID id, Type* type, AllocInfo info) : Value(id, type) {
+  set_num_of_operands(info.num_ops);
 }
 
-void* User::operator new(size_t size, AllocMarker marker) {
+void* User::operator new(size_t size, AllocInfo info) {
   // Allocate Use array in front of User payload.
-  const size_t num_ops = marker.num_ops;
+  const size_t num_ops = info.num_ops;
   uint8_t* storage =
       static_cast<uint8_t*>(::operator new(size + sizeof(Use) * num_ops));
   Use* use_start = reinterpret_cast<Use*>(storage);

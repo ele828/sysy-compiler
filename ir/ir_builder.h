@@ -1,15 +1,23 @@
 #pragma once
 
-#include "instruction.h"
-#include "value.h"
+#include "common/global_context.h"
+#include "ir/instruction.h"
+#include "ir/value.h"
 
 namespace sysy {
 
 class IRBuilder {
  public:
-  ReturnInst* CreateRetVoid() { return nullptr; }
+  explicit IRBuilder(GlobalContext& context);
 
-  ReturnInst* CreateRet(Value* v) { return nullptr; }
+  ReturnInst* CreateRetVoid() { return ReturnInst::Create(context_, nullptr); }
+
+  ReturnInst* CreateRet(Value* retval) {
+    return ReturnInst::Create(context_, retval);
+  }
+
+ private:
+  GlobalContext& context_;
 };
 
 }  // namespace sysy

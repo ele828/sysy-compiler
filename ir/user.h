@@ -10,7 +10,9 @@ class Instruction;
 
 class User : public Value {
  public:
-  User(ValueID id, Type* type, uint32_t num_ops);
+  struct AllocInfo {
+    uint32_t num_ops;
+  };
 
   static bool classof(const Value& v) {
     return IsA<Instruction>(v) || IsA<Constant>(v);
@@ -19,15 +21,13 @@ class User : public Value {
   void operator delete(void*);
 
  protected:
+  User(ValueID id, Type* type, AllocInfo info);
+
   ~User() = default;
 
   void* operator new(size_t size) = delete;
 
-  struct AllocMarker {
-    uint32_t num_ops;
-  };
-
-  void* operator new(size_t size, AllocMarker marker);
+  void* operator new(size_t size, AllocInfo info);
 
  private:
   void set_num_of_operands(uint32_t num_ops) {
