@@ -18,27 +18,16 @@ class User : public Value {
     return IsA<Instruction>(v) || IsA<Constant>(v);
   }
 
-  void operator delete(void*);
+  uint32_t num_of_operands() const { return num_ops_; }
 
  protected:
   User(ValueID id, Type* type, AllocInfo info);
 
-  ~User() = default;
-
-  void* operator new(size_t size) = delete;
-
-  void* operator new(size_t size, AllocInfo info);
+  ~User() override = default;
 
  private:
-  void set_num_of_operands(uint32_t num_ops) {
-    memcpy(&sub_class_data()[0], &num_ops, sizeof(uint32_t));
-  }
-
-  uint32_t num_of_operands() const {
-    uint32_t num_ops;
-    memcpy(&num_ops, &sub_class_data()[0], sizeof(uint32_t));
-    return num_ops;
-  }
+  uint32_t num_ops_;
+  std::vector<Use*> uses_;
 };
 
 }  // namespace sysy

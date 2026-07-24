@@ -22,12 +22,9 @@ class Instruction : public User, public base::LinkNode<Instruction> {
  protected:
   Instruction(Operation op, Type* type, AllocInfo info);
 
-  ~Instruction() = default;
+  ~Instruction() override = default;
 
  private:
-  // Called by Value::DeleteValue
-  void DeleteInst(uint8_t inst);
-
   friend Value;
 };
 
@@ -35,7 +32,7 @@ class ReturnInst : public Instruction {
  public:
   static ReturnInst* Create(GlobalContext& context, Value* retval) {
     AllocInfo info{.num_ops = retval ? 1u : 0u};
-    return new (info) ReturnInst(context, retval, info);
+    return new ReturnInst(context, retval, info);
   }
 
   static bool classof(Instruction& i) {

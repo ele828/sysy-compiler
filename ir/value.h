@@ -31,7 +31,7 @@ class Value {
     // The following is reserved for various instruction types.
   };
 
-  void DeleteValue();
+  virtual ~Value() = default;
 
   void AddUse(Use* use) {
     if (has_use_list()) {
@@ -48,16 +48,8 @@ class Value {
  protected:
   Value(ValueID id, Type* type);
 
-  // Use DeleteValue() instead.
-  ~Value() = default;
-
-  using SubClassDataType = std::array<uint8_t, 7>;
-  uint8_t* sub_class_data() { return sub_class_data_.data(); }
-  const uint8_t* sub_class_data() const { return sub_class_data_.data(); }
-
  private:
   uint8_t id_;
-  SubClassDataType sub_class_data_;
 
   Type* type_;
   Use* use_list_{};

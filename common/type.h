@@ -1,14 +1,18 @@
 #pragma once
 
+#include <span>
 #include <string_view>
 #include <variant>
+#include <vector>
 
 #include "base/type_casts.h"
 #include "base/zone.h"
+#include "base/zone_container.h"
 
 namespace sysy {
 
 class Expression;
+class GlobalContext;
 
 class Type : public ZoneObject {
  public:
@@ -16,17 +20,22 @@ class Type : public ZoneObject {
     kBuiltin,
     kConstantArray,
     kIncompleteArray,
+    kFunction,
   };
 
-  explicit Type(TypeClass type_class) : type_class_(type_class) {}
+  Type(GlobalContext& context, TypeClass type_class)
+      : context_(context), type_class_(type_class) {}
 
   TypeClass type_class() const { return type_class_; }
+
+  GlobalContext& context() const { return context_; }
 
   bool Equals(const Type& other) const;
 
   void Dump() const;
 
  private:
+  GlobalContext& context_;
   TypeClass type_class_;
 
   friend bool operator==(const Type& lhs, const Type& rhs);
@@ -44,7 +53,8 @@ class BuiltinType : public Type {
     kFloat,
   };
 
-  explicit BuiltinType(Kind kind) : Type(TypeClass::kBuiltin), kind_(kind) {}
+  BuiltinType(GlobalContext& context, Kind kind)
+      : Type(context, TypeClass::kBuiltin), kind_(kind) {}
 
   Kind kind() const { return kind_; }
 
@@ -67,7 +77,8 @@ class BuiltinType : public Type {
 class ArrayType : public Type {
  public:
   explicit ArrayType(TypeClass type_class, Type* element_type)
-      : Type(type_class), element_type_(element_type) {}
+      : Type(element_type->context(), type_class),
+        element_type_(element_type) {}
 
   static bool classof(const Type& t) {
     return t.type_class() == TypeClass::kConstantArray ||
@@ -139,6 +150,29 @@ class IncompleteArrayType : public ArrayType {
   static bool classof(const Type& t) {
     return t.type_class() == TypeClass::kIncompleteArray;
   }
+};
+
+class FunctionType : public Type {
+ public:
+  FunctionType(Type* return_type, ZoneVector<Type*> param_types)
+      : Type(return_type->context(), TypeClass::kFunction),
+        return_type_(return_type),
+        param_types_(std::move(param_types)) {}
+
+  static FunctionType* get(Type* result, std::span<Type*> params);
+  static FunctionType* get(Type* result);
+
+  Type* return_type() const { return return_type_; }
+  Type* param_type(size_t i) const { return param_types_[i]; }
+  const ZoneVector<Type*>& param_types() const { return param_types_; }
+
+  static bool classof(const Type& t) {
+    return t.type_class() == TypeClass::kFunction;
+  }
+
+ private:
+  Type* return_type_;
+  ZoneVector<Type*> param_types_;
 };
 
 inline bool IsInt(const Type* type) {

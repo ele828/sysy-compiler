@@ -5,6 +5,7 @@
 #include "base/logging.h"
 #include "base/tree_dumper.h"
 #include "base/type_casts.h"
+#include "common/global_context.h"
 #include "common/type_visitor.h"
 
 namespace sysy {
@@ -21,6 +22,8 @@ bool Type::Equals(const Type& other) const {
     case Type::TypeClass::kIncompleteArray:
       return To<IncompleteArrayType>(*this).Equals(
           To<IncompleteArrayType>(other));
+    case Type::TypeClass::kFunction:
+      return To<FunctionType>(*this).Equals(To<FunctionType>(other));
   }
 }
 
@@ -123,5 +126,27 @@ bool IncompleteArrayType::IsCompatibleWith(const Type& other) const {
 bool IncompleteArrayType::Equals(const IncompleteArrayType& other) const {
   return ArrayType::Equals(other);
 }
+
+// static
+FunctionType* FunctionType::get(Type* result, std::span<Type*> params) {
+  auto& context = result->context();
+  auto& function_types = context.function_types();
+
+  FunctionTypeKey key{result, params};
+  auto it = function_types.find(key);
+  if (it != function_types.end()) {
+    return *it;
+  }
+
+  ZoneVector<Type*> param_types(context.zone());
+  param_types.assign(params.begin(), params.end());
+  auto* function_type =
+      context.zone()->New<FunctionType>(result, std::move(param_types));
+  function_types.insert(function_type);
+  return function_type;
+}
+
+// static
+FunctionType* FunctionType::get(Type* result) { return get(result, {}); }
 
 }  // namespace sysy

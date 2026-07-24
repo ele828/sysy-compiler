@@ -9,10 +9,10 @@ class Instruction;
 
 class BasicBlock : public Value {
  public:
-  using InitList = base::LinkedList<Instruction>;
+  using InstListType = base::LinkedList<Instruction>;
 
  private:
-  InitList inst_list_;
+  InstListType inst_list_;
 };
 
 }  // namespace sysy
