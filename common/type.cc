@@ -128,7 +128,7 @@ bool IncompleteArrayType::Equals(const IncompleteArrayType& other) const {
 }
 
 // static
-FunctionType* FunctionType::get(Type* result, std::span<Type*> params) {
+FunctionType* FunctionType::get(Type* result, ZoneVector<Type*> params) {
   auto& context = result->context();
   auto& function_types = context.function_types();
 
@@ -138,15 +138,16 @@ FunctionType* FunctionType::get(Type* result, std::span<Type*> params) {
     return *it;
   }
 
-  ZoneVector<Type*> param_types(context.zone());
-  param_types.assign(params.begin(), params.end());
   auto* function_type =
-      context.zone()->New<FunctionType>(result, std::move(param_types));
+      context.zone()->New<FunctionType>(result, std::move(params));
   function_types.insert(function_type);
   return function_type;
 }
 
 // static
-FunctionType* FunctionType::get(Type* result) { return get(result, {}); }
+FunctionType* FunctionType::get(Type* result) {
+  ZoneVector<Type*> params(result->context().zone());
+  return get(result, std::move(params));
+}
 
 }  // namespace sysy

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <span>
 #include <string_view>
 #include <variant>
 #include <vector>
@@ -159,7 +158,7 @@ class FunctionType : public Type {
         return_type_(return_type),
         param_types_(std::move(param_types)) {}
 
-  static FunctionType* get(Type* result, std::span<Type*> params);
+  static FunctionType* get(Type* result, ZoneVector<Type*> params);
   static FunctionType* get(Type* result);
 
   Type* return_type() const { return return_type_; }

@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <iterator>
 #include <utility>
 
 // Simple LinkedList type. (See the Q&A section to understand how this

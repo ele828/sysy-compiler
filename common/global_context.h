@@ -1,20 +1,23 @@
 #pragma once
-
 #include <algorithm>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "base/hashing.h"
 #include "base/zone.h"
+#include "common/symbol_table.h"
 #include "common/type.h"
 
 namespace sysy {
 
+class Value;
+
 struct FunctionTypeKey {
   Type* return_type;
-  std::span<Type*> params;
+  ZoneVector<Type*> params;
 };
 
-struct FunctionTypeHasher {
+struct FunctionTypeHash {
   using is_transparent = void;
 
   std::size_t operator()(const FunctionType* f) const {
@@ -28,7 +31,7 @@ struct FunctionTypeHasher {
   }
 };
 
-struct FunctionTypeComparator {
+struct FunctionTypeEqual {
   using is_transparent = void;
 
   bool operator()(const FunctionType* a, const FunctionType* b) const {
@@ -55,8 +58,8 @@ struct FunctionTypeComparator {
 
 class GlobalContext final {
  public:
-  using FunctionTypeSet = std::unordered_set<FunctionType*, FunctionTypeHasher,
-                                             FunctionTypeComparator>;
+  using FunctionTypeSet =
+      std::unordered_set<FunctionType*, FunctionTypeHash, FunctionTypeEqual>;
 
   GlobalContext();
 
@@ -70,14 +73,18 @@ class GlobalContext final {
 
   FunctionTypeSet& function_types() { return function_types_; }
 
+  void AddValueName(const Value* value, ValueName* name);
+
+  void RemoveValueName(const Value* value);
+
  private:
   Zone zone_;
 
   BuiltinType* void_type_;
   BuiltinType* int_type_;
   BuiltinType* float_type_;
-
   FunctionTypeSet function_types_;
+  std::unordered_map<const Value*, ValueName*> value_names_;
 };
 
 }  // namespace sysy

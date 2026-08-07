@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/type_casts.h"
+#include "common/symbol_table.h"
 #include "common/type.h"
 #include "ir/use.h"
 
@@ -31,7 +32,7 @@ class Value {
     // The following is reserved for various instruction types.
   };
 
-  virtual ~Value() = default;
+  virtual ~Value();
 
   void AddUse(Use* use) {
     if (has_use_list()) {
@@ -43,15 +44,30 @@ class Value {
 
   Type* type() const { return type_; }
 
+  GlobalContext& context() const { return type_->context(); }
+
   bool has_use_list() const { return !IsA<ConstantData>(this); }
+
+  void SetName(std::string_view name);
+
+  bool has_name() const { return name_ != nullptr; }
+
+  std::string_view name() const {
+    if (!has_name()) return {};
+    return *name_;
+  }
 
  protected:
   Value(ValueID id, Type* type);
 
  private:
+  SymbolTable* GetSymbolTable() const;
+  void DestroyName();
+
   uint8_t id_;
 
   Type* type_;
+  ValueName* name_{};
   Use* use_list_{};
 };
 
