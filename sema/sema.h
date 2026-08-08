@@ -134,9 +134,10 @@ class Sema : public AstRecursiveVisitor<Sema> {
 
   Expression* GetZeroLiteral(Type* type, SourceLocation location);
 
-  /// Returns false when evaluation fails
-  bool EvaluateArrayType(const Declaration* decl, Type* type,
-                         bool allow_incomplete_array_type);
+  /// Returns nullptr when evaluation fails otherwise returns the evaluated
+  /// array type.
+  ArrayType* EvaluateArrayType(const Declaration* decl, Type* type,
+                               bool allow_incomplete_array_type);
 
   void Diag(DiagnosticID diagnostic, SourceLocation location);
 

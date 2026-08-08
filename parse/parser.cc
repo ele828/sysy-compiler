@@ -306,9 +306,9 @@ ArrayType* Parser::ParseArrayTypeDeclaration(Type* builtin_type) {
   }
 
   if (!size_expression) {
-    return zone()->New<IncompleteArrayType>(child_type);
+    return IncompleteArrayType::Get(child_type);
   }
-  return zone()->New<ConstantArrayType>(child_type, size_expression);
+  return zone()->New<ConstantArrayWithExprType>(child_type, size_expression);
 }
 
 Statement* Parser::ParseBlock() {

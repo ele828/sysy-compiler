@@ -1,5 +1,6 @@
 #include "common/type.h"
 
+#include <array>
 #include <print>
 
 #include "base/logging.h"
@@ -9,23 +10,6 @@
 #include "common/type_visitor.h"
 
 namespace sysy {
-
-bool Type::Equals(const Type& other) const {
-  if (type_class() != other.type_class()) {
-    return false;
-  }
-  switch (type_class()) {
-    case Type::TypeClass::kBuiltin:
-      return To<BuiltinType>(*this).Equals(To<BuiltinType>(other));
-    case Type::TypeClass::kConstantArray:
-      return To<ConstantArrayType>(*this).Equals(To<ConstantArrayType>(other));
-    case Type::TypeClass::kIncompleteArray:
-      return To<IncompleteArrayType>(*this).Equals(
-          To<IncompleteArrayType>(other));
-    case Type::TypeClass::kFunction:
-      return To<FunctionType>(*this).Equals(To<FunctionType>(other));
-  }
-}
 
 void Type::Dump() const {
   class TypeDumper final : public TypeVisitor<TypeDumper>,
@@ -42,14 +26,16 @@ void Type::Dump() const {
 
     void VisitConstantArrayType(const ConstantArrayType* type) {
       PrefixWriterScope scope(*this);
-      std::string str;
-      if (type->is_number()) {
-        str = std::format("ConstantArrayType size: {}", type->size());
-      } else {
-        str = std::format("ConstantArrayType size: *");
-      }
+      std::string str = std::format("ConstantArrayType size: {}", type->size());
       Write(str);
       Base::VisitConstantArrayType(type);
+    }
+
+    void VisitConstantArrayWithExprType(const ConstantArrayWithExprType* type) {
+      PrefixWriterScope scope(*this);
+      std::string str = std::format("ConstantArrayType expression: *");
+      Write(str);
+      Base::VisitConstantArrayWithExprType(type);
     }
 
     void VisitIncompleteArrayType(const IncompleteArrayType* type) {
@@ -65,6 +51,19 @@ void Type::Dump() const {
   std::println("{}", dumper.str());
 }
 
+// static
+BuiltinType* BuiltinType::GetVoid(GlobalContext& ctx) {
+  return ctx.void_type();
+}
+
+// static
+BuiltinType* BuiltinType::GetInt(GlobalContext& ctx) { return ctx.int_type(); }
+
+// static
+BuiltinType* BuiltinType::GetFloat(GlobalContext& ctx) {
+  return ctx.float_type();
+}
+
 std::string_view BuiltinType::name() const {
   switch (kind()) {
     case Kind::kVoid:
@@ -74,10 +73,6 @@ std::string_view BuiltinType::name() const {
     case Kind::kFloat:
       return "float";
   }
-}
-
-bool BuiltinType::Equals(const BuiltinType& other) const {
-  return kind() == other.kind();
 }
 
 const ArrayType* ArrayType::GetInnermostArrayType() const {
@@ -94,41 +89,55 @@ const ArrayType* ArrayType::GetInnermostArrayType() const {
 
   return inner_type;
 }
+// static
+ConstantArrayType* ConstantArrayType::Get(Type* element_type, size_t size) {
+  auto& context = element_type->context();
+  auto& array_types = context.array_types();
+  auto it = array_types.find(std::make_pair(element_type, size));
+  if (it != array_types.end()) {
+    return To<ConstantArrayType>(it->second);
+  }
 
-bool ArrayType::Equals(const ArrayType& other) const {
-  return element_type()->Equals(*other.element_type());
+  auto* constant_array_type =
+      context.zone()->New<ConstantArrayType>(element_type, size);
+  array_types.emplace(std::make_pair(element_type, size), constant_array_type);
+  return constant_array_type;
 }
 
-bool ConstantArrayType::Equals(const ConstantArrayType& other) const {
-  if (is_expression() || other.is_expression()) {
-    // Expression should be resolved to constant size before invoking Equals
-    NOTREACHED();
-    return false;
+// static
+IncompleteArrayType* IncompleteArrayType::Get(Type* element_type) {
+  auto& context = element_type->context();
+  auto& array_types = context.array_types();
+  auto it = array_types.find(std::make_pair(element_type, 0));
+  if (it != array_types.end()) {
+    return To<IncompleteArrayType>(it->second);
   }
-  return ArrayType::Equals(other) && size_ == other.size_;
+
+  auto* incomplete_array_type =
+      context.zone()->New<IncompleteArrayType>(element_type);
+  array_types.emplace(std::make_pair(element_type, 0), incomplete_array_type);
+  return incomplete_array_type;
 }
 
 bool IncompleteArrayType::IsCompatibleWith(const Type& other) const {
-  if (Type::Equals(other)) {
-    return true;
-  }
-
   const ArrayType* other_array_type = DynamicTo<ArrayType>(other);
   if (!other_array_type) {
     return false;
   }
 
+  if (auto* incomplete_element_type =
+          DynamicTo<IncompleteArrayType>(element_type())) {
+    return incomplete_element_type->IsCompatibleWith(
+        *other_array_type->element_type());
+  }
+
   // Incomplete Array Type is compatible with any array type in the first
   // dimension.
-  return element_type()->Equals(*other_array_type->element_type());
-}
-
-bool IncompleteArrayType::Equals(const IncompleteArrayType& other) const {
-  return ArrayType::Equals(other);
+  return element_type() == other_array_type->element_type();
 }
 
 // static
-FunctionType* FunctionType::get(Type* result, ZoneVector<Type*> params) {
+FunctionType* FunctionType::Get(Type* result, ZoneVector<Type*> params) {
   auto& context = result->context();
   auto& function_types = context.function_types();
 
@@ -145,9 +154,9 @@ FunctionType* FunctionType::get(Type* result, ZoneVector<Type*> params) {
 }
 
 // static
-FunctionType* FunctionType::get(Type* result) {
+FunctionType* FunctionType::Get(Type* result) {
   ZoneVector<Type*> params(result->context().zone());
-  return get(result, std::move(params));
+  return Get(result, std::move(params));
 }
 
 }  // namespace sysy

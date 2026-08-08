@@ -4,6 +4,7 @@
 #include <optional>
 
 #include "base/logging.h"
+#include "base/type_casts.h"
 #include "common/source_location.h"
 #include "common/type.h"
 #include "sema/diagnostic.h"
@@ -82,14 +83,17 @@ void Sema::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
 
   Type* type = const_decl->type();
   if (auto* array_type = DynamicTo<ArrayType>(type)) {
-    if (!EvaluateArrayType(const_decl, array_type,
-                           /*allow_incomplete_array_type=*/false)) {
+    auto* new_array_type =
+        EvaluateArrayType(const_decl, array_type,
+                          /*allow_incomplete_array_type=*/false);
+    if (!new_array_type) {
       return;
     }
+    const_decl->set_type(new_array_type);
 
     // Pass down array type in const declaration, so that we can check and
     // organize array list in init value expression.
-    ctx.decl_array_type = array_type;
+    ctx.decl_array_type = new_array_type;
   }
 
   // Constant declaration without init value is a syntax error.
@@ -115,7 +119,8 @@ void Sema::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
     }
   }
 
-  if (!const_decl->init_value()->type()->Equals(*const_decl->type())) {
+  if (const_decl->init_value()->type() != const_decl->type()) {
+    std::abort();
     Diag(DiagnosticID::kInitValueTypeMismatch,
          const_decl->init_value()->location());
     return;
@@ -136,20 +141,23 @@ void Sema::VisitVariableDeclaration(VariableDeclaration* var_decl) {
 
   Type* type = var_decl->type();
   if (auto* array_type = DynamicTo<ArrayType>(type)) {
-    if (!EvaluateArrayType(var_decl, array_type,
-                           /*allow_incomplete_array_type=*/false)) {
+    auto* new_array_type =
+        EvaluateArrayType(var_decl, array_type,
+                          /*allow_incomplete_array_type=*/false);
+    if (!new_array_type) {
       return;
     }
+    var_decl->set_type(new_array_type);
 
     // Pass down array type in const declaration, so that we can check and
     // organize array list in init value expression.
-    ctx.decl_array_type = array_type;
+    ctx.decl_array_type = new_array_type;
   }
 
   if (IsA<GlobalScope>(current_scope())) {
     if (!var_decl->init_value()) {
       // Zero init when there is no init value
-      auto* init_value = GetZeroLiteral(type, var_decl->location());
+      auto* init_value = GetZeroLiteral(var_decl->type(), var_decl->location());
       if (init_value) {
         var_decl->set_init_value(init_value);
       }
@@ -159,6 +167,17 @@ void Sema::VisitVariableDeclaration(VariableDeclaration* var_decl) {
   if (var_decl->init_value()) {
     if (!CheckExpression(ctx, var_decl->init_value())) {
       return;
+    }
+
+    // If declaration type is an IncompleteArrayType, we check if init_value is
+    // compatible with it. If so, we use the type of init_value as var decl's
+    // type.
+    if (auto* incomplete_array_type =
+            DynamicTo<IncompleteArrayType>(var_decl->type())) {
+      if (incomplete_array_type->IsCompatibleWith(
+              *var_decl->init_value()->type())) {
+        var_decl->set_type(var_decl->init_value()->type());
+      }
     }
 
     auto* var_decl_btype = DynamicTo<BuiltinType>(var_decl->type());
@@ -176,7 +195,7 @@ void Sema::VisitVariableDeclaration(VariableDeclaration* var_decl) {
       }
     }
 
-    if (!var_decl->init_value()->type()->Equals(*var_decl->type())) {
+    if (var_decl->init_value()->type() != var_decl->type()) {
       Diag(DiagnosticID::kInitValueTypeMismatch,
            var_decl->init_value()->location());
       return;
@@ -203,12 +222,17 @@ void Sema::VisitParameterDeclaration(ParameterDeclaration* param_decl) {
     return;
   }
 
-  if (!EvaluateArrayType(param_decl, type, true)) {
-    return;
+  if (auto* array_type = DynamicTo<ArrayType>(type)) {
+    auto* new_array_type = EvaluateArrayType(param_decl, array_type, true);
+    if (!new_array_type) {
+      return;
+    }
+    param_decl->set_type(new_array_type);
   }
 
   // Incomplete array type can only be in the first dimension.
-  auto* incomplete_array_type = DynamicTo<IncompleteArrayType>(type);
+  auto* incomplete_array_type =
+      DynamicTo<IncompleteArrayType>(param_decl->type());
   if (!incomplete_array_type) {
     return;
   }
@@ -370,7 +394,7 @@ void Sema::VisitReturnStatement(ReturnStatement* return_stmt) {
       return_stmt->set_expression(casted);
     }
 
-    if (!return_stmt->expression()->type()->Equals(*function_return_type)) {
+    if (return_stmt->expression()->type() != function_return_type) {
       Diag(DiagnosticID::kReturnTypeMismatch, expr->location());
       return;
     }
@@ -569,7 +593,7 @@ bool Sema::CheckBinaryAssign(const CheckingContext& ctx,
   // If both lhs and rhs are not builtin types, then they should be exactly
   // the same type.
   if (!IsA<BuiltinType>(lhs->type()) && !IsA<BuiltinType>(rhs->type())) {
-    if (lhs->type()->Equals(*rhs->type())) {
+    if (lhs->type() == rhs->type()) {
       return true;
     }
     return false;
@@ -685,7 +709,7 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
     if (!CheckExpression(ctx, list[i])) {
       return std::nullopt;
     }
-    if (!list[i]->type()->Equals(*type->element_type())) {
+    if (list[i]->type() != type->element_type()) {
       // The spec says it allows implicitly cast int to float in init list
       if (IsFloat(type->element_type()) && IsInt(list[i]->type())) {
         auto* cast = ImplicitCast(global_context()->float_type(), list[i]);
@@ -734,12 +758,17 @@ bool Sema::CheckInitListExpression(const CheckingContext& ctx,
     return false;
   }
 
-  auto* array_type = To<ConstantArrayType>(ctx.decl_array_type);
-  if (auto result = CheckInitList(ctx, init_list_expr, 0, array_type, true)) {
-    init_list_expr->set_list(result->init_list_expr->list());
-    init_list_expr->set_array_filler(result->init_list_expr->array_filler());
-    init_list_expr->set_type(ctx.decl_array_type);
-    return true;
+  if (auto* constant_array_type =
+          DynamicTo<ConstantArrayType>(ctx.decl_array_type)) {
+    if (auto result =
+            CheckInitList(ctx, init_list_expr, 0, constant_array_type, true)) {
+      init_list_expr->set_list(result->init_list_expr->list());
+      init_list_expr->set_array_filler(result->init_list_expr->array_filler());
+      init_list_expr->set_type(ctx.decl_array_type);
+      return true;
+    }
+  } else if (IsA<IncompleteArrayType>(ctx.decl_array_type)) {
+    return false;
   }
   return false;
 }
@@ -843,7 +872,7 @@ bool Sema::CheckCallExpression(const CheckingContext& ctx,
         Diag(DiagnosticID::kCallArgType, arg_expr->location());
         return false;
       }
-    } else if (!arg_type->Equals(*param_type)) {
+    } else if (arg_type != param_type) {
       // Argument type should match the parameter of function declaration
       Diag(DiagnosticID::kCallArgType, arg_expr->location());
       return false;
@@ -900,42 +929,57 @@ Expression* Sema::GetZeroLiteral(Type* type, SourceLocation location) {
   return nullptr;
 }
 
-bool Sema::EvaluateArrayType(const Declaration* decl, Type* type,
-                             bool allow_incomplete_array_type) {
-  if (!allow_incomplete_array_type) {
-    if (IsA<IncompleteArrayType>(type)) {
-      Diag(DiagnosticID::kArrayTypeIncomplete, decl->location());
-      return false;
+ArrayType* Sema::EvaluateArrayType(const Declaration* decl, Type* type,
+                                   bool allow_incomplete_array_type) {
+  auto evaluate_element = [&](Type* element_type) -> Type* {
+    if (IsA<ArrayType>(element_type)) {
+      auto new_element_type =
+          EvaluateArrayType(decl, element_type, allow_incomplete_array_type);
+      return new_element_type;
     }
-  }
+    return element_type;
+  };
 
-  if (auto* constant_array_type = DynamicTo<ConstantArrayType>(type);
-      constant_array_type && constant_array_type->is_expression()) {
+  if (auto* incomplete_array_type = DynamicTo<IncompleteArrayType>(type)) {
+    if (!allow_incomplete_array_type) {
+      Diag(DiagnosticID::kArrayTypeIncomplete, decl->location());
+      return nullptr;
+    }
+
+    auto* new_element_type =
+        evaluate_element(incomplete_array_type->element_type());
+
+    // IncompleteArrayType got no dimension to evaluate.
+    return IncompleteArrayType::Get(new_element_type);
+  }
+  if (auto* constant_array_with_expr_type =
+          DynamicTo<ConstantArrayWithExprType>(type)) {
     Evaluator evaluator(current_scope());
-    Value result = evaluator.Evaluate(constant_array_type->expression());
+    Value result =
+        evaluator.Evaluate(constant_array_with_expr_type->expression());
     if (!result.has_value()) {
       Diag(DiagnosticID::kArrayTypeEval, decl->location());
-      return false;
+      return nullptr;
     }
 
     if (result.is_int()) {
       if (result.get_as_int() < 0) {
         Diag(DiagnosticID::kArrayNegDimension, decl->location());
-        return false;
+        return nullptr;
       }
     } else {
       Diag(DiagnosticID::kArrayIntDimension, decl->location());
-      return false;
+      return nullptr;
     }
-    constant_array_type->set_size(result.get_as_int());
+
+    auto* new_element_type =
+        evaluate_element(constant_array_with_expr_type->element_type());
+
+    return ConstantArrayType::Get(new_element_type, result.get_as_int());
   }
 
-  if (auto* array_type = DynamicTo<ArrayType>(type)) {
-    return EvaluateArrayType(decl, array_type->element_type(),
-                             allow_incomplete_array_type);
-  }
-
-  return true;
+  NOTREACHED();
+  return nullptr;
 }
 
 void Sema::Diag(DiagnosticID diagnostic, SourceLocation location) {

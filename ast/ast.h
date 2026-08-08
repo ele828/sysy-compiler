@@ -115,6 +115,7 @@ class Declaration : public AstNode {
            n.kind() <= Kind::kFunctionDelcaration;
   }
 
+  void set_type(Type* type) { type_ = type; }
   Type* type() const { return type_; }
   std::string_view name() const { return name_; }
 

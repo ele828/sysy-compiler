@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string_view>
-#include <variant>
 #include <vector>
 
 #include "base/type_casts.h"
@@ -18,20 +17,20 @@ class Type : public ZoneObject {
   enum class TypeClass {
     kBuiltin,
     kConstantArray,
+    kConstantArrayWithExpr,
     kIncompleteArray,
     kFunction,
   };
-
-  Type(GlobalContext& context, TypeClass type_class)
-      : context_(context), type_class_(type_class) {}
 
   TypeClass type_class() const { return type_class_; }
 
   GlobalContext& context() const { return context_; }
 
-  bool Equals(const Type& other) const;
-
   void Dump() const;
+
+ protected:
+  Type(GlobalContext& context, TypeClass type_class)
+      : context_(context), type_class_(type_class) {}
 
  private:
   GlobalContext& context_;
@@ -39,10 +38,6 @@ class Type : public ZoneObject {
 
   friend bool operator==(const Type& lhs, const Type& rhs);
 };
-
-inline bool operator==(const Type& lhs, const Type& rhs) {
-  return lhs.Equals(rhs);
-}
 
 class BuiltinType : public Type {
  public:
@@ -52,8 +47,9 @@ class BuiltinType : public Type {
     kFloat,
   };
 
-  BuiltinType(GlobalContext& context, Kind kind)
-      : Type(context, TypeClass::kBuiltin), kind_(kind) {}
+  static BuiltinType* GetVoid(GlobalContext& ctx);
+  static BuiltinType* GetInt(GlobalContext& ctx);
+  static BuiltinType* GetFloat(GlobalContext& ctx);
 
   Kind kind() const { return kind_; }
 
@@ -63,26 +59,29 @@ class BuiltinType : public Type {
 
   std::string_view name() const;
 
-  bool Equals(const BuiltinType& other) const;
-
   static bool classof(const Type& t) {
     return t.type_class() == TypeClass::kBuiltin;
   }
 
  private:
+  BuiltinType(GlobalContext& context, Kind kind)
+      : Type(context, TypeClass::kBuiltin), kind_(kind) {}
+
   Kind kind_;
+
+  friend GlobalContext;
+  friend Zone;
 };
 
 class ArrayType : public Type {
  public:
-  explicit ArrayType(TypeClass type_class, Type* element_type)
-      : Type(element_type->context(), type_class),
-        element_type_(element_type) {}
-
   static bool classof(const Type& t) {
     return t.type_class() == TypeClass::kConstantArray ||
+           t.type_class() == TypeClass::kConstantArrayWithExpr ||
            t.type_class() == TypeClass::kIncompleteArray;
   }
+
+  void set_element_type(Type* element_type) { element_type_ = element_type; }
 
   Type* element_type() const { return element_type_; }
 
@@ -90,76 +89,78 @@ class ArrayType : public Type {
 
   const ArrayType* GetInnermostArrayType() const;
 
-  bool Equals(const ArrayType& other) const;
+ protected:
+  ArrayType(TypeClass type_class, Type* element_type)
+      : Type(element_type->context(), type_class),
+        element_type_(element_type) {}
 
  private:
   Type* element_type_;
+
+  friend Zone;
 };
 
 class ConstantArrayType : public ArrayType {
  public:
-  ConstantArrayType(Type* element_type, Expression* size_expression)
-      : ArrayType(TypeClass::kConstantArray, element_type),
-        size_(size_expression) {}
-
-  ConstantArrayType(Type* element_type, size_t size)
-      : ArrayType(TypeClass::kConstantArray, element_type), size_(size) {}
-
   static bool classof(const Type& t) {
     return t.type_class() == TypeClass::kConstantArray;
   }
 
+  static ConstantArrayType* Get(Type* element_type, size_t size);
+
   void set_size(size_t size) { size_ = size; }
 
-  bool is_expression() const {
-    return std::holds_alternative<Expression*>(size_);
-  }
-
-  bool is_number() const { return std::holds_alternative<size_t>(size_); }
-
-  size_t size() const {
-    if (!is_number()) {
-      return 0u;
-    }
-    return std::get<size_t>(size_);
-  }
-
-  Expression* expression() const {
-    if (!is_expression()) {
-      return nullptr;
-    }
-    return std::get<Expression*>(size_);
-  }
-
-  bool Equals(const ConstantArrayType& other) const;
+  size_t size() const { return size_; }
 
  private:
-  std::variant<std::monostate, Expression*, size_t> size_;
+  ConstantArrayType(Type* element_type, size_t size)
+      : ArrayType(TypeClass::kConstantArray, element_type), size_(size) {}
+
+  size_t size_;
+
+  friend Zone;
+};
+
+class ConstantArrayWithExprType : public ArrayType {
+ public:
+  ConstantArrayWithExprType(Type* element_type, Expression* expr)
+      : ArrayType(TypeClass::kConstantArrayWithExpr, element_type),
+        expr_(expr) {}
+
+  static bool classof(const Type& t) {
+    return t.type_class() == TypeClass::kConstantArrayWithExpr;
+  }
+
+  static ConstantArrayType* Get(Type* element_type, size_t size);
+
+  Expression* expression() { return expr_; }
+  const Expression* expression() const { return expr_; }
+
+ private:
+  Expression* expr_;
 };
 
 class IncompleteArrayType : public ArrayType {
  public:
-  explicit IncompleteArrayType(Type* element_type)
-      : ArrayType(TypeClass::kIncompleteArray, element_type) {}
+  static IncompleteArrayType* Get(Type* element_type);
 
   bool IsCompatibleWith(const Type& other) const;
-
-  bool Equals(const IncompleteArrayType& other) const;
 
   static bool classof(const Type& t) {
     return t.type_class() == TypeClass::kIncompleteArray;
   }
+
+ private:
+  explicit IncompleteArrayType(Type* element_type)
+      : ArrayType(TypeClass::kIncompleteArray, element_type) {}
+
+  friend Zone;
 };
 
 class FunctionType : public Type {
  public:
-  FunctionType(Type* return_type, ZoneVector<Type*> param_types)
-      : Type(return_type->context(), TypeClass::kFunction),
-        return_type_(return_type),
-        param_types_(std::move(param_types)) {}
-
-  static FunctionType* get(Type* result, ZoneVector<Type*> params);
-  static FunctionType* get(Type* result);
+  static FunctionType* Get(Type* result, ZoneVector<Type*> params);
+  static FunctionType* Get(Type* result);
 
   Type* return_type() const { return return_type_; }
   Type* param_type(size_t i) const { return param_types_[i]; }
@@ -170,10 +171,18 @@ class FunctionType : public Type {
   }
 
  private:
+  FunctionType(Type* return_type, ZoneVector<Type*> param_types)
+      : Type(return_type->context(), TypeClass::kFunction),
+        return_type_(return_type),
+        param_types_(std::move(param_types)) {}
+
   Type* return_type_;
   ZoneVector<Type*> param_types_;
+
+  friend Zone;
 };
 
+// Helper functions
 inline bool IsInt(const Type* type) {
   auto* builtin = DynamicTo<BuiltinType>(type);
   return builtin && builtin->is_int();

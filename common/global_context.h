@@ -1,7 +1,9 @@
 #pragma once
+
 #include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 #include "base/hashing.h"
 #include "base/zone.h"
@@ -56,10 +58,18 @@ struct FunctionTypeEqual {
   }
 };
 
+struct ArrayTypeHash {
+  std::size_t operator()(const std::pair<Type*, uint64_t>& f) const {
+    return base::hash_combine(std::hash<Type*>{}(f.first), f.second);
+  }
+};
+
 class GlobalContext final {
  public:
   using FunctionTypeSet =
       std::unordered_set<FunctionType*, FunctionTypeHash, FunctionTypeEqual>;
+  using ArrayTypeMap =
+      std::unordered_map<std::pair<Type*, uint64_t>, ArrayType*, ArrayTypeHash>;
 
   GlobalContext();
 
@@ -73,6 +83,8 @@ class GlobalContext final {
 
   FunctionTypeSet& function_types() { return function_types_; }
 
+  ArrayTypeMap& array_types() { return array_types_; }
+
   void AddValueName(const Value* value, ValueName* name);
 
   void RemoveValueName(const Value* value);
@@ -84,6 +96,8 @@ class GlobalContext final {
   BuiltinType* int_type_;
   BuiltinType* float_type_;
   FunctionTypeSet function_types_;
+  ArrayTypeMap array_types_;
+
   std::unordered_map<const Value*, ValueName*> value_names_;
 };
 

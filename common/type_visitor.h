@@ -14,6 +14,9 @@ class TypeVisitor {
         return derived()->VisitBuiltinType(To<BuiltinType>(type));
       case Type::TypeClass::kConstantArray:
         return derived()->VisitConstantArrayType(To<ConstantArrayType>(type));
+      case Type::TypeClass::kConstantArrayWithExpr:
+        return derived()->VisitConstantArrayWithExprType(
+            To<ConstantArrayWithExprType>(type));
       case Type::TypeClass::kIncompleteArray:
         return derived()->VisitIncompleteArrayType(
             To<IncompleteArrayType>(type));
@@ -26,6 +29,10 @@ class TypeVisitor {
   void VisitBuiltinType(const BuiltinType* type) {}
 
   void VisitConstantArrayType(const ConstantArrayType* type) {
+    Visit(type->element_type());
+  }
+
+  void VisitConstantArrayWithExprType(const ConstantArrayWithExprType* type) {
     Visit(type->element_type());
   }
 

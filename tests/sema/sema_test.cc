@@ -17,7 +17,8 @@ namespace sysy::test {
 
 namespace {
 
-CompilationUnit* Parse(GlobalContext& global_context, AstContext& ast_context, std::string_view source) {
+CompilationUnit* Parse(GlobalContext& global_context, AstContext& ast_context,
+                       std::string_view source) {
   Parser parser(global_context, ast_context, source);
   CompilationUnit* compilation_unit = parser.ParseCompilationUnit();
   PrintParseErrors(ast_context, parser);
