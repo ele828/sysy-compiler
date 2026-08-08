@@ -619,11 +619,11 @@ void Parser::Unexpected(TokenType type) {
 Type* Parser::ResolveBuiltinType(const Token& token) {
   switch (token.type()) {
     case TokenType::kKeywordVoid:
-      return global_context_.void_type();
+      return Type::GetVoidType(global_context_);
     case TokenType::kKeywordInt:
-      return global_context_.int_type();
+      return Type::GetIntType(global_context_);
     case TokenType::kKeywordFloat:
-      return global_context_.float_type();
+      return Type::GetFloatType(global_context_);
     default:
       SyntaxError(std::format("Unknown type {}", token.value()),
                   token.location());

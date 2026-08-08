@@ -13,9 +13,9 @@ TEST(IRBuilder, Basic) {
   GlobalContext ctx;
   IRBuilder ir_builder(ctx);
   Module module(ctx);
-  Type* result = ctx.void_type();
+  Type* result = Type::GetVoidType(ctx);
   ZoneVector<Type*> params{ctx.zone()};
-  params.push_back(ctx.int_type());
+  params.push_back(Type::GetIntType(ctx));
   FunctionType* type = FunctionType::Get(result, params);
   auto* function = Function::Create(type, "foo", &module);
   auto* bb = BasicBlock::Create(ctx, function);

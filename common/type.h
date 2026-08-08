@@ -56,10 +56,6 @@ class BuiltinType : public Type {
     kFloat,
   };
 
-  static BuiltinType* GetVoid(GlobalContext& ctx);
-  static BuiltinType* GetInt(GlobalContext& ctx);
-  static BuiltinType* GetFloat(GlobalContext& ctx);
-
   Kind kind() const { return kind_; }
 
   bool is_void() const { return kind_ == Kind::kVoid; }

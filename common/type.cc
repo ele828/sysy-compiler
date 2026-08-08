@@ -12,13 +12,13 @@
 namespace sysy {
 
 // static
-Type* Type::GetVoidType(GlobalContext& ctx) { return ctx.void_type(); }
+Type* Type::GetVoidType(GlobalContext& ctx) { return ctx.void_type_; }
 
 // static
-Type* Type::GetIntType(GlobalContext& ctx) { return ctx.int_type(); }
+Type* Type::GetIntType(GlobalContext& ctx) { return ctx.int_type_; }
 
 // static
-Type* Type::GetFloatType(GlobalContext& ctx) { return ctx.float_type(); }
+Type* Type::GetFloatType(GlobalContext& ctx) { return ctx.float_type_; }
 
 void Type::Dump() const {
   class TypeDumper final : public TypeVisitor<TypeDumper>,
@@ -58,19 +58,6 @@ void Type::Dump() const {
   TypeDumper dumper;
   dumper.Visit(this);
   std::println("{}", dumper.str());
-}
-
-// static
-BuiltinType* BuiltinType::GetVoid(GlobalContext& ctx) {
-  return ctx.void_type();
-}
-
-// static
-BuiltinType* BuiltinType::GetInt(GlobalContext& ctx) { return ctx.int_type(); }
-
-// static
-BuiltinType* BuiltinType::GetFloat(GlobalContext& ctx) {
-  return ctx.float_type();
 }
 
 std::string_view BuiltinType::name() const {

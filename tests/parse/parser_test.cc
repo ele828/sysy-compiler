@@ -8,8 +8,8 @@
 #include "ast/ast.h"
 #include "ast/ast_context.h"
 #include "base/type_casts.h"
-#include "tests/utils.h"
 #include "common/global_context.h"
+#include "tests/utils.h"
 
 namespace sysy::test {
 
@@ -133,7 +133,7 @@ TEST(Parser, ParseFunctionDeclaration) {
 
   auto* fun_decl = To<FunctionDeclaration>(decl);
   EXPECT_EQ(fun_decl->name(), "fun");
-  EXPECT_EQ(fun_decl->type(), global_context.void_type());
+  EXPECT_EQ(fun_decl->type(), Type::GetVoidType(global_context));
   EXPECT_EQ(fun_decl->parameters().size(), 2u);
 
   EXPECT_TRUE(IsA<CompoundStatement>(fun_decl->body()));

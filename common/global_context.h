@@ -75,16 +75,13 @@ class GlobalContext final {
 
   Zone* zone() { return &zone_; }
 
-  BuiltinType* void_type() const { return void_type_; }
-  BuiltinType* int_type() const { return int_type_; }
-  BuiltinType* float_type() const { return float_type_; }
   FunctionTypeSet& function_types() { return function_types_; }
   ArrayTypeMap& array_types() { return array_types_; }
 
+ private:
   void AddValueName(const Value* value, ValueName* name);
   void RemoveValueName(const Value* value);
 
- private:
   Zone zone_;
 
   BuiltinType* void_type_;
@@ -94,6 +91,9 @@ class GlobalContext final {
   ArrayTypeMap array_types_;
 
   std::unordered_map<const Value*, ValueName*> value_names_;
+
+  friend class Value;
+  friend class Type;
 };
 
 }  // namespace sysy

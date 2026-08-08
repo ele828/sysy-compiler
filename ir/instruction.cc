@@ -18,6 +18,6 @@ void Instruction::InsertInto(BasicBlock* basic_block, Instruction* insert_pos) {
 }
 
 ReturnInst::ReturnInst(GlobalContext& context, Value* retval, AllocInfo info)
-    : Instruction(Operation::kReturn, context.void_type(), info) {}
+    : Instruction(Operation::kReturn, Type::GetVoidType(context), info) {}
 
 }  // namespace sysy
