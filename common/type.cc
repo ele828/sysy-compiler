@@ -88,7 +88,7 @@ const ArrayType* ArrayType::GetInnermostArrayType() const {
 // static
 ConstantArrayType* ConstantArrayType::Get(Type* element_type, size_t size) {
   auto& context = element_type->context();
-  auto& array_types = context.array_types();
+  auto& array_types = context.array_types_;
   auto it = array_types.find(std::make_pair(element_type, size));
   if (it != array_types.end()) {
     return To<ConstantArrayType>(it->second);
@@ -103,7 +103,7 @@ ConstantArrayType* ConstantArrayType::Get(Type* element_type, size_t size) {
 // static
 IncompleteArrayType* IncompleteArrayType::Get(Type* element_type) {
   auto& context = element_type->context();
-  auto& array_types = context.array_types();
+  auto& array_types = context.array_types_;
   auto it = array_types.find(std::make_pair(element_type, 0));
   if (it != array_types.end()) {
     return To<IncompleteArrayType>(it->second);
@@ -135,7 +135,7 @@ bool IncompleteArrayType::IsCompatibleWith(const Type& other) const {
 // static
 FunctionType* FunctionType::Get(Type* result, ZoneVector<Type*> params) {
   auto& context = result->context();
-  auto& function_types = context.function_types();
+  auto& function_types = context.function_types_;
 
   FunctionTypeKey key{result, params};
   auto it = function_types.find(key);

@@ -66,19 +66,16 @@ struct ArrayTypeHash {
 
 class GlobalContext final {
  public:
+  GlobalContext();
+
+  Zone* zone() { return &zone_; }
+
+ private:
   using FunctionTypeSet =
       std::unordered_set<FunctionType*, FunctionTypeHash, FunctionTypeEqual>;
   using ArrayTypeMap =
       std::unordered_map<std::pair<Type*, uint64_t>, ArrayType*, ArrayTypeHash>;
 
-  GlobalContext();
-
-  Zone* zone() { return &zone_; }
-
-  FunctionTypeSet& function_types() { return function_types_; }
-  ArrayTypeMap& array_types() { return array_types_; }
-
- private:
   void AddValueName(const Value* value, ValueName* name);
   void RemoveValueName(const Value* value);
 
@@ -94,6 +91,9 @@ class GlobalContext final {
 
   friend class Value;
   friend class Type;
+  friend class FunctionType;
+  friend class ConstantArrayType;
+  friend class IncompleteArrayType;
 };
 
 }  // namespace sysy
