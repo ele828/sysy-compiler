@@ -58,6 +58,7 @@ add_executable(
   tests/base/linked_list_test.cc
   tests/base/zone_test.cc
   tests/base/type_casts_test.cc
+  tests/ir/ir_builder_test.cc
   tests/parse/lexer_test.cc
   tests/parse/parser_test.cc
   tests/parse/token_test.cc

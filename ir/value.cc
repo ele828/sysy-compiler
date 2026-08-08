@@ -1,6 +1,7 @@
 #include "ir/value.h"
 
 #include "base/logging.h"
+#include "base/type_casts.h"
 #include "common/global_context.h"
 #include "ir/function.h"
 #include "ir/global_variable.h"

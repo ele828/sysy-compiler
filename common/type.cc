@@ -11,6 +11,15 @@
 
 namespace sysy {
 
+// static
+Type* Type::GetVoidType(GlobalContext& ctx) { return ctx.void_type(); }
+
+// static
+Type* Type::GetIntType(GlobalContext& ctx) { return ctx.int_type(); }
+
+// static
+Type* Type::GetFloatType(GlobalContext& ctx) { return ctx.float_type(); }
+
 void Type::Dump() const {
   class TypeDumper final : public TypeVisitor<TypeDumper>,
                            public base::TreeDumper {

@@ -5,14 +5,22 @@ namespace sysy {
 Module::Module(GlobalContext& context) : context_(context) {}
 
 Module::~Module() {
-  for (auto* node = global_list_.head(); node != global_list_.end();
-       node = node->next()) {
-    delete node->value();
+  {
+    auto* node = global_list_.head();
+    while (node != global_list_.end()) {
+      auto* next = node->next();
+      delete node->value();
+      node = next;
+    }
   }
 
-  for (auto* node = function_list_.head(); node != function_list_.end();
-       node = node->next()) {
-    delete node->value();
+  {
+    auto* node = function_list_.head();
+    while (node != function_list_.end()) {
+      auto* next = node->next();
+      delete node->value();
+      node = next;
+    }
   }
 }
 

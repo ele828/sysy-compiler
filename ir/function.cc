@@ -12,9 +12,11 @@ Function::Function(FunctionType* type, std::string_view name, Module* module)
 }
 
 Function::~Function() {
-  for (auto* node = basic_blocks_.head(); node != basic_blocks_.end();
-       node = node->next()) {
+  auto* node = basic_blocks_.head();
+  while (node != basic_blocks_.end()) {
+    auto* next = node->next();
     delete node->value();
+    node = next;
   }
 }
 

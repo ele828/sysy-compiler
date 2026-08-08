@@ -13,15 +13,21 @@ class BasicBlock : public Value, public base::LinkNode<BasicBlock> {
  public:
   using InstListType = base::LinkedList<Instruction>;
 
-  static BasicBlock* Create(GlobalContext& ctx, std::string_view name,
-                            Function* parent) {
-    return new BasicBlock(ctx, name, parent);
+  ~BasicBlock() override;
+
+  static BasicBlock* Create(GlobalContext& ctx, Function* parent) {
+    return new BasicBlock(ctx, parent);
   }
+
+  void AppendInstruction(Instruction* ins);
 
   Function* parent() const { return parent_; }
 
+  InstListType& init_list() { return inst_list_; }
+  const InstListType& init_list() const { return inst_list_; }
+
  private:
-  BasicBlock(GlobalContext& ctx, std::string_view name, Function* parent);
+  BasicBlock(GlobalContext& ctx, Function* parent);
 
   Function* parent_;
   InstListType inst_list_;

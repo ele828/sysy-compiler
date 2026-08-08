@@ -7,22 +7,26 @@
 
 namespace sysy {
 
+class BasicBlock;
+
 class Instruction : public User, public base::LinkNode<Instruction> {
  public:
   enum Operation {
     kReturn = 1,
   };
 
+  ~Instruction() override = default;
+
   Operation op_code() {
     return static_cast<Operation>(id() - Value::kInstruction);
   }
+
+  void InsertInto(BasicBlock* basic_block, Instruction* insert_pos = nullptr);
 
   static bool classof(const Value& v) { return v.id() >= Value::kInstruction; }
 
  protected:
   Instruction(Operation op, Type* type, AllocInfo info);
-
-  ~Instruction() override = default;
 
  private:
   friend Value;

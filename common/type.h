@@ -26,6 +26,10 @@ class Type : public ZoneObject {
 
   GlobalContext& context() const { return context_; }
 
+  static Type* GetVoidType(GlobalContext& ctx);
+  static Type* GetIntType(GlobalContext& ctx);
+  static Type* GetFloatType(GlobalContext& ctx);
+
   void Dump() const;
 
  protected:

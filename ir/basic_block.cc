@@ -1,13 +1,27 @@
 #include "ir/basic_block.h"
 
 #include "ir/function.h"
+#include "ir/instruction.h"
 
 namespace sysy {
 
-BasicBlock::BasicBlock(GlobalContext& ctx, std::string_view name,
-                       Function* parent)
-    : Value(ValueID::kBasicBlock, /*TODO:*/ nullptr), parent_(parent) {
-  SetName(name);
+// We use void type as basic block type here.
+BasicBlock::BasicBlock(GlobalContext& ctx, Function* parent)
+    : Value(ValueID::kBasicBlock, Type::GetVoidType(ctx)), parent_(parent) {
+  parent_->basic_blocks().Append(this);
+}
+
+BasicBlock::~BasicBlock() {
+  auto* node = inst_list_.head();
+  while (node != inst_list_.end()) {
+    auto* next = node->next();
+    delete node->value();
+    node = next;
+  }
+}
+
+void BasicBlock::AppendInstruction(Instruction* inst) {
+  inst_list_.Append(inst);
 }
 
 }  // namespace sysy

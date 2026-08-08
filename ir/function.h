@@ -22,6 +22,9 @@ class Function : public Constant, public base::LinkNode<Function> {
 
   Module* parent() const { return parent_; }
 
+  BasicBlockListType& basic_blocks() { return basic_blocks_; }
+  const BasicBlockListType& basic_blocks() const { return basic_blocks_; }
+
   Argument* argument(size_t i) { return arguments_[i]; }
 
   void RemoveFromParent();
