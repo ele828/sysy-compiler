@@ -316,7 +316,7 @@ void Sema::VisitIfStatement(IfStatement* if_stmt) {
 
   // Type check condition
   Type* condition_type = if_stmt->condition()->type();
-  if (IsFloat(condition_type)) {
+  if (Type::IsFloat(condition_type)) {
     auto* casted =
         ImplicitCast(global_context()->int_type(), if_stmt->condition());
     if_stmt->set_condition(casted);
@@ -342,7 +342,7 @@ void Sema::VisitWhileStatement(WhileStatement* while_stmt) {
 
   // Type check condition
   Type* condition_type = while_stmt->condition()->type();
-  if (IsFloat(condition_type)) {
+  if (Type::IsFloat(condition_type)) {
     auto* casted =
         ImplicitCast(global_context()->int_type(), while_stmt->condition());
     while_stmt->set_condition(casted);
@@ -386,10 +386,11 @@ void Sema::VisitReturnStatement(ReturnStatement* return_stmt) {
 
     Type* function_return_type =
         enclosing_function_scope->function_declaration()->type();
-    if (IsInt(expr->type()) && IsFloat(function_return_type)) {
+    if (Type::IsInt(expr->type()) && Type::IsFloat(function_return_type)) {
       auto* casted = ImplicitCast(global_context()->float_type(), expr);
       return_stmt->set_expression(casted);
-    } else if (IsFloat(expr->type()) && IsInt(function_return_type)) {
+    } else if (Type::IsFloat(expr->type()) &&
+               Type::IsInt(function_return_type)) {
       auto* casted = ImplicitCast(global_context()->int_type(), expr);
       return_stmt->set_expression(casted);
     }
@@ -711,7 +712,7 @@ MaybeInitListResult Sema::CheckInitList(const CheckingContext& ctx,
     }
     if (list[i]->type() != type->element_type()) {
       // The spec says it allows implicitly cast int to float in init list
-      if (IsFloat(type->element_type()) && IsInt(list[i]->type())) {
+      if (Type::IsFloat(type->element_type()) && Type::IsInt(list[i]->type())) {
         auto* cast = ImplicitCast(global_context()->float_type(), list[i]);
         new_init_list.push_back(cast);
         ++i;
@@ -855,11 +856,11 @@ bool Sema::CheckCallExpression(const CheckingContext& ctx,
     Type* arg_type = arg_expr->type();
 
     // Perform implicit cast for int and float type.
-    if (IsInt(param_type) && IsFloat(arg_type)) {
+    if (Type::IsInt(param_type) && Type::IsFloat(arg_type)) {
       auto* casted = ImplicitCast(global_context()->int_type(), arg_expr);
       call_expr->set_argument(i, casted);
       arg_type = casted->type();
-    } else if (IsFloat(param_type) && IsInt(arg_type)) {
+    } else if (Type::IsFloat(param_type) && Type::IsInt(arg_type)) {
       auto* casted = ImplicitCast(global_context()->float_type(), arg_expr);
       call_expr->set_argument(i, casted);
       arg_type = casted->type();
@@ -921,9 +922,9 @@ ImplicitCastExpression* Sema::ImplicitCast(Type* type, Expression* expression) {
 }
 
 Expression* Sema::GetZeroLiteral(Type* type, SourceLocation location) {
-  if (IsInt(type)) {
+  if (Type::IsInt(type)) {
     return zone()->New<IntegerLiteral>(0, location);
-  } else if (IsFloat(type)) {
+  } else if (Type::IsFloat(type)) {
     return zone()->New<FloatingLiteral>(0.f, location);
   }
   return nullptr;

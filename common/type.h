@@ -30,6 +30,11 @@ class Type : public ZoneObject {
   static Type* GetIntType(GlobalContext& ctx);
   static Type* GetFloatType(GlobalContext& ctx);
 
+  // Helper functions
+  static inline bool IsInt(const Type* type);
+
+  static inline bool IsFloat(const Type* type);
+
   void Dump() const;
 
  protected:
@@ -186,13 +191,14 @@ class FunctionType : public Type {
   friend Zone;
 };
 
-// Helper functions
-inline bool IsInt(const Type* type) {
+// static
+inline bool Type::IsInt(const Type* type) {
   auto* builtin = DynamicTo<BuiltinType>(type);
   return builtin && builtin->is_int();
 }
 
-inline bool IsFloat(const Type* type) {
+// static
+inline bool Type::IsFloat(const Type* type) {
   auto* builtin = DynamicTo<BuiltinType>(type);
   return builtin && builtin->is_float();
 }
