@@ -1,8 +1,8 @@
 #pragma once
 
 #include "base/type_casts.h"
-#include "common/symbol_table.h"
-#include "common/type.h"
+#include "core/symbol_table.h"
+#include "core/type.h"
 #include "ir/use.h"
 
 namespace sysy {

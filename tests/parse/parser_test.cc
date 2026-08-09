@@ -8,7 +8,7 @@
 #include "ast/ast.h"
 #include "ast/ast_context.h"
 #include "base/type_casts.h"
-#include "common/global_context.h"
+#include "core/global_context.h"
 #include "tests/utils.h"
 
 namespace sysy::test {

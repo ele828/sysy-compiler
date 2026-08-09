@@ -5,8 +5,8 @@
 #include "ast/ast.h"
 #include "ast/ast_context.h"
 #include "ast/ast_recursive_visitor.h"
-#include "common/global_context.h"
-#include "common/source_location.h"
+#include "core/global_context.h"
+#include "core/source_location.h"
 #include "sema/diagnostic.h"
 #include "sema/scope.h"
 

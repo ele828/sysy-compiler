@@ -5,8 +5,8 @@
 
 #include "base/logging.h"
 #include "base/type_casts.h"
-#include "common/source_location.h"
-#include "common/type.h"
+#include "core/source_location.h"
+#include "core/type.h"
 #include "sema/diagnostic.h"
 #include "sema/evaluator.h"
 #include "sema/scope.h"

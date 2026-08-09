@@ -5,8 +5,8 @@
 
 #include "base/zone.h"
 #include "base/zone_container.h"
-#include "common/source_location.h"
-#include "common/type.h"
+#include "core/source_location.h"
+#include "core/type.h"
 
 namespace sysy {
 

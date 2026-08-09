@@ -1,4 +1,4 @@
-#include "common/type.h"
+#include "core/type.h"
 
 #include <array>
 #include <print>
@@ -6,8 +6,8 @@
 #include "base/logging.h"
 #include "base/tree_dumper.h"
 #include "base/type_casts.h"
-#include "common/global_context.h"
-#include "common/type_visitor.h"
+#include "core/global_context.h"
+#include "core/type_visitor.h"
 
 namespace sysy {
 

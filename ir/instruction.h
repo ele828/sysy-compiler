@@ -2,7 +2,7 @@
 
 #include "base/linked_list.h"
 #include "base/type_casts.h"
-#include "common/global_context.h"
+#include "core/global_context.h"
 #include "ir/user.h"
 
 namespace sysy {

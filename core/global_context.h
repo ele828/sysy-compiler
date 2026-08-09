@@ -7,8 +7,8 @@
 
 #include "base/hashing.h"
 #include "base/zone.h"
-#include "common/symbol_table.h"
-#include "common/type.h"
+#include "core/symbol_table.h"
+#include "core/type.h"
 
 namespace sysy {
 

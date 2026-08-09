@@ -16,8 +16,8 @@ set(SOURCE_FILES
   ast/ast_context.cc
   base/linked_list.cc
   base/zone.cc
-  common/global_context.cc
-  common/type.cc
+  core/global_context.cc
+  core/type.cc
   ir/argument.cc
   ir/basic_block.cc
   ir/constant.cc

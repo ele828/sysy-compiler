@@ -5,7 +5,7 @@
 #include <format>
 #include <string_view>
 
-#include "common/source_location.h"
+#include "core/source_location.h"
 #include "magic_enum/magic_enum.hpp"
 
 namespace sysy {

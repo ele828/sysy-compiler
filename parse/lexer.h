@@ -3,7 +3,7 @@
 #include <string_view>
 
 #include "base/ring_buffer.h"
-#include "common/source_location.h"
+#include "core/source_location.h"
 #include "parse/token.h"
 
 namespace sysy {

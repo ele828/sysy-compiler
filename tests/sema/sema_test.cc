@@ -8,7 +8,7 @@
 #include <string_view>
 
 #include "ast/ast.h"
-#include "common/global_context.h"
+#include "core/global_context.h"
 #include "parse/parser.h"
 #include "sema/diagnostic.h"
 #include "tests/utils.h"

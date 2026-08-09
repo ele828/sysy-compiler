@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "common/type.h"
+#include "core/type.h"
 #include "ir/basic_block.h"
 #include "ir/instruction.h"
 #include "ir/module.h"

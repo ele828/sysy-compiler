@@ -3,7 +3,7 @@
 #include <format>
 
 #include "ast/ast.h"
-#include "common/type.h"
+#include "core/type.h"
 #include "parse/token.h"
 
 namespace sysy {

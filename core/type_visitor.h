@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/type_casts.h"
-#include "common/type.h"
+#include "core/type.h"
 
 namespace sysy {
 

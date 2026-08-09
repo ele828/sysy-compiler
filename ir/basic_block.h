@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/linked_list.h"
-#include "common/global_context.h"
+#include "core/global_context.h"
 #include "ir/value.h"
 
 namespace sysy {

@@ -1,4 +1,4 @@
-#include "common/global_context.h"
+#include "core/global_context.h"
 
 #include "ir/constant_data.h"
 
