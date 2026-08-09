@@ -12,6 +12,8 @@
 
 namespace sysy {
 
+class ConstantInt;
+class ConstantFP;
 class Value;
 
 struct FunctionTypeKey {
@@ -68,6 +70,8 @@ class GlobalContext final {
  public:
   GlobalContext();
 
+  ~GlobalContext();
+
   Zone* zone() { return &zone_; }
 
  private:
@@ -87,6 +91,9 @@ class GlobalContext final {
   FunctionTypeSet function_types_;
   ArrayTypeMap array_types_;
 
+  std::unordered_map<int, std::unique_ptr<ConstantInt>> int_constants_;
+  std::unordered_map<float, std::unique_ptr<ConstantFP>> fp_constants_;
+
   std::unordered_map<const Value*, ValueName*> value_names_;
 
   friend class Value;
@@ -94,6 +101,8 @@ class GlobalContext final {
   friend class FunctionType;
   friend class ConstantArrayType;
   friend class IncompleteArrayType;
+  friend class ConstantInt;
+  friend class ConstantFP;
 };
 
 }  // namespace sysy
