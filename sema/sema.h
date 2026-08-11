@@ -36,6 +36,25 @@ class Sema : public AstRecursiveVisitor<Sema> {
   /// Returns true if semantic analysis succeed, otherwise returns false.
   bool Analyze(AstNode* node);
 
+  bool has_diagnostics() const { return !diagnostics_.empty(); }
+
+  const std::vector<Diagnostic>& diagnostics() const { return diagnostics_; }
+
+ private:
+  template <typename ScopeType>
+  class NewScope;
+
+  GlobalContext* global_context() const { return &global_context_; }
+  AstContext* ast_context() const { return &ast_context_; }
+  Zone* zone() const { return ast_context_.zone(); }
+  Scope* current_scope() const { return current_scope_; }
+
+  struct CheckingContext {
+    bool constant_reference_only = false;
+    bool non_constant_reference_only = false;
+    ArrayType* decl_array_type = nullptr;
+  };
+
   /// Utilize AstRecursiveVisitor to traverse AST nodes including
   /// CompilationUnit All kinds of Declarations / Statements.
   void VisitCompilationUnit(CompilationUnit* node);
@@ -63,25 +82,6 @@ class Sema : public AstRecursiveVisitor<Sema> {
   void VisitContinueStatement(ContinueStatement* continue_stmt);
 
   void VisitReturnStatement(ReturnStatement* return_stmt);
-
-  bool has_diagnostics() const { return !diagnostics_.empty(); }
-
-  const std::vector<Diagnostic>& diagnostics() const { return diagnostics_; }
-
- private:
-  template <typename ScopeType>
-  class NewScope;
-
-  GlobalContext* global_context() const { return &global_context_; }
-  AstContext* ast_context() const { return &ast_context_; }
-  Zone* zone() const { return ast_context_.zone(); }
-  Scope* current_scope() const { return current_scope_; }
-
-  struct CheckingContext {
-    bool constant_reference_only = false;
-    bool non_constant_reference_only = false;
-    ArrayType* decl_array_type = nullptr;
-  };
 
   /// Returns true when expression checking succeeded, otherwise returns false
   bool CheckExpression(const CheckingContext& ctx, Expression* expr);
@@ -149,6 +149,8 @@ class Sema : public AstRecursiveVisitor<Sema> {
   Scope* current_scope_;
 
   std::vector<Diagnostic> diagnostics_;
+
+  friend Base;
 };
 
 }  // namespace sysy
