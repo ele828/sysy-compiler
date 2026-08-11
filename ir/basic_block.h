@@ -19,8 +19,6 @@ class BasicBlock : public Value, public base::LinkNode<BasicBlock> {
     return new BasicBlock(ctx, parent);
   }
 
-  void AppendInstruction(Instruction* ins);
-
   Function* parent() const { return parent_; }
 
   InstListType& init_list() { return inst_list_; }

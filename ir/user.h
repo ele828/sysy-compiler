@@ -20,6 +20,8 @@ class User : public Value {
 
   uint32_t num_of_operands() const { return num_ops_; }
 
+  Use& operand(int64_t index) { return *uses_[index]; }
+
  protected:
   User(ValueID id, Type* type, AllocInfo info);
 

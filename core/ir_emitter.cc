@@ -1,0 +1,20 @@
+#include "core/ir_emitter.h"
+
+#include "ir/ir_builder.h"
+
+namespace sysy {
+
+IREmitter::IREmitter(GlobalContext& ctx, Module& module)
+    : ctx_(ctx), module_(module), builder_(ctx) {}
+
+void IREmitter::EmitCompilationUnit(CompilationUnit* unit) { Visit(unit); }
+
+void IREmitter::VisitConstantDeclaration(ConstantDeclaration* const_decl) {}
+
+void IREmitter::VisitVariableDeclaration(VariableDeclaration* var_decl) {}
+
+void IREmitter::VisitParameterDeclaration(ParameterDeclaration* param_decl) {}
+
+void IREmitter::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {}
+
+}  // namespace sysy

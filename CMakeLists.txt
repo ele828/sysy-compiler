@@ -17,6 +17,7 @@ set(SOURCE_FILES
   base/linked_list.cc
   base/zone.cc
   core/global_context.cc
+  core/ir_emitter.cc
   core/type.cc
   ir/argument.cc
   ir/basic_block.cc

@@ -16,10 +16,6 @@ class Module {
 
   ~Module();
 
-  void AppendGlobalVariable(GlobalVariable* global_variable) {
-    global_list_.Append(global_variable);
-  }
-
   FunctionListType& function_list() { return function_list_; }
 
   GlobalContext& context() const { return context_; }

@@ -1,5 +1,3 @@
-#include "ir/ir_builder.h"
-
 #include <gtest/gtest.h>
 
 #include "core/type.h"
@@ -9,15 +7,14 @@
 
 namespace sysy::test {
 
-TEST(IRBuilder, Basic) {
+TEST(IR, BuildIR) {
   GlobalContext ctx;
-  IRBuilder ir_builder(ctx);
   Module module(ctx);
   Type* result = Type::GetVoidType(ctx);
   ZoneVector<Type*> params{ctx.zone()};
   params.push_back(Type::GetIntType(ctx));
   FunctionType* type = FunctionType::Get(result, params);
-  auto* function = Function::Create(type, "foo", module);
+  auto* function = Function::Create(type, "foo", &module);
   auto* bb = BasicBlock::Create(ctx, function);
   ReturnInst::Create(ctx, nullptr)->InsertInto(bb);
 }

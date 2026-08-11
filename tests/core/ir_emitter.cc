@@ -1,0 +1,58 @@
+#include "core/ir_emitter.h"
+
+#include <gtest/gtest.h>
+
+#include "ast/ast.h"
+#include "core/type.h"
+#include "parse/parser.h"
+#include "sema/sema.h"
+#include "tests/utils.h"
+
+namespace sysy::test {
+
+namespace {
+
+CompilationUnit* Parse(GlobalContext& ctx, AstContext& ast_context,
+                       std::string_view source) {
+  Parser parser(ctx, ast_context, source);
+  CompilationUnit* compilation_unit = parser.ParseCompilationUnit();
+  PrintParseErrors(ast_context, parser);
+  EXPECT_FALSE(parser.has_errors());
+  if (parser.has_errors()) {
+    return nullptr;
+  }
+  return compilation_unit;
+}
+
+void CheckSema(GlobalContext& ctx, AstContext& ast_context,
+               CompilationUnit* compilation_unit) {
+  if (!compilation_unit) {
+    FAIL() << "no compilation_unit";
+    return;
+  }
+
+  Sema sema(ctx, ast_context);
+  bool success = sema.Analyze(compilation_unit);
+  PrintSemanticErrors(ast_context, sema);
+  EXPECT_FALSE(success);
+  EXPECT_EQ(sema.diagnostics().size(), 0u);
+}
+
+}  // namespace
+
+TEST(IREmitter, EmitBasic) {
+  GlobalContext ctx;
+  AstContext ast_context;
+
+  const char* source = R"(
+    int main() {
+      return 0;
+    }
+  )";
+  auto* compilation_unit = Parse(ctx, ast_context, source);
+  CheckSema(ctx, ast_context, compilation_unit);
+  IREmitter emitter(ctx);
+  emitter.EmitCompilationUnit(compilation_unit);
+}
+
+}  // namespace sysy::test

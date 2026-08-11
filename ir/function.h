@@ -14,13 +14,13 @@ class Function : public Constant, public base::LinkNode<Function> {
   using BasicBlockListType = base::LinkedList<BasicBlock>;
 
   static Function* Create(FunctionType* type, std::string_view name,
-                          Module* module) {
+                          Module& module) {
     return new Function(type, name, module);
   }
 
   ~Function() override;
 
-  Module* parent() const { return parent_; }
+  Module& parent() const { return parent_; }
 
   BasicBlockListType& basic_blocks() { return basic_blocks_; }
   const BasicBlockListType& basic_blocks() const { return basic_blocks_; }
@@ -32,9 +32,9 @@ class Function : public Constant, public base::LinkNode<Function> {
   void EraseFromParent();
 
  private:
-  Function(FunctionType* type, std::string_view name, Module* module);
+  Function(FunctionType* type, std::string_view name, Module& module);
 
-  Module* parent_;
+  Module& parent_;
   BasicBlockListType basic_blocks_;
   std::vector<Argument*> arguments_;
 };

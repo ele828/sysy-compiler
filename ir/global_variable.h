@@ -5,7 +5,18 @@
 
 namespace sysy {
 
-class GlobalVariable : public Constant,
-                       public base::LinkNode<GlobalVariable> {};
+class Module;
+class GlobalVariable : public Constant, public base::LinkNode<GlobalVariable> {
+ public:
+  GlobalVariable(Module& module, Type* type, bool is_constant,
+                 std::string_view name);
+
+  void SetInitializer(Constant* init);
+
+  Module& parent() const { return parent_; }
+
+ private:
+  Module& parent_;
+};
 
 }  // namespace sysy

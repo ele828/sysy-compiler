@@ -20,8 +20,4 @@ BasicBlock::~BasicBlock() {
   }
 }
 
-void BasicBlock::AppendInstruction(Instruction* inst) {
-  inst_list_.Append(inst);
-}
-
 }  // namespace sysy
