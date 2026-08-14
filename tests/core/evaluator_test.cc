@@ -1,5 +1,5 @@
 
-#include "sema/evaluator.h"
+#include "core/evaluator.h"
 
 #include <gtest/gtest.h>
 
@@ -23,10 +23,10 @@ void TestEvaluator(std::string_view source, T expect) {
   auto result = evaluator.Evaluate(expression);
   if constexpr (std::is_integral_v<T>) {
     EXPECT_TRUE(result.is_int());
-    EXPECT_EQ(result.get_as_int(), expect);
+    EXPECT_EQ(result.get<int>(), expect);
   } else {
     EXPECT_TRUE(result.is_float());
-    EXPECT_EQ(result.get_as_float(), expect);
+    EXPECT_EQ(result.get<float>(), expect);
   }
 }
 

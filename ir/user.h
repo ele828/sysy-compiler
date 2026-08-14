@@ -20,16 +20,24 @@ class User : public Value {
 
   uint32_t num_of_operands() const { return num_ops_; }
 
-  Use& operand(int64_t index) { return *uses_[index]; }
+  Use& operand(int64_t index) { return operands()[index]; }
+
+  void operator delete(void*);
 
  protected:
+  void* operator new(size_t size) = delete;
+
+  void* operator new(size_t size, AllocInfo marker);
+
   User(ValueID id, Type* type, AllocInfo info);
 
-  ~User() override = default;
+  Use* operands() { return reinterpret_cast<Use*>(this) - num_ops_; }
+  const Use* operands() const {
+    return reinterpret_cast<const Use*>(this) - num_ops_;
+  }
 
  private:
   uint32_t num_ops_;
-  std::vector<Use*> uses_;
 };
 
 }  // namespace sysy

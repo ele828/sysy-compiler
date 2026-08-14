@@ -24,6 +24,7 @@ class Value {
     kConstantData,
     kConstantInt,
     kConstantFP,
+    kConstantArray,
     kConstantDataEnd,
 
     kConstantEnd,
