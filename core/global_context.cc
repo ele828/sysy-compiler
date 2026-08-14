@@ -18,8 +18,9 @@ void GlobalContext::AddValueName(const Value* value, ValueName* name) {
 ValueName* GlobalContext::RemoveValueName(const Value* value) {
   auto it = value_names_.find(value);
   if (it != value_names_.end()) {
+    ValueName* name = it->second;
     value_names_.erase(it);
-    return it->second;
+    return name;
   }
   return {};
 }
