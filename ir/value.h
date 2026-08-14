@@ -33,7 +33,7 @@ class Value {
     // The following is reserved for various instruction types.
   };
 
-  virtual ~Value();
+  void DeleteValue();
 
   void AddUse(Use* use) {
     if (has_use_list()) {
@@ -51,26 +51,32 @@ class Value {
 
   void SetName(std::string_view name);
 
-  bool has_name() const { return name_ != nullptr; }
+  bool has_name() const { return has_name_; }
 
-  std::string_view name() const {
-    if (!has_name()) return {};
-    return *name_;
-  }
+  std::string_view name() const;
 
  protected:
   Value(ValueID id, Type* type);
+
+  ~Value();
 
  private:
   SymbolTable* GetSymbolTable() const;
   void DestroyName();
 
   uint8_t id_;
+  bool has_name_ : 1;
 
   Type* type_;
-  ValueName* name_{};
   Use* use_list_{};
 };
+
+struct ValueDeleter {
+  void operator()(Value* value) { value->DeleteValue(); }
+};
+
+template <typename T>
+using unique_value = std::unique_ptr<T, ValueDeleter>;
 
 template <>
 struct base::DowncastTraits<Constant> {

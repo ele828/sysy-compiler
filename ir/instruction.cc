@@ -9,6 +9,15 @@ Instruction::Instruction(Operation op, Type* type, AllocInfo info)
                                 static_cast<uint8_t>(op)),
            type, info) {}
 
+void Instruction::Destroy(uint32_t op, PassKey<Value>) {
+  switch (static_cast<Operation>(op)) {
+    case Operation::kReturn: {
+      delete static_cast<ReturnInst*>(this);
+      break;
+    }
+  }
+}
+
 void Instruction::InsertInto(BasicBlock* basic_block, Instruction* insert_pos) {
   if (!insert_pos) {
     basic_block->init_list().Append(this);

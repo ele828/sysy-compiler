@@ -15,8 +15,21 @@ void GlobalContext::AddValueName(const Value* value, ValueName* name) {
   value_names_.emplace(value, name);
 }
 
-void GlobalContext::RemoveValueName(const Value* value) {
-  value_names_.erase(value);
+ValueName* GlobalContext::RemoveValueName(const Value* value) {
+  auto it = value_names_.find(value);
+  if (it != value_names_.end()) {
+    value_names_.erase(it);
+    return it->second;
+  }
+  return {};
+}
+
+ValueName* GlobalContext::GetValueName(const Value* value) {
+  auto it = value_names_.find(value);
+  if (it != value_names_.end()) {
+    return it->second;
+  }
+  return {};
 }
 
 }  // namespace sysy

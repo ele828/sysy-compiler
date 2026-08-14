@@ -12,7 +12,7 @@ ConstantInt* ConstantInt::Get(GlobalContext& ctx, int value) {
     return it->second.get();
   }
 
-  auto constant_int = std::unique_ptr<ConstantInt>(new ConstantInt(ctx, value));
+  auto constant_int = unique_value<ConstantInt>(new ConstantInt(ctx, value));
   auto res = int_constants.emplace(value, std::move(constant_int));
   return res.first->second.get();
 }
@@ -25,7 +25,7 @@ ConstantFP* ConstantFP::Get(GlobalContext& ctx, float value) {
     return it->second.get();
   }
 
-  auto constant_fp = std::unique_ptr<ConstantFP>(new ConstantFP(ctx, value));
+  auto constant_fp = unique_value<ConstantFP>(new ConstantFP(ctx, value));
   auto res = fp_constants.emplace(value, std::move(constant_fp));
   return res.first->second.get();
 }

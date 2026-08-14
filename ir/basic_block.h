@@ -13,7 +13,7 @@ class BasicBlock : public Value, public base::LinkNode<BasicBlock> {
  public:
   using InstListType = base::LinkedList<Instruction>;
 
-  ~BasicBlock() override;
+  ~BasicBlock();
 
   static BasicBlock* Create(GlobalContext& ctx, Function* parent) {
     return new BasicBlock(ctx, parent);

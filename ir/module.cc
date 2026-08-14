@@ -9,7 +9,7 @@ Module::~Module() {
     auto* node = global_list_.head();
     while (node != global_list_.end()) {
       auto* next = node->next();
-      delete node->value();
+      node->value()->DeleteValue();
       node = next;
     }
   }
@@ -18,7 +18,7 @@ Module::~Module() {
     auto* node = function_list_.head();
     while (node != function_list_.end()) {
       auto* next = node->next();
-      delete node->value();
+      node->value()->DeleteValue();
       node = next;
     }
   }

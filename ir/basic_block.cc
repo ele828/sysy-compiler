@@ -15,7 +15,7 @@ BasicBlock::~BasicBlock() {
   auto* node = inst_list_.head();
   while (node != inst_list_.end()) {
     auto* next = node->next();
-    delete node->value();
+    node->value()->DeleteValue();
     node = next;
   }
 }

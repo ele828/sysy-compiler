@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/linked_list.h"
+#include "base/pass_key.h"
 #include "base/type_casts.h"
 #include "core/global_context.h"
 #include "ir/user.h"
@@ -15,7 +16,7 @@ class Instruction : public User, public base::LinkNode<Instruction> {
     kReturn = 1,
   };
 
-  ~Instruction() override = default;
+  void Destroy(uint32_t op, PassKey<Value>);
 
   Operation op_code() {
     return static_cast<Operation>(id() - Value::kInstruction);
@@ -27,6 +28,8 @@ class Instruction : public User, public base::LinkNode<Instruction> {
 
  protected:
   Instruction(Operation op, Type* type, AllocInfo info);
+
+  ~Instruction() = default;
 
  private:
   friend Value;

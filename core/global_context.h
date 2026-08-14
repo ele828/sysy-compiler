@@ -9,6 +9,7 @@
 #include "base/zone.h"
 #include "core/symbol_table.h"
 #include "core/type.h"
+#include "ir/value.h"
 
 namespace sysy {
 
@@ -82,7 +83,8 @@ class GlobalContext final {
       std::unordered_map<std::pair<Type*, uint64_t>, ArrayType*, ArrayTypeHash>;
 
   void AddValueName(const Value* value, ValueName* name);
-  void RemoveValueName(const Value* value);
+  ValueName* RemoveValueName(const Value* value);
+  ValueName* GetValueName(const Value* value);
 
   Zone zone_;
 
@@ -92,9 +94,9 @@ class GlobalContext final {
   FunctionTypeSet function_types_;
   ArrayTypeMap array_types_;
 
-  std::unordered_map<int, std::unique_ptr<ConstantInt>> int_constants_;
-  std::unordered_map<float, std::unique_ptr<ConstantFP>> fp_constants_;
-  std::unordered_map<float, std::unique_ptr<ConstantArray>> array_constants_;
+  std::unordered_map<int, unique_value<ConstantInt>> int_constants_;
+  std::unordered_map<float, unique_value<ConstantFP>> fp_constants_;
+  std::unordered_map<float, unique_value<ConstantArray>> array_constants_;
 
   std::unordered_map<const Value*, ValueName*> value_names_;
 

@@ -20,7 +20,7 @@ class Function : public Constant, public base::LinkNode<Function> {
     return new (alloc_info) Function(type, name, module);
   }
 
-  ~Function() override;
+  ~Function();
 
   Module& parent() const { return parent_; }
 
