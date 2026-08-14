@@ -1,4 +1,4 @@
-#include "core/ir_emitter.h"
+#include "core/ir_generator.h"
 
 #include <gtest/gtest.h>
 
@@ -34,25 +34,27 @@ void CheckSema(GlobalContext& ctx, AstContext& ast_context,
   Sema sema(ctx, ast_context);
   bool success = sema.Analyze(compilation_unit);
   PrintSemanticErrors(ast_context, sema);
-  EXPECT_FALSE(success);
+  EXPECT_TRUE(success);
   EXPECT_EQ(sema.diagnostics().size(), 0u);
 }
 
 }  // namespace
 
-TEST(IREmitter, EmitBasic) {
+TEST(IRGenerator, GenerateBasic) {
   GlobalContext ctx;
   AstContext ast_context;
+  Module module(ctx);
 
   const char* source = R"(
+    int a = 1;
     int main() {
       return 0;
     }
   )";
   auto* compilation_unit = Parse(ctx, ast_context, source);
   CheckSema(ctx, ast_context, compilation_unit);
-  IREmitter emitter(ctx);
-  emitter.EmitCompilationUnit(compilation_unit);
+  IRGenerator generator(ctx, module);
+  generator.Generate(compilation_unit);
 }
 
 }  // namespace sysy::test

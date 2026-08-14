@@ -1,14 +1,22 @@
 #pragma once
 
+#include <algorithm>
+#include <span>
+
 #include "core/global_context.h"
 #include "ir/constant.h"
 
 namespace sysy {
 
 class ConstantData : public Constant {
+  constexpr static AllocInfo alloc_info{.num_ops = 0};
+
  protected:
-  ConstantData(ValueID id, Type* type)
-      : Constant(id, type, AllocInfo{.num_ops = 0}) {}
+  ConstantData(ValueID id, Type* type) : Constant(id, type, alloc_info) {}
+
+  void* operator new(size_t size) {
+    return User::operator new(size, alloc_info);
+  }
 };
 
 class ConstantInt : public ConstantData {
@@ -37,6 +45,18 @@ class ConstantFP : public ConstantData {
         value_(value) {}
 
   float value_;
+};
+
+class ConstantArray : public Constant {
+ public:
+  static ConstantArray* Get(ArrayType* type, std::span<Constant*> elements);
+
+ private:
+  ConstantArray(ArrayType* type, std::span<Constant*> elements)
+      : Constant(ValueID::kConstantArray, type,
+                 AllocInfo{.num_ops = static_cast<uint32_t>(elements.size())}) {
+    std::copy(elements.begin(), elements.end(), operands());
+  }
 };
 
 }  // namespace sysy

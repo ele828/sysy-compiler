@@ -5,8 +5,7 @@
 namespace sysy {
 
 Function::Function(FunctionType* type, std::string_view name, Module& module)
-    : Constant(ValueID::kFunction, type, AllocInfo{.num_ops = 0}),
-      parent_(module) {
+    : Constant(ValueID::kFunction, type, alloc_info), parent_(module) {
   SetName(name);
   parent_.function_list().Append(this);
 }

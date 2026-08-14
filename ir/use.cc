@@ -14,6 +14,16 @@ void Use::set(Value* value) {
   }
 }
 
+Value* Use::operator=(Value* rhs) {
+  set(rhs);
+  return rhs;
+}
+
+const Use& Use::operator=(const Use& rhs) {
+  set(rhs.value_);
+  return *this;
+}
+
 void Use::AddToList(Use** list) {
   next_ = *list;
   if (next_) {

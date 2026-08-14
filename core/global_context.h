@@ -12,8 +12,9 @@
 
 namespace sysy {
 
-class ConstantInt;
+class ConstantArray;
 class ConstantFP;
+class ConstantInt;
 class Value;
 
 struct FunctionTypeKey {
@@ -93,6 +94,7 @@ class GlobalContext final {
 
   std::unordered_map<int, std::unique_ptr<ConstantInt>> int_constants_;
   std::unordered_map<float, std::unique_ptr<ConstantFP>> fp_constants_;
+  std::unordered_map<float, std::unique_ptr<ConstantArray>> array_constants_;
 
   std::unordered_map<const Value*, ValueName*> value_names_;
 

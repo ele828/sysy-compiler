@@ -1,4 +1,4 @@
-#include "sema/evaluator.h"
+#include "core/evaluator.h"
 
 #include <bit>
 
@@ -7,15 +7,17 @@
 
 namespace sysy {
 
+using Value = Evaluator::Value;
+
 #define VALUE_UNARY_OP(OP)           \
   Value Value::operator OP() const { \
     if (!has_value()) {              \
       return {};                     \
     }                                \
     if (is_int()) {                  \
-      return OP(get_as_int());       \
+      return OP(get<int>());         \
     } else if (is_float()) {         \
-      return OP(get_as_float());     \
+      return OP(get<float>());       \
     }                                \
     return {};                       \
   }
@@ -27,15 +29,15 @@ namespace sysy {
     }                                                  \
     if (is_int()) {                                    \
       if (other.is_int()) {                            \
-        return get_as_int() OP other.get_as_int();     \
+        return get<int>() OP other.get<int>();         \
       } else if (other.is_float()) {                   \
-        return get_as_int() OP other.get_as_float();   \
+        return get<int>() OP other.get<float>();       \
       }                                                \
     } else if (is_float()) {                           \
       if (other.is_float()) {                          \
-        return get_as_float() OP other.get_as_float(); \
+        return get<float>() OP other.get<float>();     \
       } else if (other.is_int()) {                     \
-        return get_as_float() OP other.get_as_int();   \
+        return get<float>() OP other.get<int>();       \
       }                                                \
     }                                                  \
     return {};                                         \
@@ -62,7 +64,7 @@ Value Value::operator%(const Value& other) const {
     return {};
   }
   if (is_int() && other.is_int()) {
-    return get_as_int() % other.get_as_int();
+    return get<int>() % other.get<int>();
   }
   return {};
 }

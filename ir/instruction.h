@@ -36,7 +36,7 @@ class ReturnInst : public Instruction {
  public:
   static ReturnInst* Create(GlobalContext& context, Value* retval) {
     AllocInfo info{.num_ops = retval ? 1u : 0u};
-    return new ReturnInst(context, retval, info);
+    return new (info) ReturnInst(context, retval, info);
   }
 
   static bool classof(Instruction& i) {

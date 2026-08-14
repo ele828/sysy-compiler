@@ -17,6 +17,9 @@ class Use {
 
   void set(Value* value);
 
+  Value* operator=(Value* rhs);
+  const Use& operator=(const Use& rhs);
+
   // NOLINTNEXTLINE
   operator Value*() const { return value_; }
   Value* get() const { return value_; }

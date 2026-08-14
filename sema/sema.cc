@@ -5,10 +5,10 @@
 
 #include "base/logging.h"
 #include "base/type_casts.h"
+#include "core/evaluator.h"
 #include "core/source_location.h"
 #include "core/type.h"
 #include "sema/diagnostic.h"
-#include "sema/evaluator.h"
 #include "sema/scope.h"
 
 namespace sysy {
@@ -445,9 +445,11 @@ bool Sema::CheckExpression(const CheckingContext& ctx, Expression* expr) {
       auto* call_expr = To<CallExpression>(expr);
       return CheckCallExpression(ctx, call_expr);
     }
-    case AstNode::Kind::kImplicitCast: {
-      // ImplicitCastExpression is manually added in semantic analysis phase,
-      // we should not reach here when performing tree traversal.
+    case AstNode::Kind::kImplicitCast:
+    case AstNode::Kind::kImplicitValueInit: {
+      // ImplicitCastExpression and kImplicitValueInitExpression are manually
+      // added in semantic analysis phase, we should not reach here when
+      // performing tree traversal.
       NOTREACHED();
       return true;
     }
@@ -957,7 +959,7 @@ ArrayType* Sema::EvaluateArrayType(const Declaration* decl, Type* type,
   if (auto* constant_array_with_expr_type =
           DynamicTo<ConstantArrayWithExprType>(type)) {
     Evaluator evaluator(current_scope());
-    Value result =
+    auto result =
         evaluator.Evaluate(constant_array_with_expr_type->expression());
     if (!result.has_value()) {
       Diag(DiagnosticID::kArrayTypeEval, decl->location());
@@ -965,7 +967,7 @@ ArrayType* Sema::EvaluateArrayType(const Declaration* decl, Type* type,
     }
 
     if (result.is_int()) {
-      if (result.get_as_int() < 0) {
+      if (result.get<int>() < 0) {
         Diag(DiagnosticID::kArrayNegDimension, decl->location());
         return nullptr;
       }
@@ -977,7 +979,7 @@ ArrayType* Sema::EvaluateArrayType(const Declaration* decl, Type* type,
     auto* new_element_type =
         evaluate_element(constant_array_with_expr_type->element_type());
 
-    return ConstantArrayType::Get(new_element_type, result.get_as_int());
+    return ConstantArrayType::Get(new_element_type, result.get<int>());
   }
 
   NOTREACHED();

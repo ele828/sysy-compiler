@@ -8,13 +8,13 @@
 
 namespace sysy {
 
-class IREmitter final : public AstRecursiveVisitor<IREmitter> {
-  using Base = AstRecursiveVisitor<IREmitter>;
+class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
+  using Base = AstRecursiveVisitor<IRGenerator>;
 
  public:
-  IREmitter(GlobalContext& ctx, Module& module);
+  IRGenerator(GlobalContext& ctx, Module& module);
 
-  void EmitCompilationUnit(CompilationUnit* unit);
+  void Generate(CompilationUnit* unit);
 
  private:
   void VisitConstantDeclaration(ConstantDeclaration* const_decl);
@@ -24,6 +24,16 @@ class IREmitter final : public AstRecursiveVisitor<IREmitter> {
   void VisitParameterDeclaration(ParameterDeclaration* param_decl);
 
   void VisitFunctionDeclaration(FunctionDeclaration* fun_decl);
+
+  Constant* GenerateInitializer(Expression* expr);
+
+  Constant* GenerateInitList(InitListExpression* init_list_expr);
+
+  Value* GenerateExpression(Expression* expr);
+
+  Constant* GenerateIntegerLiteral(IntegerLiteral* int_lit);
+
+  Constant* GenerateFloatingLiteral(FloatingLiteral* float_lit);
 
   GlobalContext& ctx_;
   Module& module_;

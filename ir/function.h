@@ -10,12 +10,14 @@ namespace sysy {
 class Module;
 
 class Function : public Constant, public base::LinkNode<Function> {
+  constexpr static AllocInfo alloc_info{.num_ops = 0};
+
  public:
   using BasicBlockListType = base::LinkedList<BasicBlock>;
 
   static Function* Create(FunctionType* type, std::string_view name,
                           Module& module) {
-    return new Function(type, name, module);
+    return new (alloc_info) Function(type, name, module);
   }
 
   ~Function() override;

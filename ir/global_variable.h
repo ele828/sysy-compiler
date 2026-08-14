@@ -7,15 +7,24 @@ namespace sysy {
 
 class Module;
 class GlobalVariable : public Constant, public base::LinkNode<GlobalVariable> {
- public:
-  GlobalVariable(Module& module, Type* type, bool is_constant,
-                 std::string_view name);
+  constexpr static AllocInfo alloc_info{.num_ops = 1};
 
-  void SetInitializer(Constant* init);
+ public:
+  static GlobalVariable* Create(Module& module, Type* type, bool is_constant,
+                                std::string_view name) {
+    return new (alloc_info) GlobalVariable(module, type, is_constant, name);
+  }
+
+  void set_initializer(Constant* initializer) { operand(0).set(initializer); }
+
+  Constant* initializer() { return static_cast<Constant*>(operand(0).get()); }
 
   Module& parent() const { return parent_; }
 
  private:
+  GlobalVariable(Module& module, Type* type, bool is_constant,
+                 std::string_view name);
+
   Module& parent_;
 };
 

@@ -16,8 +16,9 @@ set(SOURCE_FILES
   ast/ast_context.cc
   base/linked_list.cc
   base/zone.cc
+  core/evaluator.cc
   core/global_context.cc
-  core/ir_emitter.cc
+  core/ir_generator.cc
   core/type.cc
   ir/argument.cc
   ir/basic_block.cc
@@ -34,7 +35,6 @@ set(SOURCE_FILES
   parse/lexer.cc
   parse/parser.cc
   parse/token.cc
-  sema/evaluator.cc
   sema/scope.cc
   sema/sema.cc)
 
@@ -59,11 +59,12 @@ add_executable(
   tests/base/linked_list_test.cc
   tests/base/zone_test.cc
   tests/base/type_casts_test.cc
+  tests/core/evaluator_test.cc
+  tests/core/ir_generator_test.cc
   tests/ir/ir_builder_test.cc
   tests/parse/lexer_test.cc
   tests/parse/parser_test.cc
   tests/parse/token_test.cc
-  tests/sema/evaluator_test.cc
   tests/sema/sema_test.cc)
 target_link_libraries(
   sysy_test

@@ -30,4 +30,11 @@ ConstantFP* ConstantFP::Get(GlobalContext& ctx, float value) {
   return res.first->second.get();
 }
 
+// static
+ConstantArray* ConstantArray::Get(ArrayType* type,
+                                  std::span<Constant*> elements) {
+  AllocInfo alloc_info{.num_ops = static_cast<uint32_t>(elements.size())};
+  return new (alloc_info) ConstantArray(type, elements);
+}
+
 }  // namespace sysy
