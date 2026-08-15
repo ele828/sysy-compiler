@@ -15,15 +15,15 @@ class User : public Value {
     uint32_t num_ops;
   };
 
-  static bool classof(const Value& v) {
-    return IsA<Instruction>(v) || IsA<Constant>(v);
-  }
-
   uint32_t num_of_operands() const { return num_ops_; }
 
   Use& operand(int64_t index) { return operands()[index]; }
 
   void operator delete(void*);
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) || IsA<Constant>(v);
+  }
 
  protected:
   void* operator new(size_t size) = delete;

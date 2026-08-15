@@ -33,6 +33,8 @@ class Function : public Constant, public base::LinkNode<Function> {
 
   void EraseFromParent();
 
+  static bool classof(const Value& v) { return v.id() == ValueID::kFunction; }
+
  private:
   Function(FunctionType* type, std::string_view name, Module& module);
 

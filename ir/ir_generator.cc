@@ -19,8 +19,8 @@ void IRGenerator::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
   auto* gv = GlobalVariable::Create(module_, const_decl->type(), true,
                                     const_decl->name());
   if (const_decl->init_value()) {
-    Value* initializer = GenerateInitializer(const_decl->init_value());
-    gv->set_initializer(To<Constant>(initializer));
+    Constant* initializer = GenerateInitializer(const_decl->init_value());
+    gv->set_initializer(initializer);
   }
 }
 
@@ -28,8 +28,8 @@ void IRGenerator::VisitVariableDeclaration(VariableDeclaration* var_decl) {
   auto* gv = GlobalVariable::Create(module_, var_decl->type(), false,
                                     var_decl->name());
   if (var_decl->init_value()) {
-    Value* initializer = GenerateInitializer(var_decl->init_value());
-    gv->set_initializer(To<Constant>(initializer));
+    Constant* initializer = GenerateInitializer(var_decl->init_value());
+    gv->set_initializer(initializer);
   }
 }
 
@@ -51,10 +51,11 @@ Constant* IRGenerator::GenerateInitializer(Expression* expr) {
     NOTREACHED();
     return nullptr;
   }
+
   if (result.is_int()) {
     return ConstantInt::Get(ctx_, result.get<int>());
   }
-  return ConstantInt::Get(ctx_, result.get<float>());
+  return ConstantFP::Get(ctx_, result.get<float>());
 }
 
 Constant* IRGenerator::GenerateInitList(InitListExpression* init_list_expr) {

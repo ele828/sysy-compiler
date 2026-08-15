@@ -21,6 +21,10 @@ class GlobalVariable : public Constant, public base::LinkNode<GlobalVariable> {
 
   Module& parent() const { return parent_; }
 
+  static bool classof(const Value& v) {
+    return v.id() == ValueID::kGlobalVariable;
+  }
+
  private:
   GlobalVariable(Module& module, Type* type, bool is_constant,
                  std::string_view name);

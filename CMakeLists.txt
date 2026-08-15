@@ -28,7 +28,7 @@ set(SOURCE_FILES
   ir/instruction.cc
   ir/ir_builder.cc
   ir/ir_generator.cc
-  ir/ir_printer.cc
+  ir/ir_writer.cc
   ir/module.cc
   ir/use.cc
   ir/user.cc

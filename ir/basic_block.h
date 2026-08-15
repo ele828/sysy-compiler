@@ -24,6 +24,8 @@ class BasicBlock : public Value, public base::LinkNode<BasicBlock> {
   InstListType& init_list() { return inst_list_; }
   const InstListType& init_list() const { return inst_list_; }
 
+  static bool classof(const Value& v) { return v.id() == ValueID::kBasicBlock; }
+
  private:
   BasicBlock(GlobalContext& ctx, Function* parent);
 

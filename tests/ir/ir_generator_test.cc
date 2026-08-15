@@ -2,8 +2,11 @@
 
 #include <gtest/gtest.h>
 
+#include <iostream>
+
 #include "ast/ast.h"
 #include "core/type.h"
+#include "ir/ir_writer.h"
 #include "parse/parser.h"
 #include "sema/sema.h"
 #include "tests/utils.h"
@@ -47,6 +50,8 @@ TEST(IRGenerator, GenerateBasic) {
 
   const char* source = R"(
     int a = 1;
+    float c = 1.1;
+
     int main() {
       return 0;
     }
@@ -55,6 +60,11 @@ TEST(IRGenerator, GenerateBasic) {
   CheckSema(ctx, ast_context, compilation_unit);
   IRGenerator generator(ctx, module);
   generator.Generate(compilation_unit);
+
+  std::stringstream ss;
+  IRWriter ir_writer(ss);
+  ir_writer.WriteModule(module);
+  std::cout << ss.str() << std::endl;
 }
 
 }  // namespace sysy::test
