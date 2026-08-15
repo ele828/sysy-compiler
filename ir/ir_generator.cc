@@ -1,4 +1,4 @@
-#include "core/ir_generator.h"
+#include "ir/ir_generator.h"
 
 #include "ast/ast.h"
 #include "base/logging.h"

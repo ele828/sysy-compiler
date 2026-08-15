@@ -1,4 +1,4 @@
-#include "core/ir_generator.h"
+#include "ir/ir_generator.h"
 
 #include <gtest/gtest.h>
 

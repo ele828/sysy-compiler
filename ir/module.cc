@@ -6,20 +6,20 @@ Module::Module(GlobalContext& context) : context_(context) {}
 
 Module::~Module() {
   {
-    auto* node = global_list_.head();
-    while (node != global_list_.end()) {
-      auto* next = node->next();
-      node->value()->DeleteValue();
-      node = next;
+    auto it = global_list_.begin();
+    while (it != global_list_.end()) {
+      auto* global = it->value();
+      ++it;
+      global->DeleteValue();
     }
   }
 
   {
-    auto* node = function_list_.head();
-    while (node != function_list_.end()) {
-      auto* next = node->next();
-      node->value()->DeleteValue();
-      node = next;
+    auto it = function_list_.begin();
+    while (it != function_list_.end()) {
+      auto* function = it->value();
+      ++it;
+      function->DeleteValue();
     }
   }
 }

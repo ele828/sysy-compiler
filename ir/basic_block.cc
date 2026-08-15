@@ -12,11 +12,11 @@ BasicBlock::BasicBlock(GlobalContext& ctx, Function* parent)
 }
 
 BasicBlock::~BasicBlock() {
-  auto* node = inst_list_.head();
-  while (node != inst_list_.end()) {
-    auto* next = node->next();
-    node->value()->DeleteValue();
-    node = next;
+  auto it = inst_list_.begin();
+  while (it != inst_list_.end()) {
+    auto* instr = it->value();
+    ++it;
+    instr->DeleteValue();
   }
 }
 

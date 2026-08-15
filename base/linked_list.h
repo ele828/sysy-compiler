@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <iterator>
 #include <utility>
 
 // Simple LinkedList type. (See the Q&A section to understand how this
@@ -184,9 +185,43 @@ class LinkedList {
 
   LinkNode<T>* tail() const { return root_.previous(); }
 
-  const LinkNode<T>* end() const { return &root_; }
+  const LinkNode<T>* end_pivot() const { return &root_; }
 
-  bool empty() const { return head() == end(); }
+  bool empty() const { return head() == &root_; }
+
+  // Iterator support
+  class Iterator final {
+   public:
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = LinkNode<T>;
+    using reference = value_type&;
+    using pointer = value_type*;
+
+    Iterator& operator++() {
+      entry_ = entry_->next();
+      return *this;
+    }
+    bool operator==(const Iterator& other) const {
+      return entry_ == other.entry_;
+    }
+
+    T& operator*() { return *entry_->value(); }
+    T* operator->() { return entry_->value(); }
+
+    Iterator() : entry_(nullptr) {}
+
+   private:
+    explicit Iterator(LinkNode<T>* entry) : entry_(entry) {}
+
+    LinkNode<T>* entry_;
+
+    friend LinkedList;
+  };
+
+  Iterator begin() { return Iterator(root_.next()); }
+
+  Iterator end() { return Iterator(&root_); }
 
  private:
   LinkNode<T> root_;

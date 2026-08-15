@@ -11,11 +11,11 @@ Function::Function(FunctionType* type, std::string_view name, Module& module)
 }
 
 Function::~Function() {
-  auto* node = basic_blocks_.head();
-  while (node != basic_blocks_.end()) {
-    auto* next = node->next();
-    delete node->value();
-    node = next;
+  auto it = basic_blocks_.begin();
+  while (it != basic_blocks_.end()) {
+    auto* basic_block = it->value();
+    ++it;
+    basic_block->DeleteValue();
   }
 }
 

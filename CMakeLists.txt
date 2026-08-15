@@ -18,7 +18,6 @@ set(SOURCE_FILES
   base/zone.cc
   core/evaluator.cc
   core/global_context.cc
-  core/ir_generator.cc
   core/type.cc
   ir/argument.cc
   ir/basic_block.cc
@@ -28,6 +27,8 @@ set(SOURCE_FILES
   ir/global_variable.cc
   ir/instruction.cc
   ir/ir_builder.cc
+  ir/ir_generator.cc
+  ir/ir_printer.cc
   ir/module.cc
   ir/use.cc
   ir/user.cc
@@ -60,8 +61,8 @@ add_executable(
   tests/base/zone_test.cc
   tests/base/type_casts_test.cc
   tests/core/evaluator_test.cc
-  tests/core/ir_generator_test.cc
   tests/ir/ir_builder_test.cc
+  tests/ir/ir_generator_test.cc
   tests/parse/lexer_test.cc
   tests/parse/parser_test.cc
   tests/parse/token_test.cc
