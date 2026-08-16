@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <span>
 
-#include "core/global_context.h"
 #include "ir/constant.h"
 
 namespace sysy {
@@ -64,6 +63,10 @@ class ConstantFP : public ConstantData {
 class ConstantArray : public Constant {
  public:
   static ConstantArray* Get(ArrayType* type, std::span<Constant*> elements);
+
+  Constant* get(int64_t index) {
+    return static_cast<Constant*>(operand(index).get());
+  }
 
   static bool classof(const Value& v) {
     return v.id() == ValueID::kConstantArray;

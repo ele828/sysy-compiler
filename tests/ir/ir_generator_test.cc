@@ -50,7 +50,8 @@ TEST(IRGenerator, GenerateBasic) {
 
   const char* source = R"(
     int a = 1;
-    float c = 1.1;
+    float b = 1.1;
+    int c[2] = {1, 2};
 
     int main() {
       return 0;

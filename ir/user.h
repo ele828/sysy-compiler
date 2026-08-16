@@ -19,6 +19,11 @@ class User : public Value {
 
   Use& operand(int64_t index) { return operands()[index]; }
 
+  Use* operands() { return reinterpret_cast<Use*>(this) - num_ops_; }
+  const Use* operands() const {
+    return reinterpret_cast<const Use*>(this) - num_ops_;
+  }
+
   void operator delete(void*);
 
   static bool classof(const Value& v) {
@@ -31,11 +36,6 @@ class User : public Value {
   void* operator new(size_t size, AllocInfo marker);
 
   User(ValueID id, Type* type, AllocInfo info);
-
-  Use* operands() { return reinterpret_cast<Use*>(this) - num_ops_; }
-  const Use* operands() const {
-    return reinterpret_cast<const Use*>(this) - num_ops_;
-  }
 
  private:
   uint32_t num_ops_;

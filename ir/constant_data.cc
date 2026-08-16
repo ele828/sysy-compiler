@@ -1,6 +1,9 @@
 #include "ir/constant_data.h"
 
 #include <memory>
+#include <system_error>
+
+#include "core/global_context.h"
 
 namespace sysy {
 
@@ -33,8 +36,18 @@ ConstantFP* ConstantFP::Get(GlobalContext& ctx, float value) {
 // static
 ConstantArray* ConstantArray::Get(ArrayType* type,
                                   std::span<Constant*> elements) {
+  auto& ctx = type->context();
+  auto& array_constants = ctx.array_constants_;
+  auto it = array_constants.find(std::make_pair(type, elements));
+  if (it != array_constants.end()) {
+    return it->get();
+  }
+
   AllocInfo alloc_info{.num_ops = static_cast<uint32_t>(elements.size())};
-  return new (alloc_info) ConstantArray(type, elements);
+  auto constant_array = unique_value<ConstantArray>(
+      new (alloc_info) ConstantArray(type, elements));
+  auto res = array_constants.emplace(std::move(constant_array));
+  return res.first->get();
 }
 
 }  // namespace sysy

@@ -16,8 +16,6 @@ class Module {
 
   ~Module();
 
-  FunctionListType& function_list() { return function_list_; }
-
   GlobalContext& context() const { return context_; }
 
   GlobalListType& globals() { return global_list_; }

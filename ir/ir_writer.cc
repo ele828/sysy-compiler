@@ -1,6 +1,5 @@
 #include "ir/ir_writer.h"
 
-#include <iomanip>
 #include <ostream>
 
 #include "base/logging.h"
@@ -8,7 +7,6 @@
 #include "core/type_visitor.h"
 #include "ir/constant_data.h"
 #include "ir/module.h"
-#include "magic_enum/magic_enum.hpp"
 
 namespace sysy {
 
@@ -75,6 +73,12 @@ void IRWriter::WriteModule(Module& module) {
 
     os_ << "\n";
   }
+
+  // Write Function
+  for (auto& function : module.functions()) {
+    os_ << "\n";
+    (void)function;
+  }
 }
 
 void IRWriter::WriteAlignment() {
@@ -94,8 +98,23 @@ void IRWriter::WriteConstant(Constant* constant) {
   } else if (auto* constant_fp = DynamicTo<ConstantFP>(constant)) {
     os_ << std::scientific << constant_fp->value();
   } else if (auto* constant_array = DynamicTo<ConstantArray>(constant)) {
-    (void)constant_array;
+    WriteConstantArray(constant_array);
   }
+}
+
+void IRWriter::WriteConstantArray(ConstantArray* constant_array) {
+  size_t n = constant_array->num_of_operands();
+  os_ << "[";
+  for (size_t i = 0; i < n; ++i) {
+    auto* element = constant_array->get(i);
+    WriteType(element->type());
+    os_ << " ";
+    WriteConstant(element);
+    if (i != n - 1) {
+      os_ << ", ";
+    }
+  }
+  os_ << "]";
 }
 
 }  // namespace sysy
