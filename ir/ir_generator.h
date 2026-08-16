@@ -25,9 +25,10 @@ class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
 
   void VisitFunctionDeclaration(FunctionDeclaration* fun_decl);
 
-  Constant* GenerateInitializer(Expression* expr);
+  Constant* GenerateInitializer(Type* type, Expression* expr);
 
-  Constant* GenerateInitList(InitListExpression* init_list_expr);
+  Constant* GenerateInitList(ArrayType* array_type,
+                             InitListExpression* init_list_expr);
 
   Value* GenerateExpression(Expression* expr);
 

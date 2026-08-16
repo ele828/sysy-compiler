@@ -18,70 +18,77 @@ void IRGenerator::Generate(CompilationUnit* unit) { Visit(unit); }
 void IRGenerator::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
   auto* gv = GlobalVariable::Create(module_, const_decl->type(), true,
                                     const_decl->name());
-  if (const_decl->init_value()) {
-    Constant* initializer = GenerateInitializer(const_decl->init_value());
-    gv->set_initializer(initializer);
-  }
+  Constant* initializer =
+      GenerateInitializer(const_decl->type(), const_decl->init_value());
+  gv->set_initializer(initializer);
 }
 
 void IRGenerator::VisitVariableDeclaration(VariableDeclaration* var_decl) {
   auto* gv = GlobalVariable::Create(module_, var_decl->type(), false,
                                     var_decl->name());
-  if (var_decl->init_value()) {
-    Constant* initializer = GenerateInitializer(var_decl->init_value());
-    gv->set_initializer(initializer);
-  }
+  Constant* initializer =
+      GenerateInitializer(var_decl->type(), var_decl->init_value());
+  gv->set_initializer(initializer);
 }
 
 void IRGenerator::VisitParameterDeclaration(ParameterDeclaration* param_decl) {}
 
 void IRGenerator::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {}
 
-Constant* IRGenerator::GenerateInitializer(Expression* expr) {
-  if (IsA<InitListExpression>(expr)) {
-    return GenerateInitList(To<InitListExpression>(expr));
+Constant* IRGenerator::GenerateInitializer(Type* type, Expression* expr) {
+  if (auto* array_type = DynamicTo<ArrayType>(type)) {
+    return GenerateInitList(array_type, To<InitListExpression>(expr));
   }
 
   Scope global_scope(Scope::kGlobal, nullptr);
   Evaluator evaluator(&global_scope);
   auto result = evaluator.Evaluate(expr);
 
-  // Failed to evaluate initializer expression.
-  if (!result.has_value()) {
-    NOTREACHED();
-    return nullptr;
+  if (Type::IsInt(type)) {
+    return ConstantInt::Get(ctx_, result.has_value() ? result.get<int>() : 0);
   }
 
-  if (result.is_int()) {
-    return ConstantInt::Get(ctx_, result.get<int>());
-  }
-  return ConstantFP::Get(ctx_, result.get<float>());
+  DCHECK(Type::IsFloat(type));
+  return ConstantFP::Get(ctx_, result.has_value() ? result.get<float>() : 0.f);
 }
 
-Constant* IRGenerator::GenerateInitList(InitListExpression* init_list_expr) {
-  ArrayType* init_list_array_type = To<ArrayType>(init_list_expr->type());
-  Type* element_type = init_list_array_type->element_type();
+Constant* IRGenerator::GenerateInitList(ArrayType* array_type,
+                                        InitListExpression* init_list_expr) {
+  if (!init_list_expr) {
+    return ConstantArray::Get(array_type, {});
+  }
+
+  Type* element_type = array_type->element_type();
 
   std::vector<Constant*> elements;
-  elements.reserve(init_list_expr->list().size());
+  size_t element_count = init_list_expr->list().size();
+  elements.reserve(element_count);
   for (auto& expr : init_list_expr->list()) {
-    elements.push_back(GenerateInitializer(expr));
+    elements.push_back(GenerateInitializer(expr->type(), expr));
   }
 
   if (init_list_expr->array_filler()) {
-    if (Type::IsInt(element_type)) {
-      auto* filler = ConstantInt::Get(ctx_, 0);
-      elements.push_back(filler);
-    } else if (Type::IsFloat(element_type)) {
-      auto* filler = ConstantFP::Get(ctx_, 0.f);
-      elements.push_back(filler);
-    } else if (auto* element_array_type = DynamicTo<ArrayType>(element_type)) {
-      auto* filler = ConstantArray::Get(element_array_type, {});
-      elements.push_back(filler);
+    auto* constant_array_type = DynamicTo<ConstantArrayType>(array_type);
+    if (!constant_array_type) {
+      NOTREACHED();
+    }
+
+    for (size_t i = 0; i < constant_array_type->size() - element_count; ++i) {
+      if (Type::IsInt(element_type)) {
+        auto* filler = ConstantInt::Get(ctx_, 0);
+        elements.push_back(filler);
+      } else if (Type::IsFloat(element_type)) {
+        auto* filler = ConstantFP::Get(ctx_, 0.f);
+        elements.push_back(filler);
+      } else if (auto* element_array_type =
+                     DynamicTo<ArrayType>(element_type)) {
+        auto* filler = ConstantArray::Get(element_array_type, {});
+        elements.push_back(filler);
+      }
     }
   }
 
-  return ConstantArray::Get(init_list_array_type, elements);
+  return ConstantArray::Get(array_type, elements);
 }
 
 Value* IRGenerator::GenerateExpression(Expression* expr) {

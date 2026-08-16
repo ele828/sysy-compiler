@@ -99,16 +99,24 @@ void IRWriter::WriteConstant(Constant* constant) {
     os_ << std::scientific << constant_fp->value();
   } else if (auto* constant_array = DynamicTo<ConstantArray>(constant)) {
     WriteConstantArray(constant_array);
+  } else {
+    NOTREACHED();
   }
 }
 
 void IRWriter::WriteConstantArray(ConstantArray* constant_array) {
   size_t n = constant_array->num_of_operands();
+  if (n == 0) {
+    os_ << "zeroinitializer";
+    return;
+  }
+
   os_ << "[";
   for (size_t i = 0; i < n; ++i) {
     auto* element = constant_array->get(i);
     WriteType(element->type());
     os_ << " ";
+
     WriteConstant(element);
     if (i != n - 1) {
       os_ << ", ";
