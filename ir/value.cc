@@ -65,6 +65,10 @@ void Value::DeleteValue() {
 }
 
 void Value::SetName(std::string_view name) {
+  if (name.empty()) {
+    return;
+  }
+
   auto* symbol_table = GetSymbolTable();
   if (!symbol_table) {
     NOTREACHED();
@@ -96,6 +100,10 @@ SymbolTable* Value::GetSymbolTable() const {
     return &function->parent().symbol_table();
   } else if (auto* global_variable = DynamicTo<GlobalVariable>(this)) {
     return &global_variable->parent().symbol_table();
+  } else if (auto* argument = DynamicTo<Argument>(this)) {
+    return &argument->parent().symbol_table();
+  } else if (auto* basic_block = DynamicTo<BasicBlock>(this)) {
+    return &basic_block->parent().symbol_table();
   }
   return nullptr;
 }

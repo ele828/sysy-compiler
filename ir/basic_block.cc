@@ -6,9 +6,11 @@
 namespace sysy {
 
 // We use void type as basic block type here.
-BasicBlock::BasicBlock(GlobalContext& ctx, Function* parent)
+BasicBlock::BasicBlock(GlobalContext& ctx, std::string_view name,
+                       Function& parent)
     : Value(ValueID::kBasicBlock, Type::GetVoidType(ctx)), parent_(parent) {
-  parent_->basic_blocks().Append(this);
+  SetName(name);
+  parent_.basic_blocks().Append(this);
 }
 
 BasicBlock::~BasicBlock() {

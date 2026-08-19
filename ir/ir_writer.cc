@@ -69,7 +69,8 @@ void IRWriter::WriteModule(Module& module) {
     WriteConstant(global.initializer());
 
     // Write alignment
-    WriteAlignment();
+    bool has_initializer = global.initializer() != nullptr;
+    WriteAlignment(global.type(), has_initializer);
 
     os_ << "\n";
   }
@@ -77,20 +78,43 @@ void IRWriter::WriteModule(Module& module) {
   // Write Function
   for (auto& function : module.functions()) {
     os_ << "\n";
-    (void)function;
+    os_ << "define dso_local ";
+
+    // Write function type
+    WriteType(To<FunctionType>(function.type())->return_type());
+    os_ << " ";
+
+    // Write function name
+    os_ << "@" << function.name();
+
+    // Write function parameters
+    os_ << "(";
+    WriteFunctionParameters(&function);
+    os_ << ") ";
+
+    WriteFunctionBody(&function);
+
+    os_ << "\n";
   }
 }
 
-void IRWriter::WriteAlignment() {
-  // In SysY, data alignment is always 4 since it only support int and float as
-  // builtin type.
-  os_ << ", align 4";
+void IRWriter::WriteAlignment(Type* type, bool has_initializer) {
+  if (auto* array_type = To<ArrayType>(type)) {
+    if (has_initializer) {
+      type = array_type->GetBaseType();
+    }
+  }
+
+  size_t alignment = Type::GetAlignment(type);
+  os_ << ", align " << alignment;
 }
 
 void IRWriter::WriteType(Type* type) {
   TypeWriter type_writer(os_);
   type_writer.Visit(type);
 }
+
+void IRWriter::WriteName(std::string_view name) { os_ << "%" << name; }
 
 void IRWriter::WriteConstant(Constant* constant) {
   if (auto* constant_int = DynamicTo<ConstantInt>(constant)) {
@@ -123,6 +147,23 @@ void IRWriter::WriteConstantArray(ConstantArray* constant_array) {
     }
   }
   os_ << "]";
+}
+
+void IRWriter::WriteFunctionParameters(Function* function) {
+  for (size_t i = 0; i < function->arg_size(); ++i) {
+    auto* arg = function->argument(i);
+    WriteType(arg->type());
+    os_ << " ";
+    WriteName(arg->name());
+    if (i != function->arg_size() - 1) {
+      os_ << ", ";
+    }
+  }
+}
+
+void IRWriter::WriteFunctionBody(Function* function) {
+  os_ << "{";
+  os_ << "}";
 }
 
 }  // namespace sysy

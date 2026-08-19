@@ -18,7 +18,7 @@ TEST(IRBuilder, Basic) {
   params.push_back(Type::GetIntType(ctx));
   FunctionType* type = FunctionType::Get(result, params);
   auto* function = Function::Create(type, "foo", module);
-  auto* bb = BasicBlock::Create(ctx, function);
+  auto* bb = BasicBlock::Create(ctx, "entry", *function);
   ReturnInst::Create(ctx, nullptr)->InsertInto(bb);
 }
 

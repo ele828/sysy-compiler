@@ -71,19 +71,16 @@ std::string_view BuiltinType::name() const {
   }
 }
 
-const ArrayType* ArrayType::GetInnermostArrayType() const {
-  const ArrayType* inner_type = const_cast<ArrayType*>(this);
-
-  while (true) {
-    Type* type = inner_type->element_type();
-    auto* inner_array_type = DynamicTo<ArrayType>(type);
+Type* ArrayType::GetBaseType() {
+  Type* element_type = element_type_;
+  while (element_type) {
+    auto* inner_array_type = DynamicTo<ArrayType>(element_type);
     if (!inner_array_type) {
       break;
     }
-    inner_type = inner_array_type;
+    element_type = inner_array_type->element_type_;
   }
-
-  return inner_type;
+  return element_type;
 }
 // static
 ConstantArrayType* ConstantArrayType::Get(Type* element_type, size_t size) {

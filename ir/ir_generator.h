@@ -21,8 +21,6 @@ class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
 
   void VisitVariableDeclaration(VariableDeclaration* var_decl);
 
-  void VisitParameterDeclaration(ParameterDeclaration* param_decl);
-
   void VisitFunctionDeclaration(FunctionDeclaration* fun_decl);
 
   Constant* GenerateInitializer(Type* type, Expression* expr);
@@ -35,6 +33,8 @@ class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
   Constant* GenerateIntegerLiteral(IntegerLiteral* int_lit);
 
   Constant* GenerateFloatingLiteral(FloatingLiteral* float_lit);
+
+  Argument* GenerateFunctionParameter(ParameterDeclaration* param);
 
   GlobalContext& ctx_;
   Module& module_;

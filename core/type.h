@@ -3,6 +3,7 @@
 #include <string_view>
 #include <vector>
 
+#include "base/logging.h"
 #include "base/type_casts.h"
 #include "base/zone.h"
 #include "base/zone_container.h"
@@ -34,6 +35,8 @@ class Type : public ZoneObject {
   static inline bool IsInt(const Type* type);
 
   static inline bool IsFloat(const Type* type);
+
+  static inline size_t GetAlignment(const Type* type);
 
   void Dump() const;
 
@@ -92,7 +95,7 @@ class ArrayType : public Type {
 
   bool is_multi_dimensional() const { return IsA<ArrayType>(element_type()); }
 
-  const ArrayType* GetInnermostArrayType() const;
+  Type* GetBaseType();
 
  protected:
   ArrayType(TypeClass type_class, Type* element_type)
@@ -170,6 +173,7 @@ class FunctionType : public Type {
   Type* return_type() const { return return_type_; }
   Type* param_type(size_t i) const { return param_types_[i]; }
   const ZoneVector<Type*>& param_types() const { return param_types_; }
+  size_t param_size() const { return param_types_.size(); }
 
   static bool classof(const Type& t) {
     return t.type_class() == TypeClass::kFunction;
@@ -197,6 +201,17 @@ inline bool Type::IsInt(const Type* type) {
 inline bool Type::IsFloat(const Type* type) {
   auto* builtin = DynamicTo<BuiltinType>(type);
   return builtin && builtin->is_float();
+}
+
+// static
+inline size_t Type::GetAlignment(const Type* type) {
+  if (IsA<BuiltinType>(type)) {
+    return 4;
+  } else if (IsA<ArrayType>(type)) {
+    return 8;
+  }
+  NOTREACHED();
+  return 4;
 }
 
 }  // namespace sysy

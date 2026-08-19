@@ -62,7 +62,8 @@ void Sema::VisitCompilationUnit(CompilationUnit* comp_unit) {
       }
 
       has_main_function = true;
-      if (fun_decl->type() != Type::GetIntType(global_context_)) {
+      auto* function_type = To<FunctionType>(fun_decl->type());
+      if (function_type->return_type() != Type::GetIntType(global_context_)) {
         Diag(DiagnosticID::kMainReturnType, comp_unit->location());
         return;
       }
@@ -270,7 +271,8 @@ void Sema::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
   scope.current()->set_function_declaration(fun_decl);
   Base::VisitFunctionDeclaration(fun_decl);
 
-  if (fun_decl->type() != Type::GetVoidType(global_context_) &&
+  auto* function_type = To<FunctionType>(fun_decl->type());
+  if (function_type->return_type() != Type::GetVoidType(global_context_) &&
       !scope.current()->has_return_statement() && !fun_decl->is_prelude() &&
       !has_diagnostics()) {
     Diag(DiagnosticID::kFuncNonVoidReturn, fun_decl->location());
@@ -385,7 +387,9 @@ void Sema::VisitReturnStatement(ReturnStatement* return_stmt) {
     }
 
     Type* function_return_type =
-        enclosing_function_scope->function_declaration()->type();
+        To<FunctionType>(
+            enclosing_function_scope->function_declaration()->type())
+            ->return_type();
     if (Type::IsInt(expr->type()) && Type::IsFloat(function_return_type)) {
       auto* casted = ImplicitCast(Type::GetFloatType(global_context_), expr);
       return_stmt->set_expression(casted);
@@ -400,9 +404,12 @@ void Sema::VisitReturnStatement(ReturnStatement* return_stmt) {
       return;
     }
   } else {
+    Type* function_return_type =
+        To<FunctionType>(
+            enclosing_function_scope->function_declaration()->type())
+            ->return_type();
     // No return type, expect function declaration to have void return type.
-    if (enclosing_function_scope->function_declaration()->type() !=
-        Type::GetVoidType(global_context_)) {
+    if (function_return_type != Type::GetVoidType(global_context_)) {
       Diag(DiagnosticID::kReturnTypeMismatch, return_stmt->location());
       return;
     }
@@ -605,6 +612,11 @@ bool Sema::CheckBinaryAssign(const CheckingContext& ctx,
   // Both lhs and rhs are builtin type.
   auto* lhs_type = DynamicTo<BuiltinType>(lhs->type());
   auto* rhs_type = DynamicTo<BuiltinType>(rhs->type());
+
+  // No need to perform type conversion.
+  if (!lhs_type || !rhs_type) {
+    return true;
+  }
 
   if (lhs_type->is_void()) {
     Diag(DiagnosticID::kAssignToVoid, lhs->location());
@@ -884,7 +896,8 @@ bool Sema::CheckCallExpression(const CheckingContext& ctx,
   }
 
   call_expr->set_function_declaration(fun_decl);
-  call_expr->set_type(fun_decl->type());
+  FunctionType* function_type = To<FunctionType>(fun_decl->type());
+  call_expr->set_type(function_type->return_type());
 
   return true;
 }

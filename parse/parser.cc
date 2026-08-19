@@ -243,35 +243,40 @@ Expression* Parser::ParseInitValue() {
 }
 
 FunctionDeclaration* Parser::ParseFunctionDeclaration() {
-  Type* type = ResolveBuiltinType(Consume());
+  Type* return_type = ResolveBuiltinType(Consume());
+
   std::string_view name = ExpectAndConsume(TokenType::kIdentifier).value();
 
   ExpectAndConsume(TokenType::kLeftParen);
   ZoneVector<ParameterDeclaration*> parameters(zone());
 
+  ZoneVector<Type*> parameter_types(zone());
   do {
     auto* parameter_declaration = ParseFunctionParameter();
     if (!parameter_declaration) {
       break;
     }
     parameters.push_back(parameter_declaration);
+    parameter_types.push_back(parameter_declaration->type());
   } while (TryConsume(TokenType::kComma));
-
   ExpectAndConsume(TokenType::kRightParen);
+
+  auto* function_type = FunctionType::Get(return_type, parameter_types);
 
   // Function declaration without body
   if (TryConsume(TokenType::kSemicolon)) {
     ZoneVector<Statement*> body(zone());
     Statement* compound_statement =
         zone()->New<CompoundStatement>(std::move(body), current_.location());
-    return zone()->New<FunctionDeclaration>(type, name, std::move(parameters),
-                                            compound_statement, true,
-                                            current_.location());
+    return zone()->New<FunctionDeclaration>(
+        function_type, name, std::move(parameters), compound_statement, true,
+        current_.location());
   }
 
   Statement* body = ParseBlock();
-  return zone()->New<FunctionDeclaration>(type, name, std::move(parameters),
-                                          body, false, current_.location());
+  return zone()->New<FunctionDeclaration>(function_type, name,
+                                          std::move(parameters), body, false,
+                                          current_.location());
 }
 
 ParameterDeclaration* Parser::ParseFunctionParameter() {

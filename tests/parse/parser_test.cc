@@ -133,7 +133,8 @@ TEST(Parser, ParseFunctionDeclaration) {
 
   auto* fun_decl = To<FunctionDeclaration>(decl);
   EXPECT_EQ(fun_decl->name(), "fun");
-  EXPECT_EQ(fun_decl->type(), Type::GetVoidType(global_context));
+  EXPECT_EQ(To<FunctionType>(fun_decl->type())->return_type(),
+            Type::GetVoidType(global_context));
   EXPECT_EQ(fun_decl->parameters().size(), 2u);
 
   EXPECT_TRUE(IsA<CompoundStatement>(fun_decl->body()));

@@ -54,6 +54,8 @@ TEST(IRGenerator, GenerateBasic) {
     int main() {
       return 0;
     }
+
+    void foo(int a, int b) {}
   )";
   auto* compilation_unit = Parse(ctx, ast_context, source);
   CheckSema(ctx, ast_context, compilation_unit);

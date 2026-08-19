@@ -5,6 +5,7 @@
 #include "core/evaluator.h"
 #include "core/type.h"
 #include "ir/constant_data.h"
+#include "ir/function.h"
 #include "ir/global_variable.h"
 #include "ir/ir_builder.h"
 
@@ -31,9 +32,15 @@ void IRGenerator::VisitVariableDeclaration(VariableDeclaration* var_decl) {
   gv->set_initializer(initializer);
 }
 
-void IRGenerator::VisitParameterDeclaration(ParameterDeclaration* param_decl) {}
-
-void IRGenerator::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {}
+void IRGenerator::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
+  auto* function = Function::Create(To<FunctionType>(fun_decl->type()),
+                                    fun_decl->name(), module_);
+  for (size_t i = 0; i < fun_decl->parameters().size(); ++i) {
+    auto& param = fun_decl->parameters()[i];
+    function->argument(i)->SetName(param->name());
+  }
+  Visit(fun_decl->body());
+}
 
 Constant* IRGenerator::GenerateInitializer(Type* type, Expression* expr) {
   if (auto* array_type = DynamicTo<ArrayType>(type)) {

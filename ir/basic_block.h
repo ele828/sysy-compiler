@@ -15,11 +15,12 @@ class BasicBlock : public Value, public base::LinkNode<BasicBlock> {
 
   ~BasicBlock();
 
-  static BasicBlock* Create(GlobalContext& ctx, Function* parent) {
-    return new BasicBlock(ctx, parent);
+  static BasicBlock* Create(GlobalContext& ctx, std::string name,
+                            Function& parent) {
+    return new BasicBlock(ctx, name, parent);
   }
 
-  Function* parent() const { return parent_; }
+  Function& parent() const { return parent_; }
 
   InstListType& init_list() { return inst_list_; }
   const InstListType& init_list() const { return inst_list_; }
@@ -27,9 +28,9 @@ class BasicBlock : public Value, public base::LinkNode<BasicBlock> {
   static bool classof(const Value& v) { return v.id() == ValueID::kBasicBlock; }
 
  private:
-  BasicBlock(GlobalContext& ctx, Function* parent);
+  BasicBlock(GlobalContext& ctx, std::string_view name, Function& parent);
 
-  Function* parent_;
+  Function& parent_;
   InstListType inst_list_;
 };
 
