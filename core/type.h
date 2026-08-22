@@ -96,8 +96,6 @@ class ArrayType : public Type {
 
   bool is_multi_dimensional() const { return IsA<ArrayType>(element_type()); }
 
-  Type* GetBaseType();
-
  protected:
   ArrayType(TypeClass type_class, Type* element_type)
       : Type(element_type->context(), type_class),
@@ -223,6 +221,8 @@ inline size_t Type::GetAlignment(const Type* type) {
   if (IsA<BuiltinType>(type)) {
     return 4;
   } else if (IsA<ArrayType>(type)) {
+    return 4;
+  } else if (IsA<PointerType>(type)) {
     return 8;
   }
   NOTREACHED();

@@ -107,12 +107,6 @@ void IRWriter::WriteModule(Module& module) {
 }
 
 void IRWriter::WriteAlignment(Type* type, bool has_initializer) {
-  if (auto* array_type = DynamicTo<ArrayType>(type)) {
-    if (has_initializer) {
-      type = array_type->GetBaseType();
-    }
-  }
-
   size_t alignment = Type::GetAlignment(type);
   os_ << "align " << alignment;
 }

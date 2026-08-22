@@ -71,17 +71,6 @@ std::string_view BuiltinType::name() const {
   }
 }
 
-Type* ArrayType::GetBaseType() {
-  Type* element_type = element_type_;
-  while (element_type) {
-    auto* inner_array_type = DynamicTo<ArrayType>(element_type);
-    if (!inner_array_type) {
-      break;
-    }
-    element_type = inner_array_type->element_type_;
-  }
-  return element_type;
-}
 // static
 ConstantArrayType* ConstantArrayType::Get(Type* element_type, size_t size) {
   auto& context = element_type->context();
