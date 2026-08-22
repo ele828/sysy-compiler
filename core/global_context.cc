@@ -1,13 +1,12 @@
 #include "core/global_context.h"
 
-#include "ir/constants.h"
-
 namespace sysy {
 
 GlobalContext::GlobalContext()
     : void_type_(zone()->New<BuiltinType>(*this, BuiltinType::Kind::kVoid)),
       int_type_(zone()->New<BuiltinType>(*this, BuiltinType::Kind::kInt)),
-      float_type_(zone()->New<BuiltinType>(*this, BuiltinType::Kind::kFloat)) {}
+      float_type_(zone()->New<BuiltinType>(*this, BuiltinType::Kind::kFloat)),
+      pointer_type_(zone()->New<PointerType>(*this)) {}
 
 GlobalContext::~GlobalContext() = default;
 

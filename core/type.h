@@ -21,6 +21,7 @@ class Type : public ZoneObject {
     kConstantArrayWithExpr,
     kIncompleteArray,
     kFunction,
+    kPointer,
   };
 
   TypeClass type_class() const { return type_class_; }
@@ -192,7 +193,17 @@ class FunctionType : public Type {
 };
 
 class PointerType : public Type {
+ public:
   static PointerType* Get(GlobalContext& ctx);
+
+  static bool classof(const Type& t) {
+    return t.type_class() == TypeClass::kPointer;
+  }
+
+ private:
+  explicit PointerType(GlobalContext& ctx) : Type(ctx, TypeClass::kPointer) {}
+
+  friend Zone;
 };
 
 // static

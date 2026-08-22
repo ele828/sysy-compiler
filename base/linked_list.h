@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <iterator>
 #include <utility>
 
@@ -209,7 +210,10 @@ class LinkedList {
     T& operator*() { return *entry_->value(); }
     T* operator->() { return entry_->value(); }
 
+    bool is_valid() const { return !!entry_; }
+
     Iterator() : entry_(nullptr) {}
+    Iterator(std::nullptr_t) : entry_(nullptr) {}
 
    private:
     explicit Iterator(LinkNode<T>* entry) : entry_(entry) {}

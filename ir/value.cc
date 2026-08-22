@@ -71,7 +71,6 @@ void Value::SetName(std::string_view name) {
 
   auto* symbol_table = GetSymbolTable();
   if (!symbol_table) {
-    NOTREACHED();
     return;
   }
   if (has_name()) {
@@ -104,6 +103,10 @@ SymbolTable* Value::GetSymbolTable() const {
     return &argument->parent().symbol_table();
   } else if (auto* basic_block = DynamicTo<BasicBlock>(this)) {
     return &basic_block->parent().symbol_table();
+  } else if (auto* instruction = DynamicTo<Instruction>(this)) {
+    if (auto* basic_block = DynamicTo<BasicBlock>(instruction->parent())) {
+      return &basic_block->parent().symbol_table();
+    }
   }
   return nullptr;
 }

@@ -152,4 +152,7 @@ FunctionType* FunctionType::Get(Type* result) {
   return Get(result, std::move(params));
 }
 
+// static
+PointerType* PointerType::Get(GlobalContext& ctx) { return ctx.pointer_type_; }
+
 }  // namespace sysy

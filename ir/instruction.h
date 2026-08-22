@@ -11,6 +11,8 @@ namespace sysy {
 class BasicBlock;
 
 class Instruction : public User, public base::LinkNode<Instruction> {
+  using Base = base::LinkNode<Instruction>;
+
  public:
   enum Operation {
     kUnary = 1,
@@ -23,13 +25,17 @@ class Instruction : public User, public base::LinkNode<Instruction> {
     kReturn,
   };
 
+  using InsertPoint = base::LinkedList<Instruction>::Iterator;
+
   void Destroy(uint32_t op, PassKey<Value>);
 
   Operation op_code() const {
     return static_cast<Operation>(id() - Value::kInstruction);
   }
 
-  void InsertInto(BasicBlock* basic_block, Instruction* insert_pos = nullptr);
+  void InsertInto(BasicBlock* basic_block, InsertPoint insert_before = nullptr);
+
+  BasicBlock* parent() const { return parent_; }
 
   static bool classof(const Value& v) { return v.id() >= Value::kInstruction; }
 
@@ -39,6 +45,12 @@ class Instruction : public User, public base::LinkNode<Instruction> {
   ~Instruction() = default;
 
  private:
+  // Hide these two methods for now since these methods won't update parent.
+  using Base::InsertAfter;
+  using Base::InsertBefore;
+
+  BasicBlock* parent_{};
+
   friend Value;
 };
 
@@ -60,7 +72,6 @@ class UnaryInstruction : public Instruction {
     return IsA<Instruction>(v) && classof(To<Instruction>(v));
   }
 
- protected:
   void* operator new(size_t size) {
     return User::operator new(size, alloc_info);
   }
@@ -70,7 +81,20 @@ class BinaryInstruction : public Instruction {};
 
 class AllocaInst : public UnaryInstruction {
  public:
-  AllocaInst(Type* type, Value* array_size, std::string_view name);
+  explicit AllocaInst(Type* type);
+
+  Type* allocated_type() const { return allocated_type_; }
+
+  static bool classof(const Instruction& i) {
+    return i.op_code() == Operation::kAlloca;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+
+ private:
+  Type* allocated_type_;
 };
 
 class LoadInst : public UnaryInstruction {};

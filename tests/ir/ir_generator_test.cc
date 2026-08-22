@@ -52,12 +52,14 @@ TEST(IRGenerator, GenerateBasic) {
     int d[2][2][2] = {{{1}}};
 
     int main() {
+      int a = 1;
       return 0;
     }
 
     void foo(int a, int b) {}
   )";
   auto* compilation_unit = Parse(ctx, ast_context, source);
+  compilation_unit->Dump();
   CheckSema(ctx, ast_context, compilation_unit);
   IRGenerator generator(ctx, module);
   generator.Generate(compilation_unit);

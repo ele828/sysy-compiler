@@ -41,6 +41,8 @@ class IRWriter final {
 
   void WriteOperand(Value* op);
 
+  void WriteAllocaInst(AllocaInst& ret_inst);
+
   void WriteReturnInst(ReturnInst& ret_inst);
 
   std::ostream& os_;

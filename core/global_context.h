@@ -155,6 +155,7 @@ class GlobalContext final {
   BuiltinType* void_type_;
   BuiltinType* int_type_;
   BuiltinType* float_type_;
+  PointerType* pointer_type_;
   FunctionTypeSet function_types_;
   ArrayTypeMap array_types_;
 
@@ -167,6 +168,7 @@ class GlobalContext final {
   friend class Value;
   friend class Type;
   friend class FunctionType;
+  friend class PointerType;
   friend class ConstantArrayType;
   friend class IncompleteArrayType;
   friend class ConstantInt;

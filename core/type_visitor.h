@@ -22,7 +22,8 @@ class TypeVisitor {
             To<IncompleteArrayType>(type));
       case Type::TypeClass::kFunction:
         return derived()->VisitFunctionType(To<FunctionType>(type));
-        break;
+      case Type::TypeClass::kPointer:
+        return derived()->VisitPointerType(To<PointerType>(type));
     }
   }
 
@@ -46,6 +47,8 @@ class TypeVisitor {
       Visit(param_type);
     }
   }
+
+  void VisitPointerType(const PointerType* type) {}
 
  private:
   Derived* derived() { return static_cast<Derived*>(this); }

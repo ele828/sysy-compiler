@@ -1,6 +1,7 @@
 #include "ir/ir_writer.h"
 
 #include <ostream>
+#include <print>
 
 #include "base/logging.h"
 #include "core/type.h"
@@ -48,6 +49,10 @@ class TypeWriter : public TypeVisitor<TypeWriter> {
     NOTREACHED();
   }
 
+  void VisitFunctionType(const FunctionType* type) { NOTREACHED(); }
+
+  void VisitPointerType(const PointerType* type) { NOTREACHED(); }
+
  private:
   std::ostream& os_;
 };
@@ -71,6 +76,7 @@ void IRWriter::WriteModule(Module& module) {
     WriteConstant(global.initializer());
 
     // Write alignment
+    os_ << ", ";
     bool has_initializer = global.initializer() != nullptr;
     WriteAlignment(global.type(), has_initializer);
 
@@ -101,14 +107,14 @@ void IRWriter::WriteModule(Module& module) {
 }
 
 void IRWriter::WriteAlignment(Type* type, bool has_initializer) {
-  if (auto* array_type = To<ArrayType>(type)) {
+  if (auto* array_type = DynamicTo<ArrayType>(type)) {
     if (has_initializer) {
       type = array_type->GetBaseType();
     }
   }
 
   size_t alignment = Type::GetAlignment(type);
-  os_ << ", align " << alignment;
+  os_ << "align " << alignment;
 }
 
 void IRWriter::WriteType(Type* type) {
@@ -189,15 +195,21 @@ void IRWriter::WriteBasicBlock(BasicBlock& bb) {
 }
 
 void IRWriter::WriteInstruction(Instruction& inst) {
+  // Indentation
+  os_ << "  ";
+
   switch (inst.op_code()) {
     case Instruction::kAlloca:
-      // TODO(eric):
+      WriteAllocaInst(To<AllocaInst>(inst));
       break;
     case Instruction::kReturn:
-      return WriteReturnInst(To<ReturnInst>(inst));
+      WriteReturnInst(To<ReturnInst>(inst));
+      break;
     default:
       break;
   }
+
+  os_ << "\n";
 }
 
 void IRWriter::WriteOperand(Value* op) {
@@ -216,8 +228,15 @@ void IRWriter::WriteOperand(Value* op) {
   }
 }
 
+void IRWriter::WriteAllocaInst(AllocaInst& ret_inst) {
+  WriteName(ret_inst.name());
+  os_ << " = alloca ";
+  WriteType(ret_inst.allocated_type());
+  os_ << ", ";
+  WriteAlignment(ret_inst.allocated_type(), true);
+}
+
 void IRWriter::WriteReturnInst(ReturnInst& ret_inst) {
-  os_ << "  ";
   os_ << "ret";
   os_ << " ";
   if (auto* retval = ret_inst.return_value()) {
@@ -225,7 +244,6 @@ void IRWriter::WriteReturnInst(ReturnInst& ret_inst) {
   } else {
     os_ << "void";
   }
-  os_ << "\n";
 }
 
 }  // namespace sysy

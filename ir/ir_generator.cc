@@ -2,6 +2,7 @@
 
 #include "ast/ast.h"
 #include "base/logging.h"
+#include "base/type_casts.h"
 #include "core/evaluator.h"
 #include "core/type.h"
 #include "ir/basic_block.h"
@@ -9,6 +10,7 @@
 #include "ir/constants.h"
 #include "ir/function.h"
 #include "ir/global_variable.h"
+#include "ir/instruction.h"
 #include "ir/ir_builder.h"
 
 namespace sysy {
@@ -16,22 +18,36 @@ namespace sysy {
 IRGenerator::IRGenerator(GlobalContext& ctx, Module& module)
     : ctx_(ctx), module_(module), builder_(ctx) {}
 
-void IRGenerator::Generate(CompilationUnit* unit) { Visit(unit); }
-
-void IRGenerator::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
-  auto* gv = GlobalVariable::Create(module_, const_decl->type(), true,
-                                    const_decl->name());
-  Constant* initializer =
-      GenerateInitializer(const_decl->type(), const_decl->init_value());
-  gv->set_initializer(initializer);
+void IRGenerator::Generate(CompilationUnit* unit) {
+  for (auto& decl : unit->body()) {
+    if (auto* const_decl = DynamicTo<ConstantDeclaration>(decl)) {
+      auto* gv = GlobalVariable::Create(module_, const_decl->type(), true,
+                                        const_decl->name());
+      Constant* initializer =
+          GenerateInitializer(const_decl->type(), const_decl->init_value());
+      gv->set_initializer(initializer);
+    } else if (auto* var_decl = DynamicTo<VariableDeclaration>(decl)) {
+      auto* gv = GlobalVariable::Create(module_, var_decl->type(), false,
+                                        var_decl->name());
+      Constant* initializer =
+          GenerateInitializer(var_decl->type(), var_decl->init_value());
+      gv->set_initializer(initializer);
+    } else if (auto* fun_decl = DynamicTo<FunctionDeclaration>(decl)) {
+      VisitFunctionDeclaration(fun_decl);
+    } else {
+      NOTREACHED();
+    }
+  }
 }
 
-void IRGenerator::VisitVariableDeclaration(VariableDeclaration* var_decl) {
-  auto* gv = GlobalVariable::Create(module_, var_decl->type(), false,
-                                    var_decl->name());
-  Constant* initializer =
-      GenerateInitializer(var_decl->type(), var_decl->init_value());
-  gv->set_initializer(initializer);
+AllocaInst* IRGenerator::CreateTempAlloca(Type* type, std::string_view name) {
+  DCHECK(entry_);
+
+  auto* alloca = new AllocaInst(type);
+  alloca->InsertInto(entry_, alloca_insert_point_);
+  alloca->SetName(name);
+  alloca_insert_point_ = ++alloca_insert_point_;
+  return alloca;
 }
 
 void IRGenerator::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
@@ -41,14 +57,28 @@ void IRGenerator::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
     auto& param = fun_decl->parameters()[i];
     function->argument(i)->SetName(param->name());
   }
-  auto* entry = BasicBlock::Create(ctx_, "entry", *function);
-  builder_.SetInsertPoint(entry);
+  entry_ = BasicBlock::Create(ctx_, "entry", *function);
+  builder_.SetInsertPoint(entry_);
+  alloca_insert_point_ = entry_->inst_list().end();
+
   Visit(fun_decl->body());
 
   auto* function_type = To<FunctionType>(function->type());
   if (function_type->return_type() == Type::GetVoidType(ctx_)) {
     // TODO(eric): add return inst if current block doest not have terminator.
   }
+
+  entry_ = nullptr;
+}
+
+void IRGenerator::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
+  auto* alloca = CreateTempAlloca(const_decl->type(), const_decl->name());
+  (void)alloca;
+}
+
+void IRGenerator::VisitVariableDeclaration(VariableDeclaration* var_decl) {
+  auto* alloca = CreateTempAlloca(var_decl->type(), var_decl->name());
+  (void)alloca;
 }
 
 Constant* IRGenerator::GenerateInitializer(Type* type, Expression* expr) {

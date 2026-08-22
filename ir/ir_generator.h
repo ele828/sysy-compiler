@@ -3,6 +3,7 @@
 #include "ast/ast.h"
 #include "ast/ast_recursive_visitor.h"
 #include "core/global_context.h"
+#include "ir/instruction.h"
 #include "ir/ir_builder.h"
 #include "ir/module.h"
 
@@ -17,11 +18,13 @@ class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
   void Generate(CompilationUnit* unit);
 
  private:
+  AllocaInst* CreateTempAlloca(Type* type, std::string_view name);
+
+  void VisitFunctionDeclaration(FunctionDeclaration* fun_decl);
+
   void VisitConstantDeclaration(ConstantDeclaration* const_decl);
 
   void VisitVariableDeclaration(VariableDeclaration* var_decl);
-
-  void VisitFunctionDeclaration(FunctionDeclaration* fun_decl);
 
   void VisitReturnStatement(ReturnStatement* return_stmt);
 
@@ -41,6 +44,8 @@ class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
   GlobalContext& ctx_;
   Module& module_;
   IRBuilder builder_;
+  BasicBlock* entry_{};
+  Instruction::InsertPoint alloca_insert_point_{};
 
   friend Base;
 };
