@@ -191,6 +191,10 @@ class FunctionType : public Type {
   friend Zone;
 };
 
+class PointerType : public Type {
+  static PointerType* Get(GlobalContext& ctx);
+};
+
 // static
 inline bool Type::IsInt(const Type* type) {
   auto* builtin = DynamicTo<BuiltinType>(type);

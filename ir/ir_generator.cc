@@ -4,7 +4,9 @@
 #include "base/logging.h"
 #include "core/evaluator.h"
 #include "core/type.h"
-#include "ir/constant_data.h"
+#include "ir/basic_block.h"
+#include "ir/constant.h"
+#include "ir/constants.h"
 #include "ir/function.h"
 #include "ir/global_variable.h"
 #include "ir/ir_builder.h"
@@ -39,7 +41,14 @@ void IRGenerator::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
     auto& param = fun_decl->parameters()[i];
     function->argument(i)->SetName(param->name());
   }
+  auto* entry = BasicBlock::Create(ctx_, "entry", *function);
+  builder_.SetInsertPoint(entry);
   Visit(fun_decl->body());
+
+  auto* function_type = To<FunctionType>(function->type());
+  if (function_type->return_type() == Type::GetVoidType(ctx_)) {
+    // TODO(eric): add return inst if current block doest not have terminator.
+  }
 }
 
 Constant* IRGenerator::GenerateInitializer(Type* type, Expression* expr) {
@@ -140,6 +149,16 @@ Constant* IRGenerator::GenerateIntegerLiteral(IntegerLiteral* int_lit) {
 
 Constant* IRGenerator::GenerateFloatingLiteral(FloatingLiteral* float_lit) {
   return ConstantFP::Get(ctx_, float_lit->value());
+}
+
+void IRGenerator::VisitReturnStatement(ReturnStatement* return_stmt) {
+  if (!return_stmt->expression()) {
+    builder_.CreateRetVoid();
+    return;
+  }
+
+  Value* retval = GenerateExpression(return_stmt->expression());
+  builder_.CreateRet(retval);
 }
 
 }  // namespace sysy

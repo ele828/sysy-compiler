@@ -24,7 +24,7 @@ class IRBuilder {
  private:
   template <typename InstType>
   InstType* Insert(InstType* inst) {
-    basic_block_->init_list().Append(inst);
+    basic_block_->inst_list().Append(inst);
     return inst;
   }
 

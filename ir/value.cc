@@ -6,7 +6,7 @@
 #include "core/global_context.h"
 #include "ir/argument.h"
 #include "ir/basic_block.h"
-#include "ir/constant_data.h"
+#include "ir/constants.h"
 #include "ir/function.h"
 #include "ir/global_variable.h"
 #include "ir/instruction.h"

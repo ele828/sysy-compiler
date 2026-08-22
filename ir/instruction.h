@@ -13,12 +13,19 @@ class BasicBlock;
 class Instruction : public User, public base::LinkNode<Instruction> {
  public:
   enum Operation {
-    kReturn = 1,
+    kUnary = 1,
+    kAlloca,
+    kUnaryEnd,
+
+    kBinary,
+    kBinaryEnd,
+
+    kReturn,
   };
 
   void Destroy(uint32_t op, PassKey<Value>);
 
-  Operation op_code() {
+  Operation op_code() const {
     return static_cast<Operation>(id() - Value::kInstruction);
   }
 
@@ -35,6 +42,41 @@ class Instruction : public User, public base::LinkNode<Instruction> {
   friend Value;
 };
 
+class UnaryInstruction : public Instruction {
+  constexpr static AllocInfo alloc_info{.num_ops = 1};
+
+ public:
+  UnaryInstruction(Operation op, Type* type, Value* value)
+      : Instruction(op, type, alloc_info) {
+    operand(0) = value;
+  }
+
+  static bool classof(const Instruction& v) {
+    Operation op = static_cast<Operation>(v.id());
+    return op >= kUnary && op <= kUnaryEnd;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+
+ protected:
+  void* operator new(size_t size) {
+    return User::operator new(size, alloc_info);
+  }
+};
+
+class BinaryInstruction : public Instruction {};
+
+class AllocaInst : public UnaryInstruction {
+ public:
+  AllocaInst(Type* type, Value* array_size, std::string_view name);
+};
+
+class LoadInst : public UnaryInstruction {};
+
+class StoreInst : public Instruction {};
+
 class ReturnInst : public Instruction {
  public:
   static ReturnInst* Create(GlobalContext& context, Value* retval) {
@@ -42,7 +84,11 @@ class ReturnInst : public Instruction {
     return new (info) ReturnInst(context, retval, info);
   }
 
-  static bool classof(Instruction& i) {
+  Value* return_value() const {
+    return num_of_operands() != 0 ? operand(0) : nullptr;
+  }
+
+  static bool classof(const Instruction& i) {
     return i.op_code() == Operation::kReturn;
   }
 

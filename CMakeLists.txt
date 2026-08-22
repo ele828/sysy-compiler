@@ -22,7 +22,7 @@ set(SOURCE_FILES
   ir/argument.cc
   ir/basic_block.cc
   ir/constant.cc
-  ir/constant_data.cc
+  ir/constants.cc
   ir/function.cc
   ir/global_variable.cc
   ir/instruction.cc

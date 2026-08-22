@@ -22,8 +22,8 @@ class BasicBlock : public Value, public base::LinkNode<BasicBlock> {
 
   Function& parent() const { return parent_; }
 
-  InstListType& init_list() { return inst_list_; }
-  const InstListType& init_list() const { return inst_list_; }
+  InstListType& inst_list() { return inst_list_; }
+  const InstListType& inst_list() const { return inst_list_; }
 
   static bool classof(const Value& v) { return v.id() == ValueID::kBasicBlock; }
 

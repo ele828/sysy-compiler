@@ -18,6 +18,7 @@ class User : public Value {
   uint32_t num_of_operands() const { return num_ops_; }
 
   Use& operand(int64_t index) { return operands()[index]; }
+  const Use& operand(int64_t index) const { return operands()[index]; }
 
   Use* operands() { return reinterpret_cast<Use*>(this) - num_ops_; }
   const Use* operands() const {

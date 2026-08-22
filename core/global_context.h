@@ -10,7 +10,7 @@
 #include "base/zone.h"
 #include "core/symbol_table.h"
 #include "core/type.h"
-#include "ir/constant_data.h"
+#include "ir/constants.h"
 #include "ir/value.h"
 
 namespace sysy {

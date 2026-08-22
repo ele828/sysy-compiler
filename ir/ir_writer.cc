@@ -5,7 +5,9 @@
 #include "base/logging.h"
 #include "core/type.h"
 #include "core/type_visitor.h"
-#include "ir/constant_data.h"
+#include "ir/basic_block.h"
+#include "ir/constants.h"
+#include "ir/instruction.h"
 #include "ir/module.h"
 
 namespace sysy {
@@ -58,7 +60,7 @@ void IRWriter::WriteModule(Module& module) {
   // Write GlobalVariable
   for (auto& global : module.globals()) {
     // Write name
-    os_ << "@" << global.name();
+    WriteName(global.name(), true);
     os_ << " = dso_local global ";
 
     // Write type
@@ -85,14 +87,14 @@ void IRWriter::WriteModule(Module& module) {
     os_ << " ";
 
     // Write function name
-    os_ << "@" << function.name();
+    WriteName(function.name(), true);
 
     // Write function parameters
     os_ << "(";
-    WriteFunctionParameters(&function);
+    WriteFunctionParameters(function);
     os_ << ") ";
 
-    WriteFunctionBody(&function);
+    WriteFunctionBody(function);
 
     os_ << "\n";
   }
@@ -114,7 +116,14 @@ void IRWriter::WriteType(Type* type) {
   type_writer.Visit(type);
 }
 
-void IRWriter::WriteName(std::string_view name) { os_ << "%" << name; }
+void IRWriter::WriteName(std::string_view name, bool is_global) {
+  if (is_global) {
+    os_ << "@";
+  } else {
+    os_ << "%";
+  }
+  os_ << name;
+}
 
 void IRWriter::WriteConstant(Constant* constant) {
   if (auto* constant_int = DynamicTo<ConstantInt>(constant)) {
@@ -149,21 +158,74 @@ void IRWriter::WriteConstantArray(ConstantArray* constant_array) {
   os_ << "]";
 }
 
-void IRWriter::WriteFunctionParameters(Function* function) {
-  for (size_t i = 0; i < function->arg_size(); ++i) {
-    auto* arg = function->argument(i);
+void IRWriter::WriteFunctionParameters(Function& function) {
+  for (size_t i = 0; i < function.arg_size(); ++i) {
+    auto* arg = function.argument(i);
     WriteType(arg->type());
     os_ << " ";
     WriteName(arg->name());
-    if (i != function->arg_size() - 1) {
+    if (i != function.arg_size() - 1) {
       os_ << ", ";
     }
   }
 }
 
-void IRWriter::WriteFunctionBody(Function* function) {
+void IRWriter::WriteFunctionBody(Function& function) {
   os_ << "{";
+  os_ << "\n";
+  auto& basic_blocks = function.basic_blocks();
+  if (!basic_blocks.empty()) {
+    auto entry = function.basic_blocks().begin();
+    WriteBasicBlock(*entry);
+  }
   os_ << "}";
+}
+
+void IRWriter::WriteBasicBlock(BasicBlock& bb) {
+  os_ << "." << bb.name() << ":\n";
+  for (auto& inst : bb.inst_list()) {
+    WriteInstruction(inst);
+  }
+}
+
+void IRWriter::WriteInstruction(Instruction& inst) {
+  switch (inst.op_code()) {
+    case Instruction::kAlloca:
+      // TODO(eric):
+      break;
+    case Instruction::kReturn:
+      return WriteReturnInst(To<ReturnInst>(inst));
+    default:
+      break;
+  }
+}
+
+void IRWriter::WriteOperand(Value* op) {
+  WriteType(op->type());
+  os_ << " ";
+
+  if (op->has_name()) {
+    WriteName(op->name());
+    return;
+  }
+
+  auto* constant = DynamicTo<Constant>(op);
+  if (constant && (IsA<ConstantData>(op) || IsA<ConstantArray>(op))) {
+    WriteConstant(constant);
+    return;
+  }
+}
+
+void IRWriter::WriteReturnInst(ReturnInst& ret_inst) {
+  os_ << "  ";
+  os_ << "ret";
+  os_ << " ";
+  if (auto* retval = ret_inst.return_value()) {
+    WriteOperand(retval);
+  } else {
+    os_ << "void";
+  }
+  os_ << "\n";
 }
 
 }  // namespace sysy
