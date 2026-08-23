@@ -53,6 +53,8 @@ class Evaluator final {
     std::variant<std::monostate, int, float> value_;
   };
 
+  Evaluator() : current_scope_(nullptr) {}
+
   explicit Evaluator(Scope* current_scope);
 
   Value Evaluate(Expression* expression);

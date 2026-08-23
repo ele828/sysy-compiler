@@ -19,7 +19,8 @@ class GlobalVariable : public Constant, public base::LinkNode<GlobalVariable> {
 
   Constant* initializer() { return static_cast<Constant*>(operand(0).get()); }
 
-  Module& parent() const { return parent_; }
+  Module& parent() { return parent_; }
+  const Module& parent() const { return parent_; }
 
   static bool classof(const Value& v) {
     return v.id() == ValueID::kGlobalVariable;

@@ -44,10 +44,33 @@ AllocaInst* IRGenerator::CreateTempAlloca(Type* type, std::string_view name) {
   DCHECK(entry_);
 
   auto* alloca = new AllocaInst(type);
-  alloca->InsertInto(entry_, alloca_insert_point_);
+  if (alloca_insert_point_ == entry_->inst_list().end()) {
+    alloca->InsertInto(entry_);
+  } else {
+    alloca->InsertAfter(alloca_insert_point_);
+  }
   alloca->SetName(name);
-  alloca_insert_point_ = ++alloca_insert_point_;
+  ++alloca_insert_point_;
   return alloca;
+}
+
+Constant* IRGenerator::EvaluateConstantExpression(Expression* expr) {
+  if (!expr) {
+    return nullptr;
+  }
+
+  auto result = Evaluator().Evaluate(expr);
+  if (!result.has_value()) {
+    return nullptr;
+  }
+
+  Type* type = expr->type();
+  if (Type::IsInt(type)) {
+    return ConstantInt::Get(ctx_, result.has_value() ? result.get<int>() : 0);
+  }
+
+  DCHECK(Type::IsFloat(type));
+  return ConstantFP::Get(ctx_, result.has_value() ? result.get<float>() : 0.f);
 }
 
 void IRGenerator::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
@@ -57,6 +80,9 @@ void IRGenerator::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
     auto& param = fun_decl->parameters()[i];
     function->argument(i)->SetName(param->name());
   }
+
+  FunctionScope function_scope(*this);
+
   entry_ = BasicBlock::Create(ctx_, "entry", *function);
   builder_.SetInsertPoint(entry_);
   alloca_insert_point_ = entry_->inst_list().end();
@@ -67,18 +93,39 @@ void IRGenerator::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
   if (function_type->return_type() == Type::GetVoidType(ctx_)) {
     // TODO(eric): add return inst if current block doest not have terminator.
   }
-
-  entry_ = nullptr;
 }
 
 void IRGenerator::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
   auto* alloca = CreateTempAlloca(const_decl->type(), const_decl->name());
-  (void)alloca;
+  local_decl_map_.emplace(const_decl, alloca);
+
+  auto* init_value = const_decl->init_value();
+  if (!init_value) {
+    return;
+  }
+
+  auto* constant = EvaluateConstantExpression(init_value);
+  DCHECK(constant);
+  builder_.CreateStore(constant, alloca);
 }
 
 void IRGenerator::VisitVariableDeclaration(VariableDeclaration* var_decl) {
   auto* alloca = CreateTempAlloca(var_decl->type(), var_decl->name());
-  (void)alloca;
+  local_decl_map_.emplace(var_decl, alloca);
+
+  auto* init_value = var_decl->init_value();
+  if (!init_value) {
+    return;
+  }
+
+  auto* constant = EvaluateConstantExpression(init_value);
+  if (constant) {
+    builder_.CreateStore(constant, alloca);
+    return;
+  }
+
+  auto* value = GenerateExpression(init_value);
+  builder_.CreateStore(value, alloca);
 }
 
 Constant* IRGenerator::GenerateInitializer(Type* type, Expression* expr) {
@@ -86,16 +133,10 @@ Constant* IRGenerator::GenerateInitializer(Type* type, Expression* expr) {
     return GenerateInitList(array_type, To<InitListExpression>(expr));
   }
 
-  Scope global_scope(Scope::kGlobal, nullptr);
-  Evaluator evaluator(&global_scope);
-  auto result = evaluator.Evaluate(expr);
+  auto* constant = EvaluateConstantExpression(expr);
+  DCHECK(constant);
 
-  if (Type::IsInt(type)) {
-    return ConstantInt::Get(ctx_, result.has_value() ? result.get<int>() : 0);
-  }
-
-  DCHECK(Type::IsFloat(type));
-  return ConstantFP::Get(ctx_, result.has_value() ? result.get<float>() : 0.f);
+  return constant;
 }
 
 Constant* IRGenerator::GenerateInitList(ArrayType* array_type,
@@ -149,7 +190,7 @@ Value* IRGenerator::GenerateExpression(Expression* expr) {
     case AstNode::Kind::kBinaryOperation:
       return {};
     case AstNode::Kind::kDeclarationReference: {
-      return {};
+      return GenerateDeclarationReference(To<DeclarationReference>(expr));
     }
     case AstNode::Kind::kInitList: {
       return {};
@@ -189,6 +230,22 @@ void IRGenerator::VisitReturnStatement(ReturnStatement* return_stmt) {
 
   Value* retval = GenerateExpression(return_stmt->expression());
   builder_.CreateRet(retval);
+}
+
+Value* IRGenerator::GenerateDeclarationReference(
+    DeclarationReference* decl_ref) {
+  Value* value;
+
+  // Find declaration from local
+  auto it = local_decl_map_.find(decl_ref->declaration());
+  if (it != local_decl_map_.end()) {
+    value = it->second;
+  } else {
+    // Decl is not found from local, it must be in the global
+    value = module_.symbol_table().Lookup(decl_ref->name());
+  }
+
+  return builder_.CreateLoad(decl_ref->type(), value, decl_ref->name());
 }
 
 }  // namespace sysy

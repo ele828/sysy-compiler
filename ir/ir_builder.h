@@ -11,6 +11,14 @@ class IRBuilder {
  public:
   explicit IRBuilder(GlobalContext& context);
 
+  LoadInst* CreateLoad(Type* type, Value* ptr, std::string_view name) {
+    return Insert(new LoadInst(type, ptr, name));
+  }
+
+  StoreInst* CreateStore(Value* value, Value* ptr) {
+    return Insert(new StoreInst(value, ptr));
+  }
+
   ReturnInst* CreateRetVoid() {
     return Insert(ReturnInst::Create(context_, nullptr));
   }

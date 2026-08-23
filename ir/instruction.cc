@@ -13,30 +13,30 @@ Instruction::Instruction(Operation op, Type* type, AllocInfo info)
 
 void Instruction::Destroy(uint32_t op, PassKey<Value>) {
   switch (static_cast<Operation>(op)) {
-    case Operation::kUnary: {
+    case Operation::kUnary:
       NOTREACHED();
       break;
-    }
-    case Operation::kAlloca: {
+    case Operation::kAlloca:
       delete static_cast<AllocaInst*>(this);
       break;
-    }
-    case Operation::kUnaryEnd: {
+    case Operation::kLoad:
+      delete static_cast<LoadInst*>(this);
+      break;
+    case Operation::kUnaryEnd:
       NOTREACHED();
       break;
-    }
-    case Operation::kBinary: {
+    case Operation::kBinary:
       NOTREACHED();
       break;
-    }
-    case Operation::kBinaryEnd: {
+    case Operation::kBinaryEnd:
       NOTREACHED();
       break;
-    }
-    case Operation::kReturn: {
+    case Operation::kStore:
+      delete static_cast<StoreInst*>(this);
+      break;
+    case Operation::kReturn:
       delete static_cast<ReturnInst*>(this);
       break;
-    }
   }
 }
 
@@ -51,10 +51,27 @@ void Instruction::InsertInto(BasicBlock* basic_block,
   }
 }
 
+void Instruction::InsertAfter(InsertPoint insert_after) {
+  parent_ = insert_after->parent_;
+  Base::InsertAfter(&*insert_after);
+}
+
 AllocaInst::AllocaInst(Type* type)
     : UnaryInstruction(Operation::kAlloca, PointerType::Get(type->context()),
                        ConstantInt::Get(type->context(), 1)),
       allocated_type_(type) {}
+
+LoadInst::LoadInst(Type* type, Value* ptr, std::string_view name)
+    : UnaryInstruction(Operation::kLoad, type, ptr) {
+  SetName(name);
+}
+
+StoreInst::StoreInst(Value* value, Value* ptr)
+    : Instruction(Operation::kStore, Type::GetVoidType(value->context()),
+                  alloc_info) {
+  operand(0) = value;
+  operand(1) = ptr;
+}
 
 ReturnInst::ReturnInst(GlobalContext& context, Value* retval, AllocInfo info)
     : Instruction(Operation::kReturn, Type::GetVoidType(context), info) {

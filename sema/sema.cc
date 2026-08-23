@@ -662,7 +662,9 @@ bool Sema::CheckDeclarationReference(const CheckingContext& ctx,
     return false;
   }
 
+  decl_ref->set_declaration(decl);
   decl_ref->set_type(decl->type());
+
   return true;
 }
 

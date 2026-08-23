@@ -65,7 +65,7 @@ void IRWriter::WriteModule(Module& module) {
   // Write GlobalVariable
   for (auto& global : module.globals()) {
     // Write name
-    WriteName(global.name(), true);
+    WriteName(global);
     os_ << " = dso_local global ";
 
     // Write type
@@ -77,8 +77,7 @@ void IRWriter::WriteModule(Module& module) {
 
     // Write alignment
     os_ << ", ";
-    bool has_initializer = global.initializer() != nullptr;
-    WriteAlignment(global.type(), has_initializer);
+    WriteAlignment(global.type());
 
     os_ << "\n";
   }
@@ -93,7 +92,7 @@ void IRWriter::WriteModule(Module& module) {
     os_ << " ";
 
     // Write function name
-    WriteName(function.name(), true);
+    WriteName(function);
 
     // Write function parameters
     os_ << "(";
@@ -106,7 +105,7 @@ void IRWriter::WriteModule(Module& module) {
   }
 }
 
-void IRWriter::WriteAlignment(Type* type, bool has_initializer) {
+void IRWriter::WriteAlignment(Type* type) {
   size_t alignment = Type::GetAlignment(type);
   os_ << "align " << alignment;
 }
@@ -114,6 +113,14 @@ void IRWriter::WriteAlignment(Type* type, bool has_initializer) {
 void IRWriter::WriteType(Type* type) {
   TypeWriter type_writer(os_);
   type_writer.Visit(type);
+}
+
+void IRWriter::WriteName(const Value& value) {
+  if (IsA<GlobalVariable>(value) || IsA<Function>(value)) {
+    WriteName(value.name(), true);
+    return;
+  }
+  WriteName(value.name(), false);
 }
 
 void IRWriter::WriteName(std::string_view name, bool is_global) {
@@ -163,7 +170,7 @@ void IRWriter::WriteFunctionParameters(Function& function) {
     auto* arg = function.argument(i);
     WriteType(arg->type());
     os_ << " ";
-    WriteName(arg->name());
+    WriteName(*arg);
     if (i != function.arg_size() - 1) {
       os_ << ", ";
     }
@@ -196,6 +203,12 @@ void IRWriter::WriteInstruction(Instruction& inst) {
     case Instruction::kAlloca:
       WriteAllocaInst(To<AllocaInst>(inst));
       break;
+    case Instruction::kLoad:
+      WriteLoadInst(To<LoadInst>(inst));
+      break;
+    case Instruction::kStore:
+      WriteStoreInst(To<StoreInst>(inst));
+      break;
     case Instruction::kReturn:
       WriteReturnInst(To<ReturnInst>(inst));
       break;
@@ -211,7 +224,7 @@ void IRWriter::WriteOperand(Value* op) {
   os_ << " ";
 
   if (op->has_name()) {
-    WriteName(op->name());
+    WriteName(*op);
     return;
   }
 
@@ -220,14 +233,38 @@ void IRWriter::WriteOperand(Value* op) {
     WriteConstant(constant);
     return;
   }
+
+  int id = slot_.Get(op);
+  bool op_is_global = IsA<GlobalVariable>(op) || IsA<Function>(op);
+  WriteName(std::to_string(id), op_is_global);
 }
 
 void IRWriter::WriteAllocaInst(AllocaInst& ret_inst) {
-  WriteName(ret_inst.name());
+  WriteName(ret_inst);
   os_ << " = alloca ";
   WriteType(ret_inst.allocated_type());
   os_ << ", ";
-  WriteAlignment(ret_inst.allocated_type(), true);
+  WriteAlignment(ret_inst.allocated_type());
+}
+
+void IRWriter::WriteLoadInst(LoadInst& load_inst) {
+  int id = slot_.Add(&load_inst);
+  WriteName(std::to_string(id), false);
+  os_ << " = load ";
+  WriteType(load_inst.type());
+  os_ << ", ptr ";
+  WriteName(*load_inst.pointer());
+  os_ << ", ";
+  WriteAlignment(load_inst.type());
+}
+
+void IRWriter::WriteStoreInst(StoreInst& store_inst) {
+  os_ << "store ";
+  WriteOperand(store_inst.value());
+  os_ << ", ptr ";
+  WriteName(*store_inst.pointer());
+  os_ << ", ";
+  WriteAlignment(store_inst.value()->type());
 }
 
 void IRWriter::WriteReturnInst(ReturnInst& ret_inst) {

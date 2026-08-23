@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "ast/ast.h"
 #include "ast/ast_recursive_visitor.h"
 #include "core/global_context.h"
@@ -19,6 +21,8 @@ class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
 
  private:
   AllocaInst* CreateTempAlloca(Type* type, std::string_view name);
+
+  Constant* EvaluateConstantExpression(Expression* expr);
 
   void VisitFunctionDeclaration(FunctionDeclaration* fun_decl);
 
@@ -41,13 +45,33 @@ class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
 
   Argument* GenerateFunctionParameter(ParameterDeclaration* param);
 
+  Value* GenerateDeclarationReference(DeclarationReference* expr);
+
+  class FunctionScope {
+   public:
+    explicit FunctionScope(IRGenerator& generator) : generator_(generator) {}
+
+    ~FunctionScope() {
+      generator_.entry_ = nullptr;
+      generator_.alloca_insert_point_ = nullptr;
+      generator_.local_decl_map_.clear();
+    }
+
+   private:
+    IRGenerator& generator_;
+  };
+
   GlobalContext& ctx_;
   Module& module_;
   IRBuilder builder_;
+
+  // Function related data is managed by FunctionScope
   BasicBlock* entry_{};
   Instruction::InsertPoint alloca_insert_point_{};
+  std::unordered_map<Declaration*, Value*> local_decl_map_;
 
   friend Base;
+  friend FunctionScope;
 };
 
 }  // namespace sysy

@@ -61,7 +61,7 @@ class Value {
   ~Value();
 
  private:
-  SymbolTable* GetSymbolTable() const;
+  SymbolTable* GetSymbolTable();
   void DestroyName();
 
   uint8_t id_;

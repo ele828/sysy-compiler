@@ -17,10 +17,13 @@ class Instruction : public User, public base::LinkNode<Instruction> {
   enum Operation {
     kUnary = 1,
     kAlloca,
+    kLoad,
     kUnaryEnd,
 
     kBinary,
     kBinaryEnd,
+
+    kStore,
 
     kReturn,
   };
@@ -34,6 +37,8 @@ class Instruction : public User, public base::LinkNode<Instruction> {
   }
 
   void InsertInto(BasicBlock* basic_block, InsertPoint insert_before = nullptr);
+
+  void InsertAfter(InsertPoint insert_after);
 
   BasicBlock* parent() const { return parent_; }
 
@@ -97,9 +102,46 @@ class AllocaInst : public UnaryInstruction {
   Type* allocated_type_;
 };
 
-class LoadInst : public UnaryInstruction {};
+class LoadInst : public UnaryInstruction {
+ public:
+  LoadInst(Type* type, Value* ptr, std::string_view name);
 
-class StoreInst : public Instruction {};
+  Value* pointer() { return operand(0); }
+  const Value* pointer() const { return operand(0); }
+
+  static bool classof(const Instruction& i) {
+    return i.op_code() == Operation::kLoad;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+};
+
+class StoreInst : public Instruction {
+  constexpr static AllocInfo alloc_info{.num_ops = 2};
+
+ public:
+  StoreInst(Value* value, Value* ptr);
+
+  Value* value() { return operand(0); }
+  const Value* value() const { return operand(0); }
+
+  Value* pointer() { return operand(1); }
+  const Value* pointer() const { return operand(1); }
+
+  void* operator new(size_t size) {
+    return User::operator new(size, alloc_info);
+  }
+
+  static bool classof(const Instruction& i) {
+    return i.op_code() == Operation::kStore;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+};
 
 class ReturnInst : public Instruction {
  public:

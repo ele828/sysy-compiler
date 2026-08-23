@@ -52,8 +52,9 @@ TEST(IRGenerator, GenerateBasic) {
     int d[2][2][2] = {{{1}}};
 
     int main() {
-      int a = 1;
-      return 0;
+      const int a = 1;
+      const int b = a + 1;
+      return b;
     }
 
     void foo(int a, int b) {}

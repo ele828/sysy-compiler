@@ -446,9 +446,9 @@ class DeclarationReference : public Expression {
     return n.kind() == Kind::kDeclarationReference;
   }
 
-  void set_declaration(Declaration* declaration) { declaration_ = declaration; }
-
   std::string_view name() const { return name_; }
+
+  void set_declaration(Declaration* declaration) { declaration_ = declaration; }
   Declaration* declaration() const { return declaration_; }
 
  private:

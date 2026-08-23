@@ -151,7 +151,13 @@ Value Evaluator::EvaluateBinaryOperation(BinaryOperation* binary_operation) {
 
 Value Evaluator::EvaluateDeclarationReference(
     DeclarationReference* decl_reference) {
-  Declaration* decl = current_scope_->ResolveSymbol(decl_reference->name());
+  Declaration* decl;
+  if (!current_scope_) {
+    decl = decl_reference->declaration();
+  } else {
+    decl = current_scope_->ResolveSymbol(decl_reference->name());
+  }
+
   if (auto* const_decl = DynamicTo<ConstantDeclaration>(decl)) {
     if (auto* btype = DynamicTo<BuiltinType>(const_decl->type())) {
       if (btype->is_int() || btype->is_float()) {

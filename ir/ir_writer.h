@@ -1,7 +1,9 @@
 #pragma once
 
 #include <ostream>
+#include <unordered_map>
 
+#include "core/symbol_table.h"
 #include "ir/instruction.h"
 
 namespace sysy {
@@ -21,9 +23,11 @@ class IRWriter final {
   void WriteModule(Module& module);
 
  private:
-  void WriteAlignment(Type* type, bool has_initializer);
+  void WriteAlignment(Type* type);
 
   void WriteType(Type* type);
+
+  void WriteName(const Value& value);
 
   void WriteName(std::string_view name, bool is_global = false);
 
@@ -43,9 +47,35 @@ class IRWriter final {
 
   void WriteAllocaInst(AllocaInst& ret_inst);
 
+  void WriteLoadInst(LoadInst& load_inst);
+
+  void WriteStoreInst(StoreInst& store_inst);
+
   void WriteReturnInst(ReturnInst& ret_inst);
 
+  class ValueNameSlot {
+   public:
+    int Add(const Value* value) {
+      int id = index_++;
+      slots_.emplace(value, id);
+      return id;
+    }
+
+    int Get(const Value* value) {
+      auto it = slots_.find(value);
+      if (it == slots_.end()) {
+        return -1;
+      }
+      return it->second;
+    }
+
+   private:
+    uint32_t index_{0};
+    std::unordered_map<const Value*, int> slots_;
+  };
+
   std::ostream& os_;
+  ValueNameSlot slot_;
 };
 
 }  // namespace sysy

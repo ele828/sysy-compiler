@@ -94,7 +94,7 @@ void Value::DestroyName() {
   has_name_ = false;
 }
 
-SymbolTable* Value::GetSymbolTable() const {
+SymbolTable* Value::GetSymbolTable() {
   if (auto* function = DynamicTo<Function>(this)) {
     return &function->parent().symbol_table();
   } else if (auto* global_variable = DynamicTo<GlobalVariable>(this)) {

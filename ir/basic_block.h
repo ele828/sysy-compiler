@@ -20,7 +20,8 @@ class BasicBlock : public Value, public base::LinkNode<BasicBlock> {
     return new BasicBlock(ctx, name, parent);
   }
 
-  Function& parent() const { return parent_; }
+  Function& parent() { return parent_; }
+  const Function& parent() const { return parent_; }
 
   InstListType& inst_list() { return inst_list_; }
   const InstListType& inst_list() const { return inst_list_; }

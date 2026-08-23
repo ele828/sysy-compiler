@@ -13,7 +13,8 @@ class Argument : public Value {
   Argument(Type* type, std::string_view name, Function& function,
            uint32_t index);
 
-  Function& parent() const { return parent_; }
+  Function& parent() { return parent_; }
+  const Function& parent() const { return parent_; }
 
   uint32_t arg_index() const { return arg_index_; }
 
