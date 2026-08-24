@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -56,12 +57,24 @@ class SymbolTable final {
   }
 
   ValueName* CreateValueName(std::string_view name, Value* value) {
-    auto value_name = std::make_unique<std::string>(std::move(name));
-    auto [it, inserted] = value_map_.emplace(std::move(value_name), value);
+    if (value_map_.find(name) == value_map_.end()) {
+      auto value_name = std::make_unique<std::string>(std::move(name));
+      auto [it, inserted] = value_map_.emplace(std::move(value_name), value);
+      DCHECK(inserted);
+      return it->first.get();
+    }
 
-    // We don't allow name conflict.
-    CHECK(inserted);
+    // Rename if naming conflicts.
+    char buf[16];
+    auto [ptr, ec] = std::to_chars(buf, buf + sizeof(buf), ++unique_name_id_);
 
+    std::unique_ptr<std::string> unique_name;
+    unique_name->reserve(name.length() + (ptr - buf));
+    unique_name->append(name);
+    unique_name->append(buf, ptr);
+
+    auto [it, inserted] = value_map_.emplace(std::move(unique_name), value);
+    DCHECK(inserted);
     return it->first.get();
   }
 
@@ -73,6 +86,8 @@ class SymbolTable final {
 
  private:
   ValueMap value_map_;
+
+  uint32_t unique_name_id_{0};
 };
 
 }  // namespace sysy

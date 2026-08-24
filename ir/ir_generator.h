@@ -65,7 +65,7 @@ class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
   Module& module_;
   IRBuilder builder_;
 
-  // Function related data is managed by FunctionScope
+  // Function related data are managed by FunctionScope
   BasicBlock* entry_{};
   Instruction::InsertPoint alloca_insert_point_{};
   std::unordered_map<Declaration*, Value*> local_decl_map_;
