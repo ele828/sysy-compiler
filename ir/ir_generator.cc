@@ -156,9 +156,7 @@ Constant* IRGenerator::GenerateInitList(ArrayType* array_type,
 
   if (init_list_expr->array_filler()) {
     auto* constant_array_type = DynamicTo<ConstantArrayType>(array_type);
-    if (!constant_array_type) {
-      NOTREACHED();
-    }
+    DCHECK(constant_array_type);
 
     for (size_t i = 0; i < constant_array_type->size() - element_count; ++i) {
       if (Type::IsInt(element_type)) {

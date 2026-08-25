@@ -236,7 +236,12 @@ void IRWriter::WriteOperand(Value* op) {
 
   int id = slot_.Get(op);
   bool op_is_global = IsA<GlobalVariable>(op) || IsA<Function>(op);
-  WriteName(std::to_string(id), op_is_global);
+  char buf[16];
+  auto [end_ptr, ec] = std::to_chars(buf, buf + sizeof(buf), id);
+  DCHECK(ec == std::errc{});
+
+  std::string_view id_name(buf, end_ptr);
+  WriteName(id_name, op_is_global);
 }
 
 void IRWriter::WriteAllocaInst(AllocaInst& ret_inst) {
@@ -249,7 +254,14 @@ void IRWriter::WriteAllocaInst(AllocaInst& ret_inst) {
 
 void IRWriter::WriteLoadInst(LoadInst& load_inst) {
   int id = slot_.Add(&load_inst);
-  WriteName(std::to_string(id), false);
+
+  char buf[16];
+  auto [end_ptr, ec] = std::to_chars(buf, buf + sizeof(buf), id);
+  DCHECK(ec == std::errc{});
+
+  std::string_view id_name(buf, end_ptr);
+  WriteName(id_name, false);
+
   os_ << " = load ";
   WriteType(load_inst.type());
   os_ << ", ptr ";

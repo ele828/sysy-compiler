@@ -66,12 +66,14 @@ class SymbolTable final {
 
     // Rename if naming conflicts.
     char buf[16];
-    auto [ptr, ec] = std::to_chars(buf, buf + sizeof(buf), ++unique_name_id_);
+    auto [end_ptr, ec] =
+        std::to_chars(buf, buf + sizeof(buf), ++unique_name_id_);
+    DCHECK(ec == std::errc{});
 
     std::unique_ptr<std::string> unique_name;
-    unique_name->reserve(name.length() + (ptr - buf));
+    unique_name->reserve(name.length() + (end_ptr - buf));
     unique_name->append(name);
-    unique_name->append(buf, ptr);
+    unique_name->append(buf, end_ptr);
 
     auto [it, inserted] = value_map_.emplace(std::move(unique_name), value);
     DCHECK(inserted);
