@@ -144,7 +144,7 @@ void IRWriter::WriteName(int id, bool is_global) {
   WriteName(id_name, is_global);
 }
 
-void IRWriter::WriteOrDefineName(const Value& value) {
+void IRWriter::WriteDefinedName(const Value& value) {
   if (value.has_name()) {
     WriteName(value);
   } else {
@@ -297,7 +297,7 @@ void IRWriter::WriteAllocaInst(AllocaInst& ret_inst) {
 }
 
 void IRWriter::WriteLoadInst(LoadInst& load_inst) {
-  WriteOrDefineName(load_inst);
+  WriteDefinedName(load_inst);
 
   os_ << " = load ";
   WriteType(load_inst.type());
@@ -308,7 +308,7 @@ void IRWriter::WriteLoadInst(LoadInst& load_inst) {
 }
 
 void IRWriter::WriteSIToFPInst(SIToFPInst& cast_inst) {
-  WriteOrDefineName(cast_inst);
+  WriteDefinedName(cast_inst);
 
   os_ << " = sitofp ";
   WriteOperand(cast_inst.src(), true);
@@ -317,7 +317,7 @@ void IRWriter::WriteSIToFPInst(SIToFPInst& cast_inst) {
 }
 
 void IRWriter::WriteFPToSIInst(FPToSIInst& cast_inst) {
-  WriteOrDefineName(cast_inst);
+  WriteDefinedName(cast_inst);
 
   os_ << " = fptosi ";
   WriteOperand(cast_inst.src(), true);
@@ -379,9 +379,67 @@ void IRWriter::WriteBinaryInst(BinaryInstruction& binary_inst) {
   WriteOperand(binary_inst.rhs(), false);
 }
 
-void IRWriter::WriteICmpInst(ICmpInst& binary_inst) {}
+void IRWriter::WriteICmpInst(ICmpInst& icmp_inst) {
+  WriteDefinedName(icmp_inst);
+  os_ << " = icmp ";
+  switch (icmp_inst.predicate()) {
+    case ICmpInst::kICmpEq:
+      os_ << "eq";
+      break;
+    case ICmpInst::kICmpNe:
+      os_ << "ne";
+      break;
+    case ICmpInst::kICmpSGt:
+      os_ << "sgt";
+      break;
+    case ICmpInst::kICmpSGe:
+      os_ << "sge";
+      break;
+    case ICmpInst::kICmpSLt:
+      os_ << "slt";
+      break;
+    case ICmpInst::kICmpSLe:
+      os_ << "sle";
+      break;
+    default:
+      NOTREACHED();
+  }
+  os_ << " ";
+  WriteOperand(icmp_inst.lhs(), true);
+  os_ << ", ";
+  WriteOperand(icmp_inst.rhs(), false);
+}
 
-void IRWriter::WriteFCmpInst(FCmpInst& binary_inst) {}
+void IRWriter::WriteFCmpInst(FCmpInst& fcmp_inst) {
+  WriteDefinedName(fcmp_inst);
+  os_ << " = ccmp ";
+  switch (fcmp_inst.predicate()) {
+    case FCmpInst::kFCmpOEq:
+      os_ << "oeq";
+      break;
+    case FCmpInst::kFCmpOGt:
+      os_ << "ogt";
+      break;
+    case FCmpInst::kFCmpOGe:
+      os_ << "oge";
+      break;
+    case FCmpInst::kFCmpOLt:
+      os_ << "olt";
+      break;
+    case FCmpInst::kFCmpOLe:
+      os_ << "ole";
+      break;
+    case FCmpInst::kFCmpUNe:
+      os_ << "une";
+      break;
+    default:
+      NOTREACHED();
+  }
+  os_ << " ";
+  WriteOperand(fcmp_inst.lhs(), true);
+  os_ << ", ";
+  WriteOperand(fcmp_inst.rhs(), false);
+}
 
 void IRWriter::WriteReturnInst(ReturnInst& ret_inst) {
   os_ << "ret";

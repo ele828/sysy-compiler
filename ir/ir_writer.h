@@ -33,7 +33,7 @@ class IRWriter final {
 
   void WriteName(int id, bool is_global = false);
 
-  void WriteOrDefineName(const Value& value);
+  void WriteDefinedName(const Value& value);
 
   void WriteConstant(Constant* constant);
 
@@ -59,9 +59,9 @@ class IRWriter final {
 
   void WriteBinaryInst(BinaryInstruction& binary_inst);
 
-  void WriteICmpInst(ICmpInst& binary_inst);
+  void WriteICmpInst(ICmpInst& icmp_inst);
 
-  void WriteFCmpInst(FCmpInst& binary_inst);
+  void WriteFCmpInst(FCmpInst& fcmp_inst);
 
   void WriteStoreInst(StoreInst& store_inst);
 

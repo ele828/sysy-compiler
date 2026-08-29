@@ -259,6 +259,10 @@ class CmpInst : public Instruction {
 
   Predicate predicate() const { return predicate_; }
 
+  Value* lhs() const { return operand(0); }
+
+  Value* rhs() const { return operand(1); }
+
   static bool classof(const Instruction& i) {
     return i.op_code() >= Operation::kCmp && i.op_code() <= Operation::kCmpEnd;
   }
