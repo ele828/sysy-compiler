@@ -144,6 +144,16 @@ void IRWriter::WriteName(int id, bool is_global) {
   WriteName(id_name, is_global);
 }
 
+void IRWriter::WriteOrDefineName(const Value& value) {
+  if (value.has_name()) {
+    WriteName(value);
+  } else {
+    bool op_is_global = IsA<GlobalVariable>(value) || IsA<Function>(value);
+    int id = slot_.Add(&value);
+    WriteName(id, op_is_global);
+  }
+}
+
 void IRWriter::WriteConstant(Constant* constant) {
   if (auto* constant_int = DynamicTo<ConstantInt>(constant)) {
     os_ << constant_int->value();
@@ -218,6 +228,11 @@ void IRWriter::WriteInstruction(Instruction& inst) {
     case Instruction::kLoad:
       WriteLoadInst(To<LoadInst>(inst));
       break;
+    case Instruction::kSIToFP:
+      WriteSIToFPInst(To<SIToFPInst>(inst));
+    case Instruction::kFPToSI:
+      WriteFPToSIInst(To<FPToSIInst>(inst));
+      break;
     case Instruction::kBinary:
     case Instruction::kAdd:
     case Instruction::kFAdd:
@@ -282,12 +297,7 @@ void IRWriter::WriteAllocaInst(AllocaInst& ret_inst) {
 }
 
 void IRWriter::WriteLoadInst(LoadInst& load_inst) {
-  if (load_inst.has_name()) {
-    WriteName(load_inst);
-  } else {
-    int id = slot_.Add(&load_inst);
-    WriteName(id, false);
-  }
+  WriteOrDefineName(load_inst);
 
   os_ << " = load ";
   WriteType(load_inst.type());
@@ -295,6 +305,24 @@ void IRWriter::WriteLoadInst(LoadInst& load_inst) {
   WriteName(*load_inst.pointer());
   os_ << ", ";
   WriteAlignment(load_inst.type());
+}
+
+void IRWriter::WriteSIToFPInst(SIToFPInst& cast_inst) {
+  WriteOrDefineName(cast_inst);
+
+  os_ << " = sitofp ";
+  WriteOperand(cast_inst.src(), true);
+  os_ << " to ";
+  WriteType(cast_inst.dest_type());
+}
+
+void IRWriter::WriteFPToSIInst(FPToSIInst& cast_inst) {
+  WriteOrDefineName(cast_inst);
+
+  os_ << " = fptosi ";
+  WriteOperand(cast_inst.src(), true);
+  os_ << " to ";
+  WriteType(cast_inst.dest_type());
 }
 
 void IRWriter::WriteStoreInst(StoreInst& store_inst) {

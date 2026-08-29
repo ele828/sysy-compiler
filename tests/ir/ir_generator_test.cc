@@ -50,16 +50,17 @@ TEST(IRGenerator, GenerateBasic) {
 
   const char* source = R"(
     int main() {
-      int a = 1;
-      int b = a + 1;
+      int a = 2;
+      int b = a > 1;
       return b;
     }
 
     void foo(int a, int b) {}
   )";
   auto* compilation_unit = Parse(ctx, ast_context, source);
-  compilation_unit->Dump();
   CheckSema(ctx, ast_context, compilation_unit);
+  compilation_unit->Dump();
+
   IRGenerator generator(ctx, module);
   generator.Generate(compilation_unit);
 

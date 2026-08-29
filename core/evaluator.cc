@@ -173,7 +173,23 @@ Value Evaluator::EvaluateDeclarationReference(
 }
 
 Value Evaluator::EvaluateImplicitCast(ImplicitCastExpression* implicit_cast) {
-  return Evaluate(implicit_cast->sub_expression());
+  auto result = Evaluate(implicit_cast->sub_expression());
+  // For implicit cast expression, we should cast it to the dest type.
+  if (!result.has_value()) {
+    return {};
+  }
+
+  Type* dest_type = implicit_cast->type();
+  if (Type::IsFloat(dest_type)) {
+    float dest_value = static_cast<float>(
+        result.is_int() ? result.get<int>() : result.get<float>());
+    return Value(dest_value);
+  }
+
+  DCHECK(Type::IsInt(dest_type));
+  float dest_value = static_cast<int>(result.is_int() ? result.get<int>()
+                                                      : result.get<float>());
+  return Value(dest_value);
 }
 
 }  // namespace sysy

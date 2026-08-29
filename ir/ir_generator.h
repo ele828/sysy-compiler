@@ -49,6 +49,8 @@ class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
 
   Value* GenerateDeclarationReference(DeclarationReference* expr);
 
+  Value* GenerateImplicitCast(ImplicitCastExpression* expr);
+
   class FunctionScope {
    public:
     explicit FunctionScope(IRGenerator& generator) : generator_(generator) {}

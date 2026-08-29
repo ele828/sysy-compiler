@@ -198,7 +198,7 @@ Value* IRGenerator::GenerateExpression(Expression* expr) {
       return {};
     }
     case AstNode::Kind::kImplicitCast: {
-      return {};
+      return GenerateImplicitCast(To<ImplicitCastExpression>(expr));
     }
     case AstNode::Kind::kImplicitValueInit: {
       return {};
@@ -341,7 +341,41 @@ Value* IRGenerator::GenerateDeclarationReference(
     value = module_.symbol_table().Lookup(decl_ref->name());
   }
 
-  return builder_.CreateLoad(decl_ref->type(), value);
+  return builder_.CreateLoad(decl_ref->type(), value, "");
+}
+
+Value* IRGenerator::GenerateImplicitCast(ImplicitCastExpression* expr) {
+  Type* type = expr->type();
+  auto* sub_expression = expr->sub_expression();
+
+  if (auto* integer_literal = DynamicTo<IntegerLiteral>(sub_expression)) {
+    if (Type::IsFloat(type)) {
+      return ConstantFP::Get(ctx_,
+                             static_cast<float>(integer_literal->value()));
+    } else {
+      return ConstantInt::Get(ctx_, integer_literal->value());
+    }
+  }
+
+  if (auto* floating_literal = DynamicTo<FloatingLiteral>(sub_expression)) {
+    if (Type::IsInt(type)) {
+      return ConstantInt::Get(ctx_,
+                              static_cast<int>(floating_literal->value()));
+    } else {
+      return ConstantFP::Get(ctx_, floating_literal->value());
+    }
+  }
+
+  // Perform type cast
+  Value* value = GenerateExpression(sub_expression);
+  if (Type::IsFloat(type)) {
+    DCHECK(value->type() == Type::GetIntType(ctx_));
+    return builder_.CreateSIToFP(value, type, "conv");
+  }
+
+  DCHECK(Type::IsInt(type));
+  DCHECK(value->type() == Type::GetFloatType(ctx_));
+  return builder_.CreateFPToSIInst(value, type, "conv");
 }
 
 }  // namespace sysy

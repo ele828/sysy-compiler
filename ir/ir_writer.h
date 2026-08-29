@@ -33,6 +33,8 @@ class IRWriter final {
 
   void WriteName(int id, bool is_global = false);
 
+  void WriteOrDefineName(const Value& value);
+
   void WriteConstant(Constant* constant);
 
   void WriteConstantArray(ConstantArray* constant_array);
@@ -50,6 +52,10 @@ class IRWriter final {
   void WriteAllocaInst(AllocaInst& ret_inst);
 
   void WriteLoadInst(LoadInst& load_inst);
+
+  void WriteSIToFPInst(SIToFPInst& cast_inst);
+
+  void WriteFPToSIInst(FPToSIInst& cast_inst);
 
   void WriteBinaryInst(BinaryInstruction& binary_inst);
 

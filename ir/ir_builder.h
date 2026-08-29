@@ -13,7 +13,7 @@ class IRBuilder {
  public:
   explicit IRBuilder(GlobalContext& context);
 
-  LoadInst* CreateLoad(Type* type, Value* ptr, std::string_view name = "") {
+  LoadInst* CreateLoad(Type* type, Value* ptr, std::string_view name) {
     return Insert(new LoadInst(type, ptr), name);
   }
 
@@ -107,6 +107,16 @@ class IRBuilder {
 
   FCmpInst* CreateFCmpUNe(Value* lhs, Value* rhs, std::string_view name) {
     return Insert(new FCmpInst(FCmpInst::kFCmpUNe, lhs, rhs), name);
+  }
+
+  SIToFPInst* CreateSIToFP(Value* value, Type* dest_type,
+                           std::string_view name) {
+    return Insert(new SIToFPInst(dest_type, value), name);
+  }
+
+  FPToSIInst* CreateFPToSIInst(Value* value, Type* dest_type,
+                               std::string_view name) {
+    return Insert(new FPToSIInst(dest_type, value), name);
   }
 
   ReturnInst* CreateRetVoid() {

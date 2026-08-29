@@ -20,6 +20,10 @@ class Instruction : public User, public base::LinkNode<Instruction> {
     kUnary = 1,
     kAlloca,
     kLoad,
+    kCast,
+    kSIToFP,
+    kFPToSI,
+    kCastEnd,
     kUnaryEnd,
 
     kBinary,
@@ -151,6 +155,52 @@ class LoadInst : public UnaryInstruction {
 
   static bool classof(const Instruction& i) {
     return i.op_code() == Operation::kLoad;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+};
+
+class CastInst : public UnaryInstruction {
+ public:
+  Value* src() const { return operand(0); }
+
+  Type* src_type() const { return operand(0)->type(); }
+  Type* dest_type() const { return type(); }
+
+  static bool classof(const Instruction& i) {
+    return i.op_code() >= Operation::kCast &&
+           i.op_code() <= Operation::kCastEnd;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+
+ protected:
+  CastInst(Operation op, Type* type, Value* value);
+};
+
+class SIToFPInst : public CastInst {
+ public:
+  SIToFPInst(Type* type, Value* value);
+
+  static bool classof(const Instruction& i) {
+    return i.op_code() == Operation::kSIToFP;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+};
+
+class FPToSIInst : public CastInst {
+ public:
+  FPToSIInst(Type* type, Value* value);
+
+  static bool classof(const Instruction& i) {
+    return i.op_code() == Operation::kFPToSI;
   }
 
   static bool classof(const Value& v) {

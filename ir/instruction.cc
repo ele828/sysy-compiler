@@ -22,6 +22,18 @@ void Instruction::Destroy(uint32_t op, PassKey<Value>) {
     case Operation::kLoad:
       delete static_cast<LoadInst*>(this);
       break;
+    case Operation::kCast:
+      NOTREACHED();
+      break;
+    case Operation::kSIToFP:
+      delete static_cast<SIToFPInst*>(this);
+      break;
+    case Operation::kFPToSI:
+      delete static_cast<FPToSIInst*>(this);
+      break;
+    case Operation::kCastEnd:
+      NOTREACHED();
+      break;
     case Operation::kUnaryEnd:
       NOTREACHED();
       break;
@@ -93,6 +105,15 @@ AllocaInst::AllocaInst(Type* type)
 
 LoadInst::LoadInst(Type* type, Value* ptr)
     : UnaryInstruction(Operation::kLoad, type, ptr) {}
+
+CastInst::CastInst(Operation op, Type* type, Value* value)
+    : UnaryInstruction(op, type, value) {}
+
+SIToFPInst::SIToFPInst(Type* type, Value* value)
+    : CastInst(Operation::kSIToFP, type, value) {}
+
+FPToSIInst::FPToSIInst(Type* type, Value* value)
+    : CastInst(Operation::kFPToSI, type, value) {}
 
 StoreInst::StoreInst(Value* value, Value* ptr)
     : Instruction(Operation::kStore, Type::GetVoidType(value->context()),
