@@ -154,6 +154,7 @@ class GlobalContext final {
 
   BuiltinType* void_type_;
   BuiltinType* int_type_;
+  BuiltinType* int1_type_;
   BuiltinType* float_type_;
   PointerType* pointer_type_;
   FunctionTypeSet function_types_;

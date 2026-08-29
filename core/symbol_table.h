@@ -70,7 +70,7 @@ class SymbolTable final {
         std::to_chars(buf, buf + sizeof(buf), ++unique_name_id_);
     DCHECK(ec == std::errc{});
 
-    std::unique_ptr<std::string> unique_name;
+    auto unique_name = std::make_unique<std::string>();
     unique_name->reserve(name.length() + (end_ptr - buf));
     unique_name->append(name);
     unique_name->append(buf, end_ptr);

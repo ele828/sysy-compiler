@@ -5,6 +5,7 @@ namespace sysy {
 GlobalContext::GlobalContext()
     : void_type_(zone()->New<BuiltinType>(*this, BuiltinType::Kind::kVoid)),
       int_type_(zone()->New<BuiltinType>(*this, BuiltinType::Kind::kInt)),
+      int1_type_(zone()->New<BuiltinType>(*this, BuiltinType::Kind::kInt1)),
       float_type_(zone()->New<BuiltinType>(*this, BuiltinType::Kind::kFloat)),
       pointer_type_(zone()->New<PointerType>(*this)) {}
 

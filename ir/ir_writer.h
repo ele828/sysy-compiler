@@ -31,6 +31,8 @@ class IRWriter final {
 
   void WriteName(std::string_view name, bool is_global = false);
 
+  void WriteName(int id, bool is_global = false);
+
   void WriteConstant(Constant* constant);
 
   void WriteConstantArray(ConstantArray* constant_array);
@@ -43,11 +45,17 @@ class IRWriter final {
 
   void WriteInstruction(Instruction& inst);
 
-  void WriteOperand(Value* op);
+  void WriteOperand(Value* op, bool write_type);
 
   void WriteAllocaInst(AllocaInst& ret_inst);
 
   void WriteLoadInst(LoadInst& load_inst);
+
+  void WriteBinaryInst(BinaryInstruction& binary_inst);
+
+  void WriteICmpInst(ICmpInst& binary_inst);
+
+  void WriteFCmpInst(FCmpInst& binary_inst);
 
   void WriteStoreInst(StoreInst& store_inst);
 

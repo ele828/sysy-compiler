@@ -5,6 +5,7 @@
 #include "base/type_casts.h"
 #include "core/global_context.h"
 #include "ir/user.h"
+#include "ir/value.h"
 
 namespace sysy {
 
@@ -15,15 +16,31 @@ class Instruction : public User, public base::LinkNode<Instruction> {
 
  public:
   enum Operation {
+    // First instruction must start from 1, since it uses value id slot.
     kUnary = 1,
     kAlloca,
     kLoad,
     kUnaryEnd,
 
     kBinary,
+    kAdd,
+    kFAdd,
+    kSub,
+    kFSub,
+    kMul,
+    kFMul,
+    kDiv,
+    kFDiv,
+    kRem,
+    kFRem,
     kBinaryEnd,
 
     kStore,
+
+    kCmp,
+    kICmp,
+    kFCmp,
+    kCmpEnd,
 
     kReturn,
   };
@@ -63,11 +80,6 @@ class UnaryInstruction : public Instruction {
   constexpr static AllocInfo alloc_info{.num_ops = 1};
 
  public:
-  UnaryInstruction(Operation op, Type* type, Value* value)
-      : Instruction(op, type, alloc_info) {
-    operand(0) = value;
-  }
-
   static bool classof(const Instruction& v) {
     Operation op = static_cast<Operation>(v.id());
     return op >= kUnary && op <= kUnaryEnd;
@@ -80,9 +92,37 @@ class UnaryInstruction : public Instruction {
   void* operator new(size_t size) {
     return User::operator new(size, alloc_info);
   }
+
+ protected:
+  UnaryInstruction(Operation op, Type* type, Value* value)
+      : Instruction(op, type, alloc_info) {
+    operand(0) = value;
+  }
 };
 
-class BinaryInstruction : public Instruction {};
+class BinaryInstruction : public Instruction {
+  constexpr static AllocInfo alloc_info{.num_ops = 2};
+
+ public:
+  BinaryInstruction(Operation bin_op, Value* lhs, Value* rhs);
+
+  void* operator new(size_t size) {
+    return User::operator new(size, alloc_info);
+  }
+
+  Value* lhs() const { return operand(0); }
+
+  Value* rhs() const { return operand(1); }
+
+  static bool classof(const Instruction& i) {
+    return i.op_code() >= Operation::kBinary &&
+           i.op_code() <= Operation::kBinaryEnd;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+};
 
 class AllocaInst : public UnaryInstruction {
  public:
@@ -104,7 +144,7 @@ class AllocaInst : public UnaryInstruction {
 
 class LoadInst : public UnaryInstruction {
  public:
-  LoadInst(Type* type, Value* ptr, std::string_view name);
+  LoadInst(Type* type, Value* ptr);
 
   Value* pointer() { return operand(0); }
   const Value* pointer() const { return operand(0); }
@@ -136,6 +176,73 @@ class StoreInst : public Instruction {
 
   static bool classof(const Instruction& i) {
     return i.op_code() == Operation::kStore;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+};
+
+class CmpInst : public Instruction {
+  constexpr static AllocInfo alloc_info{.num_ops = 2};
+
+ public:
+  enum Predicate {
+    kICmpEq,
+    kICmpNe,
+    kICmpSGt,
+    kICmpSGe,
+    kICmpSLt,
+    kICmpSLe,
+
+    kFCmpOEq,
+    kFCmpOGt,
+    kFCmpOGe,
+    kFCmpOLt,
+    kFCmpOLe,
+    kFCmpUNe,
+  };
+
+  void* operator new(size_t size) {
+    return User::operator new(size, alloc_info);
+  }
+
+  Predicate predicate() const { return predicate_; }
+
+  static bool classof(const Instruction& i) {
+    return i.op_code() >= Operation::kCmp && i.op_code() <= Operation::kCmpEnd;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+
+ protected:
+  CmpInst(Operation op, Type* type, Predicate pred, Value* lhs, Value* rhs);
+
+ private:
+  Predicate predicate_;
+};
+
+class ICmpInst : public CmpInst {
+ public:
+  ICmpInst(Predicate pred, Value* lhs, Value* rhs);
+
+  static bool classof(const Instruction& i) {
+    return i.op_code() == Operation::kICmp;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+};
+
+class FCmpInst : public CmpInst {
+ public:
+  FCmpInst(Predicate pred, Value* lhs, Value* rhs);
+
+  static bool classof(const Instruction& i) {
+    return i.op_code() == Operation::kFCmp;
   }
 
   static bool classof(const Value& v) {

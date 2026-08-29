@@ -30,10 +30,13 @@ class Type : public ZoneObject {
 
   static Type* GetVoidType(GlobalContext& ctx);
   static Type* GetIntType(GlobalContext& ctx);
+  static Type* GetInt1Type(GlobalContext& ctx);
   static Type* GetFloatType(GlobalContext& ctx);
 
   // Helper functions
   static inline bool IsInt(const Type* type);
+
+  static inline bool IsInt1(const Type* type);
 
   static inline bool IsFloat(const Type* type);
 
@@ -57,6 +60,7 @@ class BuiltinType : public Type {
   enum class Kind {
     kVoid,
     kInt,
+    kInt1,
     kFloat,
   };
 
@@ -64,6 +68,7 @@ class BuiltinType : public Type {
 
   bool is_void() const { return kind_ == Kind::kVoid; }
   bool is_int() const { return kind_ == Kind::kInt; }
+  bool is_int1() const { return kind_ == Kind::kInt1; }
   bool is_float() const { return kind_ == Kind::kFloat; }
 
   std::string_view name() const;
@@ -208,6 +213,12 @@ class PointerType : public Type {
 inline bool Type::IsInt(const Type* type) {
   auto* builtin = DynamicTo<BuiltinType>(type);
   return builtin && builtin->is_int();
+}
+
+// static
+inline bool Type::IsInt1(const Type* type) {
+  auto* builtin = DynamicTo<BuiltinType>(type);
+  return builtin && builtin->is_int1();
 }
 
 // static

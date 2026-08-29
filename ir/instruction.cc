@@ -28,11 +28,35 @@ void Instruction::Destroy(uint32_t op, PassKey<Value>) {
     case Operation::kBinary:
       NOTREACHED();
       break;
+    case Operation::kAdd:
+    case Operation::kFAdd:
+    case Operation::kSub:
+    case Operation::kFSub:
+    case Operation::kMul:
+    case Operation::kFMul:
+    case Operation::kDiv:
+    case Operation::kFDiv:
+    case Operation::kRem:
+    case Operation::kFRem:
+      delete static_cast<BinaryInstruction*>(this);
+      break;
     case Operation::kBinaryEnd:
       NOTREACHED();
       break;
     case Operation::kStore:
       delete static_cast<StoreInst*>(this);
+      break;
+    case Operation::kCmp:
+      NOTREACHED();
+      break;
+    case Operation::kICmp:
+      delete static_cast<ICmpInst*>(this);
+      break;
+    case Operation::kFCmp:
+      delete static_cast<FCmpInst*>(this);
+      break;
+    case Operation::kCmpEnd:
+      NOTREACHED();
       break;
     case Operation::kReturn:
       delete static_cast<ReturnInst*>(this);
@@ -56,15 +80,19 @@ void Instruction::InsertAfter(InsertPoint insert_after) {
   Base::InsertAfter(&*insert_after);
 }
 
+BinaryInstruction::BinaryInstruction(Operation bin_op, Value* lhs, Value* rhs)
+    : Instruction(bin_op, lhs->type(), alloc_info) {
+  operand(0) = lhs;
+  operand(1) = rhs;
+}
+
 AllocaInst::AllocaInst(Type* type)
     : UnaryInstruction(Operation::kAlloca, PointerType::Get(type->context()),
                        ConstantInt::Get(type->context(), 1)),
       allocated_type_(type) {}
 
-LoadInst::LoadInst(Type* type, Value* ptr, std::string_view name)
-    : UnaryInstruction(Operation::kLoad, type, ptr) {
-  SetName(name);
-}
+LoadInst::LoadInst(Type* type, Value* ptr)
+    : UnaryInstruction(Operation::kLoad, type, ptr) {}
 
 StoreInst::StoreInst(Value* value, Value* ptr)
     : Instruction(Operation::kStore, Type::GetVoidType(value->context()),
@@ -72,6 +100,21 @@ StoreInst::StoreInst(Value* value, Value* ptr)
   operand(0) = value;
   operand(1) = ptr;
 }
+
+CmpInst::CmpInst(Operation op, Type* type, Predicate pred, Value* lhs,
+                 Value* rhs)
+    : Instruction(op, type, alloc_info), predicate_(pred) {
+  operand(0) = lhs;
+  operand(1) = rhs;
+}
+
+ICmpInst::ICmpInst(Predicate pred, Value* lhs, Value* rhs)
+    : CmpInst(Operation::kICmp, Type::GetInt1Type(lhs->context()), pred, lhs,
+              rhs) {}
+
+FCmpInst::FCmpInst(Predicate pred, Value* lhs, Value* rhs)
+    : CmpInst(Operation::kFCmp, Type::GetInt1Type(lhs->context()), pred, lhs,
+              rhs) {}
 
 ReturnInst::ReturnInst(GlobalContext& context, Value* retval, AllocInfo info)
     : Instruction(Operation::kReturn, Type::GetVoidType(context), info) {

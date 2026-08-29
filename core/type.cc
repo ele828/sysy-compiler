@@ -18,6 +18,9 @@ Type* Type::GetVoidType(GlobalContext& ctx) { return ctx.void_type_; }
 Type* Type::GetIntType(GlobalContext& ctx) { return ctx.int_type_; }
 
 // static
+Type* Type::GetInt1Type(GlobalContext& ctx) { return ctx.int1_type_; }
+
+// static
 Type* Type::GetFloatType(GlobalContext& ctx) { return ctx.float_type_; }
 
 void Type::Dump() const {
@@ -66,6 +69,8 @@ std::string_view BuiltinType::name() const {
       return "void";
     case Kind::kInt:
       return "int";
+    case Kind::kInt1:
+      return "int1";
     case Kind::kFloat:
       return "float";
   }

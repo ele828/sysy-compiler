@@ -49,11 +49,9 @@ TEST(IRGenerator, GenerateBasic) {
   Module module(ctx);
 
   const char* source = R"(
-    int d[2][2][2] = {{{1}}};
-
     int main() {
-      const int a = 1;
-      const int b = a + 1;
+      int a = 1;
+      int b = a + 1;
       return b;
     }
 

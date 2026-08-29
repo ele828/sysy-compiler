@@ -29,6 +29,9 @@ class TypeWriter : public TypeVisitor<TypeWriter> {
       case BuiltinType::Kind::kInt:
         os_ << "i32";
         break;
+      case BuiltinType::Kind::kInt1:
+        os_ << "i1";
+        break;
       case BuiltinType::Kind::kFloat:
         os_ << "float";
         break;
@@ -132,6 +135,15 @@ void IRWriter::WriteName(std::string_view name, bool is_global) {
   os_ << name;
 }
 
+void IRWriter::WriteName(int id, bool is_global) {
+  char buf[16];
+  auto [end_ptr, ec] = std::to_chars(buf, buf + sizeof(buf), id);
+  DCHECK(ec == std::errc{});
+
+  std::string_view id_name(buf, end_ptr);
+  WriteName(id_name, is_global);
+}
+
 void IRWriter::WriteConstant(Constant* constant) {
   if (auto* constant_int = DynamicTo<ConstantInt>(constant)) {
     os_ << constant_int->value();
@@ -206,8 +218,28 @@ void IRWriter::WriteInstruction(Instruction& inst) {
     case Instruction::kLoad:
       WriteLoadInst(To<LoadInst>(inst));
       break;
+    case Instruction::kBinary:
+    case Instruction::kAdd:
+    case Instruction::kFAdd:
+    case Instruction::kSub:
+    case Instruction::kFSub:
+    case Instruction::kMul:
+    case Instruction::kFMul:
+    case Instruction::kDiv:
+    case Instruction::kFDiv:
+    case Instruction::kRem:
+    case Instruction::kFRem:
+    case Instruction::kBinaryEnd:
+      WriteBinaryInst(To<BinaryInstruction>(inst));
+      break;
     case Instruction::kStore:
       WriteStoreInst(To<StoreInst>(inst));
+      break;
+    case Instruction::kICmp:
+      WriteICmpInst(To<ICmpInst>(inst));
+      break;
+    case Instruction::kFCmp:
+      WriteFCmpInst(To<FCmpInst>(inst));
       break;
     case Instruction::kReturn:
       WriteReturnInst(To<ReturnInst>(inst));
@@ -219,9 +251,11 @@ void IRWriter::WriteInstruction(Instruction& inst) {
   os_ << "\n";
 }
 
-void IRWriter::WriteOperand(Value* op) {
-  WriteType(op->type());
-  os_ << " ";
+void IRWriter::WriteOperand(Value* op, bool write_type) {
+  if (write_type) {
+    WriteType(op->type());
+    os_ << " ";
+  }
 
   if (op->has_name()) {
     WriteName(*op);
@@ -236,12 +270,7 @@ void IRWriter::WriteOperand(Value* op) {
 
   int id = slot_.Get(op);
   bool op_is_global = IsA<GlobalVariable>(op) || IsA<Function>(op);
-  char buf[16];
-  auto [end_ptr, ec] = std::to_chars(buf, buf + sizeof(buf), id);
-  DCHECK(ec == std::errc{});
-
-  std::string_view id_name(buf, end_ptr);
-  WriteName(id_name, op_is_global);
+  WriteName(id, op_is_global);
 }
 
 void IRWriter::WriteAllocaInst(AllocaInst& ret_inst) {
@@ -253,14 +282,12 @@ void IRWriter::WriteAllocaInst(AllocaInst& ret_inst) {
 }
 
 void IRWriter::WriteLoadInst(LoadInst& load_inst) {
-  int id = slot_.Add(&load_inst);
-
-  char buf[16];
-  auto [end_ptr, ec] = std::to_chars(buf, buf + sizeof(buf), id);
-  DCHECK(ec == std::errc{});
-
-  std::string_view id_name(buf, end_ptr);
-  WriteName(id_name, false);
+  if (load_inst.has_name()) {
+    WriteName(load_inst);
+  } else {
+    int id = slot_.Add(&load_inst);
+    WriteName(id, false);
+  }
 
   os_ << " = load ";
   WriteType(load_inst.type());
@@ -272,18 +299,67 @@ void IRWriter::WriteLoadInst(LoadInst& load_inst) {
 
 void IRWriter::WriteStoreInst(StoreInst& store_inst) {
   os_ << "store ";
-  WriteOperand(store_inst.value());
+  WriteOperand(store_inst.value(), true);
   os_ << ", ptr ";
   WriteName(*store_inst.pointer());
   os_ << ", ";
   WriteAlignment(store_inst.value()->type());
 }
 
+void IRWriter::WriteBinaryInst(BinaryInstruction& binary_inst) {
+  WriteName(binary_inst);
+
+  os_ << " = ";
+  switch (binary_inst.op_code()) {
+    case BinaryInstruction::kAdd:
+      os_ << "add nsw";
+      break;
+    case BinaryInstruction::kFAdd:
+      os_ << "fadd";
+      break;
+    case BinaryInstruction::kSub:
+      os_ << "sub nsw";
+      break;
+    case BinaryInstruction::kFSub:
+      os_ << "fsub";
+      break;
+    case BinaryInstruction::kMul:
+      os_ << "mul nsw";
+      break;
+    case BinaryInstruction::kFMul:
+      os_ << "fmul";
+      break;
+    case BinaryInstruction::kDiv:
+      os_ << "sdiv";
+      break;
+    case BinaryInstruction::kFDiv:
+      os_ << "fdiv";
+      break;
+    case BinaryInstruction::kRem:
+      os_ << "srem";
+      break;
+    case BinaryInstruction::kFRem:
+      NOTREACHED();
+      break;
+    default:
+      break;
+  }
+  os_ << " ";
+
+  WriteOperand(binary_inst.lhs(), true);
+  os_ << ", ";
+  WriteOperand(binary_inst.rhs(), false);
+}
+
+void IRWriter::WriteICmpInst(ICmpInst& binary_inst) {}
+
+void IRWriter::WriteFCmpInst(FCmpInst& binary_inst) {}
+
 void IRWriter::WriteReturnInst(ReturnInst& ret_inst) {
   os_ << "ret";
   os_ << " ";
   if (auto* retval = ret_inst.return_value()) {
-    WriteOperand(retval);
+    WriteOperand(retval, true);
   } else {
     os_ << "void";
   }

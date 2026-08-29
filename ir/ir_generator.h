@@ -43,6 +43,8 @@ class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
 
   Constant* GenerateFloatingLiteral(FloatingLiteral* float_lit);
 
+  Instruction* GenerateBinaryOperation(BinaryOperation* bin_op);
+
   Argument* GenerateFunctionParameter(ParameterDeclaration* param);
 
   Value* GenerateDeclarationReference(DeclarationReference* expr);

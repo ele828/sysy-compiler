@@ -64,12 +64,10 @@ Constant* IRGenerator::EvaluateConstantExpression(Expression* expr) {
     return nullptr;
   }
 
-  Type* type = expr->type();
-  if (Type::IsInt(type)) {
+  if (result.is_int()) {
     return ConstantInt::Get(ctx_, result.has_value() ? result.get<int>() : 0);
   }
 
-  DCHECK(Type::IsFloat(type));
   return ConstantFP::Get(ctx_, result.has_value() ? result.get<float>() : 0.f);
 }
 
@@ -186,7 +184,7 @@ Value* IRGenerator::GenerateExpression(Expression* expr) {
       return {};
     }
     case AstNode::Kind::kBinaryOperation:
-      return {};
+      return GenerateBinaryOperation(To<BinaryOperation>(expr));
     case AstNode::Kind::kDeclarationReference: {
       return GenerateDeclarationReference(To<DeclarationReference>(expr));
     }
@@ -220,6 +218,106 @@ Constant* IRGenerator::GenerateFloatingLiteral(FloatingLiteral* float_lit) {
   return ConstantFP::Get(ctx_, float_lit->value());
 }
 
+Instruction* IRGenerator::GenerateBinaryOperation(BinaryOperation* bin_op) {
+  Instruction* result{};
+  bool is_float_op = Type::IsFloat(bin_op->lhs()->type());
+  DCHECK(bin_op->lhs()->type() == bin_op->rhs()->type());
+
+  Value* lhs = GenerateExpression(bin_op->lhs());
+  Value* rhs = GenerateExpression(bin_op->rhs());
+
+  switch (bin_op->op()) {
+    case BinaryOperator::kInvalid:
+      break;
+    case BinaryOperator::kAdd:
+      if (!is_float_op) {
+        result = builder_.CreateAdd(lhs, rhs, "add");
+      } else {
+        result = builder_.CreateFAdd(lhs, rhs, "add");
+      }
+      break;
+    case BinaryOperator::kSub:
+      if (!is_float_op) {
+        result = builder_.CreateSub(lhs, rhs, "sub");
+      } else {
+        result = builder_.CreateFSub(lhs, rhs, "sub");
+      }
+      break;
+    case BinaryOperator::kMul:
+      if (!is_float_op) {
+        result = builder_.CreateMul(lhs, rhs, "mul");
+      } else {
+        result = builder_.CreateFMul(lhs, rhs, "mul");
+      }
+      break;
+    case BinaryOperator::kDiv:
+      if (!is_float_op) {
+        result = builder_.CreateDiv(lhs, rhs, "div");
+      } else {
+        result = builder_.CreateFDiv(lhs, rhs, "div");
+      }
+      break;
+    case BinaryOperator::kRem:
+      if (!is_float_op) {
+        result = builder_.CreateRem(lhs, rhs, "rem");
+      } else {
+        // Not supported.
+        NOTREACHED();
+      }
+      break;
+    case BinaryOperator::kLt:
+      if (!is_float_op) {
+        result = builder_.CreateICmpEq(lhs, rhs, "cmp");
+      } else {
+        result = builder_.CreateFCmpOEq(lhs, rhs, "cmp");
+      }
+      break;
+    case BinaryOperator::kGt:
+      if (!is_float_op) {
+        result = builder_.CreateICmpSGt(lhs, rhs, "cmp");
+      } else {
+        result = builder_.CreateFCmpOGt(lhs, rhs, "cmp");
+      }
+      break;
+    case BinaryOperator::kLe:
+      if (!is_float_op) {
+        result = builder_.CreateICmpSLe(lhs, rhs, "cmp");
+      } else {
+        result = builder_.CreateFCmpOLe(lhs, rhs, "cmp");
+      }
+      break;
+    case BinaryOperator::kGe:
+      if (!is_float_op) {
+        result = builder_.CreateICmpSGt(lhs, rhs, "cmp");
+      } else {
+        result = builder_.CreateFCmpOGt(lhs, rhs, "cmp");
+      }
+      break;
+    case BinaryOperator::kEq:
+      if (!is_float_op) {
+        result = builder_.CreateICmpEq(lhs, rhs, "cmp");
+      } else {
+        result = builder_.CreateFCmpOEq(lhs, rhs, "cmp");
+      }
+      break;
+    case BinaryOperator::kNeq:
+      if (!is_float_op) {
+        result = builder_.CreateICmpNe(lhs, rhs, "cmp");
+      } else {
+        result = builder_.CreateFCmpUNe(lhs, rhs, "cmp");
+      }
+      break;
+    case BinaryOperator::kLAnd:
+      break;
+    case BinaryOperator::kLOr:
+      break;
+    case BinaryOperator::kAssign:
+      break;
+  }
+
+  return result;
+}
+
 void IRGenerator::VisitReturnStatement(ReturnStatement* return_stmt) {
   if (!return_stmt->expression()) {
     builder_.CreateRetVoid();
@@ -243,7 +341,7 @@ Value* IRGenerator::GenerateDeclarationReference(
     value = module_.symbol_table().Lookup(decl_ref->name());
   }
 
-  return builder_.CreateLoad(decl_ref->type(), value, decl_ref->name());
+  return builder_.CreateLoad(decl_ref->type(), value);
 }
 
 }  // namespace sysy
