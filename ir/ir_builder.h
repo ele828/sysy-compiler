@@ -119,6 +119,11 @@ class IRBuilder {
     return Insert(new FPToSIInst(dest_type, value), name);
   }
 
+  ZExtInst* CreateZExtInst(Value* value, Type* dest_type,
+                           std::string_view name) {
+    return Insert(new ZExtInst(dest_type, value), name);
+  }
+
   ReturnInst* CreateRetVoid() {
     return Insert(ReturnInst::Create(context_, nullptr));
   }

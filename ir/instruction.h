@@ -23,6 +23,7 @@ class Instruction : public User, public base::LinkNode<Instruction> {
     kCast,
     kSIToFP,
     kFPToSI,
+    kZExt,
     kCastEnd,
     kUnaryEnd,
 
@@ -201,6 +202,19 @@ class FPToSIInst : public CastInst {
 
   static bool classof(const Instruction& i) {
     return i.op_code() == Operation::kFPToSI;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+};
+
+class ZExtInst : public CastInst {
+ public:
+  ZExtInst(Type* type, Value* value);
+
+  static bool classof(const Instruction& i) {
+    return i.op_code() == Operation::kZExt;
   }
 
   static bool classof(const Value& v) {

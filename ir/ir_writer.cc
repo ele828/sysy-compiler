@@ -233,6 +233,9 @@ void IRWriter::WriteInstruction(Instruction& inst) {
     case Instruction::kFPToSI:
       WriteFPToSIInst(To<FPToSIInst>(inst));
       break;
+    case Instruction::kZExt:
+      WriteZExtInst(To<ZExtInst>(inst));
+      break;
     case Instruction::kBinary:
     case Instruction::kAdd:
     case Instruction::kFAdd:
@@ -323,6 +326,15 @@ void IRWriter::WriteFPToSIInst(FPToSIInst& cast_inst) {
   WriteOperand(cast_inst.src(), true);
   os_ << " to ";
   WriteType(cast_inst.dest_type());
+}
+
+void IRWriter::WriteZExtInst(ZExtInst& zext_inst) {
+  WriteDefinedName(zext_inst);
+
+  os_ << " = zext ";
+  WriteOperand(zext_inst.src(), true);
+  os_ << " to ";
+  WriteType(zext_inst.dest_type());
 }
 
 void IRWriter::WriteStoreInst(StoreInst& store_inst) {

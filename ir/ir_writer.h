@@ -57,6 +57,8 @@ class IRWriter final {
 
   void WriteFPToSIInst(FPToSIInst& cast_inst);
 
+  void WriteZExtInst(ZExtInst& zext_inst);
+
   void WriteBinaryInst(BinaryInstruction& binary_inst);
 
   void WriteICmpInst(ICmpInst& icmp_inst);

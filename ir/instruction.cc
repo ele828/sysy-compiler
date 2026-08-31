@@ -31,6 +31,9 @@ void Instruction::Destroy(uint32_t op, PassKey<Value>) {
     case Operation::kFPToSI:
       delete static_cast<FPToSIInst*>(this);
       break;
+    case Operation::kZExt:
+      delete static_cast<ZExtInst*>(this);
+      break;
     case Operation::kCastEnd:
       NOTREACHED();
       break;
@@ -114,6 +117,9 @@ SIToFPInst::SIToFPInst(Type* type, Value* value)
 
 FPToSIInst::FPToSIInst(Type* type, Value* value)
     : CastInst(Operation::kFPToSI, type, value) {}
+
+ZExtInst::ZExtInst(Type* type, Value* value)
+    : CastInst(Operation::kZExt, type, value) {}
 
 StoreInst::StoreInst(Value* value, Value* ptr)
     : Instruction(Operation::kStore, Type::GetVoidType(value->context()),

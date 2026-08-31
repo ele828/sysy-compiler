@@ -315,6 +315,13 @@ Instruction* IRGenerator::GenerateBinaryOperation(BinaryOperation* bin_op) {
       break;
   }
 
+  // Convert type to match the dest type.
+  if (result->type() != bin_op->type()) {
+    if (Type::IsInt1(result->type()) && Type::IsInt(bin_op->type())) {
+      result = builder_.CreateZExtInst(result, bin_op->type(), "conv");
+    }
+  }
+
   return result;
 }
 
