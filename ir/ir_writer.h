@@ -85,6 +85,11 @@ class IRWriter final {
       return it->second;
     }
 
+    void Clear() {
+      index_ = 0;
+      slots_.clear();
+    }
+
    private:
     uint32_t index_{0};
     std::unordered_map<const Value*, int> slots_;

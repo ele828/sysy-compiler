@@ -6,10 +6,10 @@
 
 namespace sysy {
 
-Instruction::Instruction(Operation op, Type* type, AllocInfo info)
+Instruction::Instruction(Operation op, Type* type, AllocInfo alloc_info)
     : User(static_cast<ValueID>(static_cast<uint8_t>(ValueID::kInstruction) +
                                 static_cast<uint8_t>(op)),
-           type, info) {}
+           type, alloc_info) {}
 
 void Instruction::Destroy(uint32_t op, PassKey<Value>) {
   switch (static_cast<Operation>(op)) {
@@ -76,6 +76,9 @@ void Instruction::Destroy(uint32_t op, PassKey<Value>) {
     case Operation::kReturn:
       delete static_cast<ReturnInst*>(this);
       break;
+    case Operation::kBranch:
+      delete static_cast<BranchInst*>(this);
+      break;
   }
 }
 
@@ -124,6 +127,8 @@ ZExtInst::ZExtInst(Type* type, Value* value)
 StoreInst::StoreInst(Value* value, Value* ptr)
     : Instruction(Operation::kStore, Type::GetVoidType(value->context()),
                   alloc_info) {
+  DCHECK(IsA<PointerType>(ptr->type()));
+
   operand(0) = value;
   operand(1) = ptr;
 }
@@ -148,6 +153,22 @@ ReturnInst::ReturnInst(GlobalContext& context, Value* retval, AllocInfo info)
   if (retval) {
     operand(0) = retval;
   }
+}
+
+BranchInst::BranchInst(BasicBlock* if_true, AllocInfo alloc_info)
+
+    : Instruction(Operation::kBranch, Type::GetVoidType(if_true->context()),
+                  alloc_info) {
+  op<-1>() = if_true;
+}
+
+BranchInst::BranchInst(BasicBlock* if_true, BasicBlock* if_false,
+                       Value* condition, AllocInfo alloc_info)
+    : Instruction(Operation::kBranch, Type::GetVoidType(if_true->context()),
+                  alloc_info) {
+  op<-3>() = condition;
+  op<-2>() = if_false;
+  op<-1>() = if_true;
 }
 
 }  // namespace sysy

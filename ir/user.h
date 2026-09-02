@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base/pass_key.h"
 #include "base/type_casts.h"
 #include "ir/value.h"
 

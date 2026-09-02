@@ -87,6 +87,8 @@ void IRWriter::WriteModule(Module& module) {
 
   // Write Function
   for (auto& function : module.functions()) {
+    slot_.Clear();
+
     os_ << "\n";
     os_ << "define dso_local ";
 

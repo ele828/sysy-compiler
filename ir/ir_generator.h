@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "ast/ast.h"
 #include "ast/ast_recursive_visitor.h"
 #include "core/global_context.h"

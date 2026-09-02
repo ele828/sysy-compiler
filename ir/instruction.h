@@ -48,6 +48,7 @@ class Instruction : public User, public base::LinkNode<Instruction> {
     kCmpEnd,
 
     kReturn,
+    kBranch,
   };
 
   using InsertPoint = base::LinkedList<Instruction>::Iterator;
@@ -67,7 +68,7 @@ class Instruction : public User, public base::LinkNode<Instruction> {
   static bool classof(const Value& v) { return v.id() >= Value::kInstruction; }
 
  protected:
-  Instruction(Operation op, Type* type, AllocInfo info);
+  Instruction(Operation op, Type* type, AllocInfo alloc_info);
 
   ~Instruction() = default;
 
@@ -339,6 +340,23 @@ class ReturnInst : public Instruction {
 
  private:
   ReturnInst(GlobalContext& context, Value* retval, AllocInfo info);
+};
+
+class BranchInst : public Instruction {
+ public:
+  static bool classof(const Instruction& i) {
+    return i.op_code() == Operation::kBranch;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+
+ private:
+  BranchInst(BasicBlock* if_true, AllocInfo alloc_info);
+
+  BranchInst(BasicBlock* if_true, BasicBlock* if_false, Value* condition,
+             AllocInfo alloc_info);
 };
 
 }  // namespace sysy
