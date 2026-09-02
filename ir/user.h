@@ -16,13 +16,23 @@ class User : public Value {
 
   uint32_t num_of_operands() const { return num_ops_; }
 
-  Use& operand(int64_t index) { return operands()[index]; }
-  const Use& operand(int64_t index) const { return operands()[index]; }
+  template <int64_t Idx>
+  Use& op() {
+    if constexpr (Idx < 0) {
+      return operands_end()[Idx];
+    }
+    return operands()[Idx];
+  }
+
+  template <int64_t Idx>
+  const Use& op() const {
+    return const_cast<User*>(this)->op<Idx>();
+  }
+
+  Use& op(int64_t index) { return operands()[index]; }
 
   Use* operands() { return reinterpret_cast<Use*>(this) - num_ops_; }
-  const Use* operands() const {
-    return reinterpret_cast<const Use*>(this) - num_ops_;
-  }
+  const Use* operands() const { return const_cast<User*>(this)->operands(); }
 
   void operator delete(void*);
 
@@ -38,6 +48,8 @@ class User : public Value {
   User(ValueID id, Type* type, AllocInfo info);
 
  private:
+  Use* operands_end() { return reinterpret_cast<Use*>(this); }
+
   uint32_t num_ops_;
 };
 

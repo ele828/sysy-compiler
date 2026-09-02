@@ -100,8 +100,8 @@ void Instruction::InsertAfter(InsertPoint insert_after) {
 
 BinaryInstruction::BinaryInstruction(Operation bin_op, Value* lhs, Value* rhs)
     : Instruction(bin_op, lhs->type(), alloc_info) {
-  operand(0) = lhs;
-  operand(1) = rhs;
+  op<0>() = lhs;
+  op<1>() = rhs;
 }
 
 AllocaInst::AllocaInst(Type* type)
@@ -129,15 +129,15 @@ StoreInst::StoreInst(Value* value, Value* ptr)
                   alloc_info) {
   DCHECK(IsA<PointerType>(ptr->type()));
 
-  operand(0) = value;
-  operand(1) = ptr;
+  op<0>() = value;
+  op<1>() = ptr;
 }
 
-CmpInst::CmpInst(Operation op, Type* type, Predicate pred, Value* lhs,
+CmpInst::CmpInst(Operation operation, Type* type, Predicate pred, Value* lhs,
                  Value* rhs)
-    : Instruction(op, type, alloc_info), predicate_(pred) {
-  operand(0) = lhs;
-  operand(1) = rhs;
+    : Instruction(operation, type, alloc_info), predicate_(pred) {
+  op<0>() = lhs;
+  op<1>() = rhs;
 }
 
 ICmpInst::ICmpInst(Predicate pred, Value* lhs, Value* rhs)
@@ -151,7 +151,7 @@ FCmpInst::FCmpInst(Predicate pred, Value* lhs, Value* rhs)
 ReturnInst::ReturnInst(GlobalContext& context, Value* retval, AllocInfo info)
     : Instruction(Operation::kReturn, Type::GetVoidType(context), info) {
   if (retval) {
-    operand(0) = retval;
+    op<0>() = retval;
   }
 }
 

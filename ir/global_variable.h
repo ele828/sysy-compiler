@@ -15,9 +15,9 @@ class GlobalVariable : public Constant, public base::LinkNode<GlobalVariable> {
     return new (alloc_info) GlobalVariable(module, type, is_constant, name);
   }
 
-  void set_initializer(Constant* initializer) { operand(0).set(initializer); }
+  void set_initializer(Constant* initializer) { op<0>().set(initializer); }
 
-  Constant* initializer() { return static_cast<Constant*>(operand(0).get()); }
+  Constant* initializer() { return static_cast<Constant*>(op<0>().get()); }
 
   Module& parent() { return parent_; }
   const Module& parent() const { return parent_; }

@@ -77,8 +77,7 @@ struct ConstantArrayHash {
   std::size_t operator()(const unique_value<ConstantArray>& arr) const {
     size_t hash = std::hash<Type*>{}(arr->type());
     for (size_t i = 0; i < arr->num_of_operands(); ++i) {
-      hash =
-          base::hash_combine(hash, std::hash<Value*>{}(arr->operand(i).get()));
+      hash = base::hash_combine(hash, std::hash<Value*>{}(arr->op(i).get()));
     }
     return hash;
   }
@@ -100,8 +99,8 @@ struct ConstantArrayEqual {
     }
 
     for (size_t i = 0; i < lhs->num_of_operands(); ++i) {
-      auto& lhs_op = lhs->operand(i);
-      auto& rhs_op = rhs->operand(i);
+      auto& lhs_op = lhs->op(i);
+      auto& rhs_op = rhs->op(i);
       if (lhs_op.get() != rhs_op.get()) {
         return false;
       }
@@ -119,7 +118,7 @@ struct ConstantArrayEqual {
       return false;
     }
     for (size_t i = 0; i < lhs->num_of_operands(); ++i) {
-      auto& lhs_op = lhs->operand(i);
+      auto& lhs_op = lhs->op(i);
       auto& rhs_op = rhs.second[i];
       if (lhs_op.get() != rhs_op) {
         return false;

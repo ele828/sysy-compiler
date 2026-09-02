@@ -65,7 +65,7 @@ class ConstantArray : public Constant {
   static ConstantArray* Get(ArrayType* type, std::span<Constant*> elements);
 
   Constant* get(int64_t index) {
-    return static_cast<Constant*>(operand(index).get());
+    return static_cast<Constant*>(op(index).get());
   }
 
   static bool classof(const Value& v) {

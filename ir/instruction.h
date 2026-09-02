@@ -100,9 +100,9 @@ class UnaryInstruction : public Instruction {
   }
 
  protected:
-  UnaryInstruction(Operation op, Type* type, Value* value)
-      : Instruction(op, type, alloc_info) {
-    operand(0) = value;
+  UnaryInstruction(Operation operation, Type* type, Value* value)
+      : Instruction(operation, type, alloc_info) {
+    op<0>() = value;
   }
 };
 
@@ -116,9 +116,9 @@ class BinaryInstruction : public Instruction {
     return User::operator new(size, alloc_info);
   }
 
-  Value* lhs() const { return operand(0); }
+  Value* lhs() const { return op<0>(); }
 
-  Value* rhs() const { return operand(1); }
+  Value* rhs() const { return op<1>(); }
 
   static bool classof(const Instruction& i) {
     return i.op_code() >= Operation::kBinary &&
@@ -152,8 +152,8 @@ class LoadInst : public UnaryInstruction {
  public:
   LoadInst(Type* type, Value* ptr);
 
-  Value* pointer() { return operand(0); }
-  const Value* pointer() const { return operand(0); }
+  Value* pointer() { return op<0>(); }
+  const Value* pointer() const { return op<0>(); }
 
   static bool classof(const Instruction& i) {
     return i.op_code() == Operation::kLoad;
@@ -166,9 +166,9 @@ class LoadInst : public UnaryInstruction {
 
 class CastInst : public UnaryInstruction {
  public:
-  Value* src() const { return operand(0); }
+  Value* src() const { return op<0>(); }
 
-  Type* src_type() const { return operand(0)->type(); }
+  Type* src_type() const { return op<0>()->type(); }
   Type* dest_type() const { return type(); }
 
   static bool classof(const Instruction& i) {
@@ -229,11 +229,11 @@ class StoreInst : public Instruction {
  public:
   StoreInst(Value* value, Value* ptr);
 
-  Value* value() { return operand(0); }
-  const Value* value() const { return operand(0); }
+  Value* value() { return op<0>(); }
+  const Value* value() const { return op<0>(); }
 
-  Value* pointer() { return operand(1); }
-  const Value* pointer() const { return operand(1); }
+  Value* pointer() { return op<1>(); }
+  const Value* pointer() const { return op<1>(); }
 
   void* operator new(size_t size) {
     return User::operator new(size, alloc_info);
@@ -274,9 +274,9 @@ class CmpInst : public Instruction {
 
   Predicate predicate() const { return predicate_; }
 
-  Value* lhs() const { return operand(0); }
+  Value* lhs() const { return op<0>(); }
 
-  Value* rhs() const { return operand(1); }
+  Value* rhs() const { return op<1>(); }
 
   static bool classof(const Instruction& i) {
     return i.op_code() >= Operation::kCmp && i.op_code() <= Operation::kCmpEnd;
@@ -287,7 +287,8 @@ class CmpInst : public Instruction {
   }
 
  protected:
-  CmpInst(Operation op, Type* type, Predicate pred, Value* lhs, Value* rhs);
+  CmpInst(Operation operation, Type* type, Predicate pred, Value* lhs,
+          Value* rhs);
 
  private:
   Predicate predicate_;
@@ -327,7 +328,7 @@ class ReturnInst : public Instruction {
   }
 
   Value* return_value() const {
-    return num_of_operands() != 0 ? operand(0) : nullptr;
+    return num_of_operands() != 0 ? op<0>() : nullptr;
   }
 
   static bool classof(const Instruction& i) {
