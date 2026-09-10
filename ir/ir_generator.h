@@ -28,6 +28,8 @@ class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
 
   void VisitVariableDeclaration(VariableDeclaration* var_decl);
 
+  void VisitExpressionStatement(ExpressionStatement* expr_stmt);
+
   void VisitReturnStatement(ReturnStatement* return_stmt);
 
   Constant* GenerateInitializer(Type* type, Expression* expr);
@@ -48,6 +50,8 @@ class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
   Value* GenerateDeclarationReference(DeclarationReference* expr);
 
   Value* GenerateImplicitCast(ImplicitCastExpression* expr);
+
+  Value* ResolveDeclrationReference(DeclarationReference* decl_ref);
 
   class FunctionScope {
    public:

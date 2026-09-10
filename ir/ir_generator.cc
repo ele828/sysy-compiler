@@ -126,6 +126,12 @@ void IRGenerator::VisitVariableDeclaration(VariableDeclaration* var_decl) {
   builder_.CreateStore(value, alloca);
 }
 
+void IRGenerator::VisitExpressionStatement(ExpressionStatement* expr_stmt) {
+  if (auto* expr = expr_stmt->expression()) {
+    GenerateExpression(expr);
+  }
+}
+
 Constant* IRGenerator::GenerateInitializer(Type* type, Expression* expr) {
   if (auto* array_type = DynamicTo<ArrayType>(type)) {
     return GenerateInitList(array_type, To<InitListExpression>(expr));
@@ -219,9 +225,18 @@ Constant* IRGenerator::GenerateFloatingLiteral(FloatingLiteral* float_lit) {
 }
 
 Instruction* IRGenerator::GenerateBinaryOperation(BinaryOperation* bin_op) {
+  DCHECK(bin_op->lhs()->type() == bin_op->rhs()->type());
+
+  if (bin_op->op() == BinaryOperator::kAssign) {
+    // lhs is a alloca
+    Value* lhs =
+        ResolveDeclrationReference(To<DeclarationReference>(bin_op->lhs()));
+    Value* rhs = GenerateExpression(bin_op->rhs());
+    return builder_.CreateStore(rhs, lhs);
+  }
+
   Instruction* result{};
   bool is_float_op = Type::IsFloat(bin_op->lhs()->type());
-  DCHECK(bin_op->lhs()->type() == bin_op->rhs()->type());
 
   Value* lhs = GenerateExpression(bin_op->lhs());
   Value* rhs = GenerateExpression(bin_op->rhs());
@@ -337,18 +352,20 @@ void IRGenerator::VisitReturnStatement(ReturnStatement* return_stmt) {
 
 Value* IRGenerator::GenerateDeclarationReference(
     DeclarationReference* decl_ref) {
-  Value* value;
+  Value* value = ResolveDeclrationReference(decl_ref);
 
+  return builder_.CreateLoad(decl_ref->type(), value, "");
+}
+
+Value* IRGenerator::ResolveDeclrationReference(DeclarationReference* decl_ref) {
   // Find declaration from local
   auto it = local_decl_map_.find(decl_ref->declaration());
   if (it != local_decl_map_.end()) {
-    value = it->second;
-  } else {
-    // Decl is not found from local, it must be in the global
-    value = module_.symbol_table().Lookup(decl_ref->name());
+    return it->second;
   }
 
-  return builder_.CreateLoad(decl_ref->type(), value, "");
+  // Decl is not found from local, it must be in the global
+  return module_.symbol_table().Lookup(decl_ref->name());
 }
 
 Value* IRGenerator::GenerateImplicitCast(ImplicitCastExpression* expr) {
