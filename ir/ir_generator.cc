@@ -228,7 +228,6 @@ Instruction* IRGenerator::GenerateBinaryOperation(BinaryOperation* bin_op) {
   DCHECK(bin_op->lhs()->type() == bin_op->rhs()->type());
 
   if (bin_op->op() == BinaryOperator::kAssign) {
-    // lhs is a alloca
     Value* lhs =
         ResolveDeclrationReference(To<DeclarationReference>(bin_op->lhs()));
     Value* rhs = GenerateExpression(bin_op->rhs());
@@ -243,7 +242,7 @@ Instruction* IRGenerator::GenerateBinaryOperation(BinaryOperation* bin_op) {
 
   switch (bin_op->op()) {
     case BinaryOperator::kInvalid:
-      break;
+      NOTREACHED();
     case BinaryOperator::kAdd:
       if (!is_float_op) {
         result = builder_.CreateAdd(lhs, rhs, "add");
@@ -327,10 +326,11 @@ Instruction* IRGenerator::GenerateBinaryOperation(BinaryOperation* bin_op) {
     case BinaryOperator::kLOr:
       break;
     case BinaryOperator::kAssign:
-      break;
+      NOTREACHED();
   }
 
   // Convert type to match the dest type.
+  DCHECK(result);
   if (result->type() != bin_op->type()) {
     if (Type::IsInt1(result->type()) && Type::IsInt(bin_op->type())) {
       result = builder_.CreateZExtInst(result, bin_op->type(), "conv");

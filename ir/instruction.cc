@@ -1,15 +1,21 @@
 #include "ir/instruction.h"
 
+#include <ranges>
+
 #include "base/logging.h"
 #include "ir/basic_block.h"
 #include "ir/constants.h"
 
 namespace sysy {
-
 Instruction::Instruction(Operation op, Type* type, AllocInfo alloc_info)
     : User(static_cast<ValueID>(static_cast<uint8_t>(ValueID::kInstruction) +
                                 static_cast<uint8_t>(op)),
            type, alloc_info) {}
+
+Instruction::Instruction(Operation op, Type* type, HungOffAllocInfo alloc_info)
+: User(static_cast<ValueID>(static_cast<uint8_t>(ValueID::kInstruction) +
+                              static_cast<uint8_t>(op)),
+         type, alloc_info) {}
 
 void Instruction::Destroy(uint32_t op, PassKey<Value>) {
   switch (static_cast<Operation>(op)) {
@@ -78,6 +84,9 @@ void Instruction::Destroy(uint32_t op, PassKey<Value>) {
       break;
     case Operation::kBranch:
       delete static_cast<BranchInst*>(this);
+      break;
+    case Operation::kPHI:
+      delete static_cast<PHINode*>(this);
       break;
   }
 }
@@ -170,5 +179,22 @@ BranchInst::BranchInst(BasicBlock* if_true, BasicBlock* if_false,
   op<-2>() = if_false;
   op<-1>() = if_true;
 }
+
+ PHINode::PHINode(Type* type, size_t num_reserved_values)
+   : Instruction(Operation::kPHI, type, alloc_info),
+     reserved_space_(num_reserved_values) {
+  User::AllocHungOffUses(num_reserved_values, true);
+}
+
+void PHINode::GrowOperands() {
+  uint32_t n = num_of_operands();
+  uint32_t ops = n + n / 2;
+  // 2 op PHI node is common
+  if (ops < 2) ops = 2;
+  reserved_space_ = ops;
+  GrowHungOffUsers(reserved_space_, true);
+}
+
+
 
 }  // namespace sysy

@@ -14,7 +14,13 @@ class User : public Value {
     uint32_t num_ops;
   };
 
-  uint32_t num_of_operands() const { return num_ops_; }
+  struct HungOffAllocInfo {};
+
+  uint32_t num_of_operands() const { return num_user_operands(); }
+
+  void set_num_of_hung_off_operands(uint32_t num_ops) {
+    set_num_user_operands(num_ops);
+  }
 
   template <int64_t Idx>
   Use& op() {
@@ -30,8 +36,12 @@ class User : public Value {
   }
 
   Use& op(int64_t index) { return operands()[index]; }
+  const Use& op(int64_t index) const { return operands()[index]; }
 
-  Use* operands() { return reinterpret_cast<Use*>(this) - num_ops_; }
+  Use* operands() {
+    return has_hung_off_uses_ ? hung_off_operands() : intrusive_operands();
+  }
+
   const Use* operands() const { return const_cast<User*>(this)->operands(); }
 
   void operator delete(void*);
@@ -45,12 +55,35 @@ class User : public Value {
 
   void* operator new(size_t size, AllocInfo marker);
 
+  void* operator new(size_t size, HungOffAllocInfo marker);
+
   User(ValueID id, Type* type, AllocInfo info);
 
- private:
-  Use* operands_end() { return reinterpret_cast<Use*>(this); }
+  User(ValueID id, Type* type, HungOffAllocInfo info);
 
-  uint32_t num_ops_;
+  void AllocHungOffUses(size_t n, bool is_phi = false);
+
+  void GrowHungOffUsers(size_t n, bool is_phi = false);
+
+ private:
+  Use* intrusive_operands() { return reinterpret_cast<Use*>(this) - num_user_operands(); }
+
+  Use* operands_end() { return operands() + num_of_operands(); }
+
+  Use*& hung_off_operands() {
+    return *(reinterpret_cast<Use**>(this) - 1);
+  }
+
+  const Use* hung_off_operands() const {
+    return *(reinterpret_cast<const Use* const*>(this) - 1);
+  }
+
+  void set_operand_list(Use* new_list) {
+    DCHECK(has_hung_off_uses_);
+    hung_off_operands() = new_list;
+  }
+
+  bool has_hung_off_uses_;
 };
 
 }  // namespace sysy

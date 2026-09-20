@@ -49,6 +49,7 @@ class Instruction : public User, public base::LinkNode<Instruction> {
 
     kReturn,
     kBranch,
+    kPHI,
   };
 
   using InsertPoint = base::LinkedList<Instruction>::Iterator;
@@ -69,6 +70,8 @@ class Instruction : public User, public base::LinkNode<Instruction> {
 
  protected:
   Instruction(Operation op, Type* type, AllocInfo alloc_info);
+
+  Instruction(Operation op, Type* type, HungOffAllocInfo alloc_info);
 
   ~Instruction() = default;
 
@@ -345,6 +348,17 @@ class ReturnInst : public Instruction {
 
 class BranchInst : public Instruction {
  public:
+  static BranchInst* Create(BasicBlock* if_true) {
+    AllocInfo info{.num_ops = 1};
+    return new (info) BranchInst(if_true, info);
+  }
+
+  static BranchInst* Create(BasicBlock* if_true, BasicBlock* if_false,
+                            Value* condition) {
+    AllocInfo info{.num_ops = 3};
+    return new (info) BranchInst(if_true, if_false, condition, info);
+  }
+
   static bool classof(const Instruction& i) {
     return i.op_code() == Operation::kBranch;
   }
@@ -358,6 +372,68 @@ class BranchInst : public Instruction {
 
   BranchInst(BasicBlock* if_true, BasicBlock* if_false, Value* condition,
              AllocInfo alloc_info);
+};
+
+class PHINode : public Instruction {
+  constexpr static HungOffAllocInfo alloc_info;
+
+public:
+  static PHINode* Create(Type* type, uint32_t num_reserved_value) {
+    return new (alloc_info) PHINode(type, num_reserved_value);
+  }
+
+  void AddIncoming(Value* value, BasicBlock* basic_block) {
+    if (num_of_operands() == reserved_space_) {
+      GrowOperands();
+    }
+
+    set_num_of_hung_off_operands(num_of_operands() + 1);
+    set_incoming_value(num_of_operands() - 1, value);
+    set_incoming_block(num_of_operands() - 1, basic_block);
+  }
+
+  Value* get_incoming_value(uint32_t index) const {
+    DCHECK(index < num_of_operands());
+    return op(index).get();
+  }
+
+  void set_incoming_value(uint32_t index, Value* value) {
+    DCHECK(index < num_of_operands());
+    op(index) = value;
+  }
+
+  BasicBlock* get_incoming_block(uint32_t index) const {
+    DCHECK(index < num_of_operands());
+    return block_begin()[index];
+  }
+
+  void set_incoming_block(uint32_t index, BasicBlock* basic_block) {
+    DCHECK(index < num_of_operands());
+    const_cast<BasicBlock**>(block_begin())[index] = basic_block;
+  }
+
+  BasicBlock* const* block_begin() const {
+    return reinterpret_cast<BasicBlock* const*>(operands() + reserved_space_);
+  }
+
+  BasicBlock* const* block_end() const {
+    return block_begin() + num_of_operands();
+  }
+
+  static bool classof(const Instruction& i) {
+    return i.op_code() == Operation::kPHI;
+  }
+
+  static bool classof(const Value& v) {
+    return IsA<Instruction>(v) && classof(To<Instruction>(v));
+  }
+
+private:
+  PHINode(Type* type, size_t num_reserved_values);
+
+  void GrowOperands();
+
+  uint32_t reserved_space_;
 };
 
 }  // namespace sysy

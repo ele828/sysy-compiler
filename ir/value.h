@@ -60,12 +60,22 @@ class Value {
 
   ~Value();
 
+  uint8_t num_user_operands() const {
+    return num_user_operands_;
+  }
+
+  void set_num_user_operands(uint8_t num_user_operands) {
+    DCHECK(num_user_operands <= 127);
+    num_user_operands_ = num_user_operands;
+  }
+
  private:
   SymbolTable* GetSymbolTable();
   void DestroyName();
 
   uint8_t id_;
   bool has_name_ : 1;
+  uint8_t num_user_operands_ : 7;
 
   Type* type_;
   Use* use_list_{};

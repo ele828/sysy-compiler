@@ -124,6 +124,20 @@ class IRBuilder {
     return Insert(new ZExtInst(dest_type, value), name);
   }
 
+  // Unconditional branch
+  BranchInst* CreateBr(BasicBlock* dest) {
+    return Insert(BranchInst::Create(dest));
+  }
+
+  BranchInst* CreateCondBr(Value* condition, BasicBlock* if_true, BasicBlock* if_false) {
+    return Insert(BranchInst::Create(if_true, if_false, condition));
+  }
+
+  PHINode* CreatePHI(Type* type, uint32_t num_reserved_values,
+                   std::string_view name) {
+    return Insert(PHINode::Create(type, num_reserved_values), name);
+  }
+
   ReturnInst* CreateRetVoid() {
     return Insert(ReturnInst::Create(context_, nullptr));
   }
