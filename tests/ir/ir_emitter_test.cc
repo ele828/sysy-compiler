@@ -1,4 +1,4 @@
-#include "ir/ir_generator.h"
+#include "ir/ir_emitter.h"
 
 #include <gtest/gtest.h>
 
@@ -41,9 +41,7 @@ void CheckSema(GlobalContext& ctx, AstContext& ast_context,
   EXPECT_EQ(sema.diagnostics().size(), 0u);
 }
 
-}  // namespace
-
-TEST(IRGenerator, GenerateBasic) {
+std::string EmitIR(const char* input) {
   GlobalContext ctx;
   AstContext ast_context;
   Module module(ctx);
@@ -61,13 +59,29 @@ TEST(IRGenerator, GenerateBasic) {
   CheckSema(ctx, ast_context, compilation_unit);
   compilation_unit->Dump();
 
-  IRGenerator generator(ctx, module);
-  generator.Generate(compilation_unit);
+  IREmitter emitter(ctx, module);
+  emitter.Emit(compilation_unit);
 
   std::stringstream ss;
   IRWriter ir_writer(ss);
   ir_writer.WriteModule(module);
-  std::cout << ss.str() << std::endl;
+  return ss.str();
+}
+
+}  // namespace
+
+TEST(IREmitter, EmitBasic) {
+  const char* source = R"(
+    int main() {
+      int a = 2;
+      int b = a > 1;
+      return b;
+    }
+
+    void foo(int a, int b) {}
+  )";
+  std::string output = EmitIR(source);
+  std::cout << output << std::endl;
 }
 
 }  // namespace sysy::test

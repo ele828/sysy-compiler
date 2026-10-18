@@ -9,13 +9,13 @@
 
 namespace sysy {
 
-class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
-  using Base = AstRecursiveVisitor<IRGenerator>;
+class IREmitter final : public AstRecursiveVisitor<IREmitter> {
+  using Base = AstRecursiveVisitor<IREmitter>;
 
  public:
-  IRGenerator(GlobalContext& ctx, Module& module);
+  IREmitter(GlobalContext& ctx, Module& module);
 
-  void Generate(CompilationUnit* unit);
+  void Emit(CompilationUnit* unit);
 
  private:
   AllocaInst* CreateTempAlloca(Type* type, std::string_view name);
@@ -32,30 +32,30 @@ class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
 
   void VisitReturnStatement(ReturnStatement* return_stmt);
 
-  Constant* GenerateInitializer(Type* type, Expression* expr);
+  Constant* EmitInitializer(Type* type, Expression* expr);
 
-  Constant* GenerateInitList(ArrayType* array_type,
-                             InitListExpression* init_list_expr);
+  Constant* EmitInitList(ArrayType* array_type,
+                         InitListExpression* init_list_expr);
 
-  Value* GenerateExpression(Expression* expr);
+  Value* EmitExpression(Expression* expr);
 
-  Constant* GenerateIntegerLiteral(IntegerLiteral* int_lit);
+  Constant* EmitIntegerLiteral(IntegerLiteral* int_lit);
 
-  Constant* GenerateFloatingLiteral(FloatingLiteral* float_lit);
+  Constant* EmitFloatingLiteral(FloatingLiteral* float_lit);
 
-  Instruction* GenerateBinaryOperation(BinaryOperation* bin_op);
+  Instruction* EmitBinaryOperation(BinaryOperation* bin_op);
 
-  Argument* GenerateFunctionParameter(ParameterDeclaration* param);
+  Argument* EmitFunctionParameter(ParameterDeclaration* param);
 
-  Value* GenerateDeclarationReference(DeclarationReference* expr);
+  Value* EmitDeclarationReference(DeclarationReference* expr);
 
-  Value* GenerateImplicitCast(ImplicitCastExpression* expr);
+  Value* EmitImplicitCast(ImplicitCastExpression* expr);
 
   Value* ResolveDeclrationReference(DeclarationReference* decl_ref);
 
   class FunctionScope {
    public:
-    explicit FunctionScope(IRGenerator& generator) : generator_(generator) {}
+    explicit FunctionScope(IREmitter& generator) : generator_(generator) {}
 
     ~FunctionScope() {
       generator_.entry_ = nullptr;
@@ -64,7 +64,7 @@ class IRGenerator final : public AstRecursiveVisitor<IRGenerator> {
     }
 
    private:
-    IRGenerator& generator_;
+    IREmitter& generator_;
   };
 
   GlobalContext& ctx_;

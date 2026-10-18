@@ -27,7 +27,7 @@ set(SOURCE_FILES
   ir/global_variable.cc
   ir/instruction.cc
   ir/ir_builder.cc
-  ir/ir_generator.cc
+  ir/ir_emitter.cc
   ir/ir_writer.cc
   ir/module.cc
   ir/use.cc
@@ -61,8 +61,7 @@ add_executable(
   tests/base/zone_test.cc
   tests/base/type_casts_test.cc
   tests/core/evaluator_test.cc
-  tests/ir/ir_builder_test.cc
-  tests/ir/ir_generator_test.cc
+  tests/ir/ir_emitter_test.cc
   tests/parse/lexer_test.cc
   tests/parse/parser_test.cc
   tests/parse/token_test.cc

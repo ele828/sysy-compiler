@@ -1,4 +1,4 @@
-#include "ir/ir_generator.h"
+#include "ir/ir_emitter.h"
 
 #include "ast/ast.h"
 #include "base/logging.h"
@@ -15,22 +15,22 @@
 
 namespace sysy {
 
-IRGenerator::IRGenerator(GlobalContext& ctx, Module& module)
+IREmitter::IREmitter(GlobalContext& ctx, Module& module)
     : ctx_(ctx), module_(module), builder_(ctx) {}
 
-void IRGenerator::Generate(CompilationUnit* unit) {
+void IREmitter::Emit(CompilationUnit* unit) {
   for (auto& decl : unit->body()) {
     if (auto* const_decl = DynamicTo<ConstantDeclaration>(decl)) {
       auto* gv = GlobalVariable::Create(module_, const_decl->type(), true,
                                         const_decl->name());
       Constant* initializer =
-          GenerateInitializer(const_decl->type(), const_decl->init_value());
+          EmitInitializer(const_decl->type(), const_decl->init_value());
       gv->set_initializer(initializer);
     } else if (auto* var_decl = DynamicTo<VariableDeclaration>(decl)) {
       auto* gv = GlobalVariable::Create(module_, var_decl->type(), false,
                                         var_decl->name());
       Constant* initializer =
-          GenerateInitializer(var_decl->type(), var_decl->init_value());
+          EmitInitializer(var_decl->type(), var_decl->init_value());
       gv->set_initializer(initializer);
     } else if (auto* fun_decl = DynamicTo<FunctionDeclaration>(decl)) {
       VisitFunctionDeclaration(fun_decl);
@@ -40,7 +40,7 @@ void IRGenerator::Generate(CompilationUnit* unit) {
   }
 }
 
-AllocaInst* IRGenerator::CreateTempAlloca(Type* type, std::string_view name) {
+AllocaInst* IREmitter::CreateTempAlloca(Type* type, std::string_view name) {
   DCHECK(entry_);
 
   auto* alloca = new AllocaInst(type);
@@ -54,7 +54,7 @@ AllocaInst* IRGenerator::CreateTempAlloca(Type* type, std::string_view name) {
   return alloca;
 }
 
-Constant* IRGenerator::EvaluateConstantExpression(Expression* expr) {
+Constant* IREmitter::EvaluateConstantExpression(Expression* expr) {
   if (!expr) {
     return nullptr;
   }
@@ -71,7 +71,7 @@ Constant* IRGenerator::EvaluateConstantExpression(Expression* expr) {
   return ConstantFP::Get(ctx_, result.has_value() ? result.get<float>() : 0.f);
 }
 
-void IRGenerator::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
+void IREmitter::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
   auto* function = Function::Create(To<FunctionType>(fun_decl->type()),
                                     fun_decl->name(), module_);
   for (size_t i = 0; i < fun_decl->parameters().size(); ++i) {
@@ -93,7 +93,7 @@ void IRGenerator::VisitFunctionDeclaration(FunctionDeclaration* fun_decl) {
   }
 }
 
-void IRGenerator::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
+void IREmitter::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
   auto* alloca = CreateTempAlloca(const_decl->type(), const_decl->name());
   local_decl_map_.emplace(const_decl, alloca);
 
@@ -107,7 +107,7 @@ void IRGenerator::VisitConstantDeclaration(ConstantDeclaration* const_decl) {
   builder_.CreateStore(constant, alloca);
 }
 
-void IRGenerator::VisitVariableDeclaration(VariableDeclaration* var_decl) {
+void IREmitter::VisitVariableDeclaration(VariableDeclaration* var_decl) {
   auto* alloca = CreateTempAlloca(var_decl->type(), var_decl->name());
   local_decl_map_.emplace(var_decl, alloca);
 
@@ -122,19 +122,19 @@ void IRGenerator::VisitVariableDeclaration(VariableDeclaration* var_decl) {
     return;
   }
 
-  auto* value = GenerateExpression(init_value);
+  auto* value = EmitExpression(init_value);
   builder_.CreateStore(value, alloca);
 }
 
-void IRGenerator::VisitExpressionStatement(ExpressionStatement* expr_stmt) {
+void IREmitter::VisitExpressionStatement(ExpressionStatement* expr_stmt) {
   if (auto* expr = expr_stmt->expression()) {
-    GenerateExpression(expr);
+    EmitExpression(expr);
   }
 }
 
-Constant* IRGenerator::GenerateInitializer(Type* type, Expression* expr) {
+Constant* IREmitter::EmitInitializer(Type* type, Expression* expr) {
   if (auto* array_type = DynamicTo<ArrayType>(type)) {
-    return GenerateInitList(array_type, To<InitListExpression>(expr));
+    return EmitInitList(array_type, To<InitListExpression>(expr));
   }
 
   auto* constant = EvaluateConstantExpression(expr);
@@ -143,8 +143,8 @@ Constant* IRGenerator::GenerateInitializer(Type* type, Expression* expr) {
   return constant;
 }
 
-Constant* IRGenerator::GenerateInitList(ArrayType* array_type,
-                                        InitListExpression* init_list_expr) {
+Constant* IREmitter::EmitInitList(ArrayType* array_type,
+                                  InitListExpression* init_list_expr) {
   if (!init_list_expr) {
     return ConstantArray::Get(array_type, {});
   }
@@ -155,7 +155,7 @@ Constant* IRGenerator::GenerateInitList(ArrayType* array_type,
   size_t element_count = init_list_expr->list().size();
   elements.reserve(element_count);
   for (auto& expr : init_list_expr->list()) {
-    elements.push_back(GenerateInitializer(expr->type(), expr));
+    elements.push_back(EmitInitializer(expr->type(), expr));
   }
 
   if (init_list_expr->array_filler()) {
@@ -180,19 +180,19 @@ Constant* IRGenerator::GenerateInitList(ArrayType* array_type,
   return ConstantArray::Get(array_type, elements);
 }
 
-Value* IRGenerator::GenerateExpression(Expression* expr) {
+Value* IREmitter::EmitExpression(Expression* expr) {
   switch (expr->kind()) {
     case AstNode::Kind::kIntegerLiteral:
-      return GenerateIntegerLiteral(To<IntegerLiteral>(expr));
+      return EmitIntegerLiteral(To<IntegerLiteral>(expr));
     case AstNode::Kind::kFloatingLiteral:
-      return GenerateFloatingLiteral(To<FloatingLiteral>(expr));
+      return EmitFloatingLiteral(To<FloatingLiteral>(expr));
     case AstNode::Kind::kUnaryOperation: {
       return {};
     }
     case AstNode::Kind::kBinaryOperation:
-      return GenerateBinaryOperation(To<BinaryOperation>(expr));
+      return EmitBinaryOperation(To<BinaryOperation>(expr));
     case AstNode::Kind::kDeclarationReference: {
-      return GenerateDeclarationReference(To<DeclarationReference>(expr));
+      return EmitDeclarationReference(To<DeclarationReference>(expr));
     }
     case AstNode::Kind::kInitList: {
       return {};
@@ -204,7 +204,7 @@ Value* IRGenerator::GenerateExpression(Expression* expr) {
       return {};
     }
     case AstNode::Kind::kImplicitCast: {
-      return GenerateImplicitCast(To<ImplicitCastExpression>(expr));
+      return EmitImplicitCast(To<ImplicitCastExpression>(expr));
     }
     case AstNode::Kind::kImplicitValueInit: {
       return {};
@@ -216,29 +216,29 @@ Value* IRGenerator::GenerateExpression(Expression* expr) {
   return {};
 }
 
-Constant* IRGenerator::GenerateIntegerLiteral(IntegerLiteral* int_lit) {
+Constant* IREmitter::EmitIntegerLiteral(IntegerLiteral* int_lit) {
   return ConstantInt::Get(ctx_, int_lit->value());
 }
 
-Constant* IRGenerator::GenerateFloatingLiteral(FloatingLiteral* float_lit) {
+Constant* IREmitter::EmitFloatingLiteral(FloatingLiteral* float_lit) {
   return ConstantFP::Get(ctx_, float_lit->value());
 }
 
-Instruction* IRGenerator::GenerateBinaryOperation(BinaryOperation* bin_op) {
+Instruction* IREmitter::EmitBinaryOperation(BinaryOperation* bin_op) {
   DCHECK(bin_op->lhs()->type() == bin_op->rhs()->type());
 
   if (bin_op->op() == BinaryOperator::kAssign) {
     Value* lhs =
         ResolveDeclrationReference(To<DeclarationReference>(bin_op->lhs()));
-    Value* rhs = GenerateExpression(bin_op->rhs());
+    Value* rhs = EmitExpression(bin_op->rhs());
     return builder_.CreateStore(rhs, lhs);
   }
 
   Instruction* result{};
   bool is_float_op = Type::IsFloat(bin_op->lhs()->type());
 
-  Value* lhs = GenerateExpression(bin_op->lhs());
-  Value* rhs = GenerateExpression(bin_op->rhs());
+  Value* lhs = EmitExpression(bin_op->lhs());
+  Value* rhs = EmitExpression(bin_op->rhs());
 
   switch (bin_op->op()) {
     case BinaryOperator::kInvalid:
@@ -340,24 +340,23 @@ Instruction* IRGenerator::GenerateBinaryOperation(BinaryOperation* bin_op) {
   return result;
 }
 
-void IRGenerator::VisitReturnStatement(ReturnStatement* return_stmt) {
+void IREmitter::VisitReturnStatement(ReturnStatement* return_stmt) {
   if (!return_stmt->expression()) {
     builder_.CreateRetVoid();
     return;
   }
 
-  Value* retval = GenerateExpression(return_stmt->expression());
+  Value* retval = EmitExpression(return_stmt->expression());
   builder_.CreateRet(retval);
 }
 
-Value* IRGenerator::GenerateDeclarationReference(
-    DeclarationReference* decl_ref) {
+Value* IREmitter::EmitDeclarationReference(DeclarationReference* decl_ref) {
   Value* value = ResolveDeclrationReference(decl_ref);
 
   return builder_.CreateLoad(decl_ref->type(), value, "");
 }
 
-Value* IRGenerator::ResolveDeclrationReference(DeclarationReference* decl_ref) {
+Value* IREmitter::ResolveDeclrationReference(DeclarationReference* decl_ref) {
   // Find declaration from local
   auto it = local_decl_map_.find(decl_ref->declaration());
   if (it != local_decl_map_.end()) {
@@ -368,7 +367,7 @@ Value* IRGenerator::ResolveDeclrationReference(DeclarationReference* decl_ref) {
   return module_.symbol_table().Lookup(decl_ref->name());
 }
 
-Value* IRGenerator::GenerateImplicitCast(ImplicitCastExpression* expr) {
+Value* IREmitter::EmitImplicitCast(ImplicitCastExpression* expr) {
   Type* type = expr->type();
   auto* sub_expression = expr->sub_expression();
 
@@ -391,7 +390,7 @@ Value* IRGenerator::GenerateImplicitCast(ImplicitCastExpression* expr) {
   }
 
   // Perform type cast
-  Value* value = GenerateExpression(sub_expression);
+  Value* value = EmitExpression(sub_expression);
   if (Type::IsFloat(type)) {
     DCHECK(value->type() == Type::GetIntType(ctx_));
     return builder_.CreateSIToFP(value, type, "conv");
