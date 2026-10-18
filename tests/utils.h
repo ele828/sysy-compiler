@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <print>
 #include <vector>
 
@@ -62,6 +63,27 @@ inline void PrintSemanticErrors(AstContext& context, const Sema& analyzer) {
                  diag.location.line - context.prelude_lines(),
                  diag.location.column);
   }
+}
+
+inline std::string dedent(std::string_view input) {
+  std::string output;
+  output.reserve(input.length());
+
+  size_t first_line_end_pos = input.find_first_of('\n');
+  input = input.substr(first_line_end_pos + 1);
+
+  size_t leading_spaces = input.find_first_not_of(" \t");
+  for (size_t i = 0; i < input.length();) {
+    size_t pos = input.find('\n', i);
+    size_t end = pos == std::string_view::npos ? input.length() : pos;
+    std::string_view line = input.substr(i, end - i);
+    output.append(line.substr(std::min(line.length(), leading_spaces)));
+    if (pos == std::string_view::npos) break;
+    output.append("\n");
+    i = pos + 1;
+  }
+
+  return output;
 }
 
 }  // namespace sysy::test

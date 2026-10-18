@@ -55,16 +55,16 @@ class IREmitter final : public AstRecursiveVisitor<IREmitter> {
 
   class FunctionScope {
    public:
-    explicit FunctionScope(IREmitter& generator) : generator_(generator) {}
+    explicit FunctionScope(IREmitter& ir_emitter) : ir_emitter_(ir_emitter) {}
 
     ~FunctionScope() {
-      generator_.entry_ = nullptr;
-      generator_.alloca_insert_point_ = nullptr;
-      generator_.local_decl_map_.clear();
+      ir_emitter_.entry_ = nullptr;
+      ir_emitter_.alloca_insert_point_ = nullptr;
+      ir_emitter_.local_decl_map_.clear();
     }
 
    private:
-    IREmitter& generator_;
+    IREmitter& ir_emitter_;
   };
 
   GlobalContext& ctx_;

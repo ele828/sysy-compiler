@@ -45,22 +45,11 @@ std::string EmitIR(const char* input) {
   GlobalContext ctx;
   AstContext ast_context;
   Module module(ctx);
-
-  const char* source = R"(
-    int main() {
-      int a = 2;
-      int b = a > 1;
-      return b;
-    }
-
-    void foo(int a, int b) {}
-  )";
-  auto* compilation_unit = Parse(ctx, ast_context, source);
+  auto* compilation_unit = Parse(ctx, ast_context, input);
   CheckSema(ctx, ast_context, compilation_unit);
-  compilation_unit->Dump();
 
-  IREmitter emitter(ctx, module);
-  emitter.Emit(compilation_unit);
+  IREmitter ir_emitter(ctx, module);
+  ir_emitter.Emit(compilation_unit);
 
   std::stringstream ss;
   IRWriter ir_writer(ss);
@@ -77,11 +66,70 @@ TEST(IREmitter, EmitBasic) {
       int b = a > 1;
       return b;
     }
+  )";
+  std::string output = EmitIR(source);
+  const char* expected = R"(
+    define dso_local i32 @main() {
+    .entry:
+      %a = alloca i32, align 4
+      %b = alloca i32, align 4
+      store i32 2, ptr %a, align 4
+      %0 = load i32, ptr %a, align 4
+      %cmp = icmp sgt i32 %0, 1
+      %conv = zext i1 %cmp to i32
+      store i32 %conv, ptr %b, align 4
+      %1 = load i32, ptr %b, align 4
+      ret i32 %1
+    }
+  )";
+
+  EXPECT_EQ(output, dedent(expected));
+}
+
+TEST(IREmitter, EmitFunctionDecl) {
+  const char* source = R"(
+    int main() {
+      return 0;
+    }
 
     void foo(int a, int b) {}
   )";
   std::string output = EmitIR(source);
-  std::cout << output << std::endl;
+  const char* expected = R"(
+    define dso_local i32 @main() {
+    .entry:
+      ret i32 0
+    }
+
+    define dso_local void @foo(i32 %a, i32 %b) {
+    .entry:
+    }
+  )";
+  std::cout << output;
+
+  EXPECT_EQ(output, dedent(expected));
+}
+
+TEST(IREmitter, EmitConstDecl) {
+  const char* source = R"(
+    const int a = 10;
+    const float b = 2.0;
+    int main() {
+      return 0;
+    }
+  )";
+  std::string output = EmitIR(source);
+  const char* expected = R"(
+    @a = dso_local global i32 10, align 4
+    @b = dso_local global float 2.000000e+00, align 4
+
+    define dso_local i32 @main() {
+    .entry:
+      ret i32 0
+    }
+  )";
+
+  EXPECT_EQ(output, dedent(expected));
 }
 
 }  // namespace sysy::test

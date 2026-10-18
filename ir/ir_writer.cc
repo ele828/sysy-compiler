@@ -85,11 +85,18 @@ void IRWriter::WriteModule(Module& module) {
     os_ << "\n";
   }
 
+  if (!module.globals().empty() && !module.functions().empty()) {
+    os_ << "\n";
+  }
+
   // Write Function
   for (auto& function : module.functions()) {
     slot_.Clear();
 
-    os_ << "\n";
+    if (&function != &*module.functions().begin()) {
+      os_ << "\n";
+    }
+
     os_ << "define dso_local ";
 
     // Write function type
