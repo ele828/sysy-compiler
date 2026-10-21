@@ -239,6 +239,7 @@ void IRWriter::WriteInstruction(Instruction& inst) {
       break;
     case Instruction::kSIToFP:
       WriteSIToFPInst(To<SIToFPInst>(inst));
+      break;
     case Instruction::kFPToSI:
       WriteFPToSIInst(To<FPToSIInst>(inst));
       break;

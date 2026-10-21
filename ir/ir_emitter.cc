@@ -281,9 +281,9 @@ Instruction* IREmitter::EmitBinaryOperation(BinaryOperation* bin_op) {
       break;
     case BinaryOperator::kLt:
       if (!is_float_op) {
-        result = builder_.CreateICmpEq(lhs, rhs, "cmp");
+        result = builder_.CreateICmpSLt(lhs, rhs, "cmp");
       } else {
-        result = builder_.CreateFCmpOEq(lhs, rhs, "cmp");
+        result = builder_.CreateFCmpOLt(lhs, rhs, "cmp");
       }
       break;
     case BinaryOperator::kGt:
@@ -302,9 +302,9 @@ Instruction* IREmitter::EmitBinaryOperation(BinaryOperation* bin_op) {
       break;
     case BinaryOperator::kGe:
       if (!is_float_op) {
-        result = builder_.CreateICmpSGt(lhs, rhs, "cmp");
+        result = builder_.CreateICmpSGe(lhs, rhs, "cmp");
       } else {
-        result = builder_.CreateFCmpOGt(lhs, rhs, "cmp");
+        result = builder_.CreateFCmpOGe(lhs, rhs, "cmp");
       }
       break;
     case BinaryOperator::kEq:
