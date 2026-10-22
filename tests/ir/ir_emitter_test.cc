@@ -131,6 +131,89 @@ TEST(IREmitter, EmitGlobalConstDecl) {
   EXPECT_EQ(output, dedent(expected));
 }
 
+TEST(IREmitter, EmitGlobalInitList) {
+  const char* source = R"(
+    int a[3] = {1, 2, 3};
+    int main() {
+      return 0;
+    }
+  )";
+  std::string output = EmitIR(source);
+  const char* expected = R"(
+    @a = dso_local global [3 x i32] [i32 1, i32 2, i32 3], align 4
+
+    define dso_local i32 @main() {
+    .entry:
+      ret i32 0
+    }
+  )";
+
+  EXPECT_EQ(output, dedent(expected));
+}
+
+TEST(IREmitter, EmitGlobalInitListMultiDims) {
+  const char* source = R"(
+    int a[3][2] = {{0, 1}, {2, 3}, {4, 5}};
+    int main() {
+      return 0;
+    }
+  )";
+  std::string output = EmitIR(source);
+  const char* expected = R"(
+    @a = dso_local global [3 x [2 x i32]] [[2 x i32] [i32 0, i32 1], [2 x i32] [i32 2, i32 3], [2 x i32] [i32 4, i32 5]], align 4
+
+    define dso_local i32 @main() {
+    .entry:
+      ret i32 0
+    }
+  )";
+
+  EXPECT_EQ(output, dedent(expected));
+}
+
+TEST(IREmitter, EmitGlobalInitListZeroInit) {
+  const char* source = R"(
+    int a[3][2] = {};
+    int main() {
+      return 0;
+    }
+  )";
+  std::string output = EmitIR(source);
+
+  // FIXME(eric): this one is not 100% correct, it should be simplified to 1
+  // zeroinitializer And int[2] = {} currently does not emit zeroinitializer.
+  const char* expected = R"(
+    @a = dso_local global [3 x [2 x i32]] [[2 x i32] zeroinitializer, [2 x i32] zeroinitializer, [2 x i32] zeroinitializer], align 4
+
+    define dso_local i32 @main() {
+    .entry:
+      ret i32 0
+    }
+  )";
+
+  EXPECT_EQ(output, dedent(expected));
+}
+
+TEST(IREmitter, EmitGlobalInitListFiller) {
+  const char* source = R"(
+    int a[3][2] = {{}, {}, {1, 2}};
+    int main() {
+      return 0;
+    }
+  )";
+  std::string output = EmitIR(source);
+  const char* expected = R"(
+    @a = dso_local global [3 x [2 x i32]] [[2 x i32] [i32 0, i32 0], [2 x i32] [i32 0, i32 0], [2 x i32] [i32 1, i32 2]], align 4
+
+    define dso_local i32 @main() {
+    .entry:
+      ret i32 0
+    }
+  )";
+
+  EXPECT_EQ(output, dedent(expected));
+}
+
 TEST(IREmitter, EmitGlobalVarDecl) {
   const char* source = R"(
     int a = 10;
